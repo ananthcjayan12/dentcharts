@@ -24,13 +24,13 @@ class ToothMaster(Document):
 			if self.universal_number not in valid_numbers:
 				frappe.throw("Universal number must be valid FDI notation (11-18, 21-28, 31-38, 41-48)")
 		elif self.dentition_type == "Primary":
-			# Primary teeth use letters A-T, stored as tooth_number field
+			# Palmer notation for primary teeth uses letters A-E
 			# Universal_number field not used for primary teeth
 			if self.universal_number and self.universal_number != 0:
-				frappe.throw("Primary teeth use letter codes (A-T), not universal numbers")
+				frappe.throw("Primary teeth use Palmer notation with letters (A-E), not universal numbers")
 	
 	def set_computed_fields(self):
-		"""Set arch and position based on FDI universal number"""
+		"""Set arch and position based on numbering system"""
 		if self.dentition_type == "Permanent" and self.universal_number:
 			num = self.universal_number
 			
@@ -54,6 +54,28 @@ class ToothMaster(Document):
 				self.arch = "Lower"
 				self.quadrant = "Lower Right"
 				self.position_in_quadrant = position_digit
+		elif self.dentition_type == "Primary" and self.tooth_number:
+			# Palmer notation for primary teeth uses letters with quadrant indicators
+			# tooth_number format: "UR-A", "UL-B", "LL-C", "LR-D", etc.
+			if "-" in self.tooth_number:
+				quadrant_code, letter = self.tooth_number.split("-")
+				
+				if quadrant_code == "UR":  # Upper Right
+					self.arch = "Upper"
+					self.quadrant = "Upper Right"
+				elif quadrant_code == "UL":  # Upper Left
+					self.arch = "Upper"
+					self.quadrant = "Upper Left"
+				elif quadrant_code == "LL":  # Lower Left
+					self.arch = "Lower"
+					self.quadrant = "Lower Left"
+				elif quadrant_code == "LR":  # Lower Right
+					self.arch = "Lower"
+					self.quadrant = "Lower Right"
+				
+				# Position based on letter (A=1, B=2, C=3, D=4, E=5)
+				if letter in "ABCDE":
+					self.position_in_quadrant = ord(letter) - ord('A') + 1
 	
 	def validate_surfaces(self):
 		"""Ensure surfaces is valid JSON"""
@@ -131,4 +153,61 @@ class ToothMaster(Document):
 				tooth.insert()
 				created_count += 1
 		
-		return f"Created {created_count} teeth" 
+		return f"Created {created_count} permanent teeth"
+
+	@staticmethod
+	def create_standard_primary_teeth():
+		"""Create all 20 primary teeth with Palmer notation system"""
+		primary_teeth_data = [
+			# Upper Right Quadrant (E, D, C, B, A)
+			{"code": "UR-E", "name": "Upper Right Second Molar (Primary)", "type": "Molar"},
+			{"code": "UR-D", "name": "Upper Right First Molar (Primary)", "type": "Molar"},
+			{"code": "UR-C", "name": "Upper Right Canine (Primary)", "type": "Canine"},
+			{"code": "UR-B", "name": "Upper Right Lateral Incisor (Primary)", "type": "Incisor"},
+			{"code": "UR-A", "name": "Upper Right Central Incisor (Primary)", "type": "Incisor"},
+			
+			# Upper Left Quadrant (A, B, C, D, E)
+			{"code": "UL-A", "name": "Upper Left Central Incisor (Primary)", "type": "Incisor"},
+			{"code": "UL-B", "name": "Upper Left Lateral Incisor (Primary)", "type": "Incisor"},
+			{"code": "UL-C", "name": "Upper Left Canine (Primary)", "type": "Canine"},
+			{"code": "UL-D", "name": "Upper Left First Molar (Primary)", "type": "Molar"},
+			{"code": "UL-E", "name": "Upper Left Second Molar (Primary)", "type": "Molar"},
+			
+			# Lower Left Quadrant (A, B, C, D, E)
+			{"code": "LL-A", "name": "Lower Left Central Incisor (Primary)", "type": "Incisor"},
+			{"code": "LL-B", "name": "Lower Left Lateral Incisor (Primary)", "type": "Incisor"},
+			{"code": "LL-C", "name": "Lower Left Canine (Primary)", "type": "Canine"},
+			{"code": "LL-D", "name": "Lower Left First Molar (Primary)", "type": "Molar"},
+			{"code": "LL-E", "name": "Lower Left Second Molar (Primary)", "type": "Molar"},
+			
+			# Lower Right Quadrant (E, D, C, B, A)
+			{"code": "LR-E", "name": "Lower Right Second Molar (Primary)", "type": "Molar"},
+			{"code": "LR-D", "name": "Lower Right First Molar (Primary)", "type": "Molar"},
+			{"code": "LR-C", "name": "Lower Right Canine (Primary)", "type": "Canine"},
+			{"code": "LR-B", "name": "Lower Right Lateral Incisor (Primary)", "type": "Incisor"},
+			{"code": "LR-A", "name": "Lower Right Central Incisor (Primary)", "type": "Incisor"},
+		]
+		
+		created_count = 0
+		for tooth_data in primary_teeth_data:
+			if not frappe.db.exists("Tooth Master", tooth_data["code"]):
+				# Primary teeth have different surfaces (no premolars)
+				if tooth_data["type"] in ["Incisor", "Canine"]:
+					surfaces = ["Incisal", "Mesial", "Distal", "Facial", "Lingual"]
+				else:  # Molars
+					surfaces = ["Occlusal", "Mesial", "Distal", "Buccal", "Lingual"]
+				
+				tooth = frappe.get_doc({
+					"doctype": "Tooth Master",
+					"tooth_number": tooth_data["code"],
+					"universal_number": 0,  # Not used for primary teeth
+					"tooth_name": tooth_data["name"],
+					"tooth_type": tooth_data["type"],
+					"dentition_type": "Primary",
+					"surfaces": json.dumps(surfaces),
+					"is_active": 1
+				})
+				tooth.insert()
+				created_count += 1
+		
+		return f"Created {created_count} primary teeth" 

@@ -3,14 +3,31 @@
 
 frappe.ui.form.on('Tooth Master', {
 	refresh: function(frm) {
-		// Add button to create all standard teeth (for System Manager only)
+		// Add buttons to create standard teeth (for System Manager only)
 		if (frappe.user.has_role('System Manager') && frm.doc.__islocal) {
-			frm.add_custom_button(__('Create All Standard Teeth'), function() {
+			frm.add_custom_button(__('Create All Permanent Teeth'), function() {
 				frappe.confirm(
-					__('This will create all 32 permanent teeth. Continue?'),
+					__('This will create all 32 permanent teeth with FDI numbering. Continue?'),
 					function() {
 						frappe.call({
 							method: 'dentcharts.dentcharts.doctype.tooth_master.tooth_master.ToothMaster.create_standard_teeth',
+							callback: function(r) {
+								if (r.message) {
+									frappe.msgprint(r.message);
+									frm.reload_doc();
+								}
+							}
+						});
+					}
+				);
+			});
+			
+			frm.add_custom_button(__('Create All Primary Teeth'), function() {
+				frappe.confirm(
+					__('This will create all 20 primary teeth with FDI numbering. Continue?'),
+					function() {
+						frappe.call({
+							method: 'dentcharts.dentcharts.doctype.tooth_master.tooth_master.ToothMaster.create_standard_primary_teeth',
 							callback: function(r) {
 								if (r.message) {
 									frappe.msgprint(r.message);
@@ -40,7 +57,14 @@ frappe.ui.form.on('Tooth Master', {
 	
 	dentition_type: function(frm) {
 		// Update validation when dentition type changes
-		if (frm.doc.universal_number) {
+		if (frm.doc.universal_number || frm.doc.tooth_number) {
+			frm.trigger('set_computed_fields');
+		}
+	},
+	
+	tooth_number: function(frm) {
+		// Auto-set computed fields when tooth number changes (for primary teeth)
+		if (frm.doc.dentition_type === "Primary" && frm.doc.tooth_number) {
 			frm.trigger('set_computed_fields');
 		}
 	},
@@ -59,7 +83,7 @@ frappe.ui.form.on('Tooth Master', {
 	},
 	
 	set_computed_fields: function(frm) {
-		// This mirrors the Python logic for FDI numbering system
+		// Handle both FDI (permanent) and Palmer (primary) notation systems
 		if (frm.doc.dentition_type === "Permanent" && frm.doc.universal_number) {
 			let num = frm.doc.universal_number;
 			
@@ -83,6 +107,32 @@ frappe.ui.form.on('Tooth Master', {
 				frm.set_value('arch', 'Lower');
 				frm.set_value('quadrant', 'Lower Right');
 				frm.set_value('position_in_quadrant', position_digit);
+			}
+		} else if (frm.doc.dentition_type === "Primary" && frm.doc.tooth_number && frm.doc.tooth_number.includes('-')) {
+			// Palmer notation for primary teeth: "UR-A", "UL-B", etc.
+			let parts = frm.doc.tooth_number.split('-');
+			if (parts.length === 2) {
+				let quadrant_code = parts[0];
+				let letter = parts[1];
+				
+				if (quadrant_code === "UR") {  // Upper Right
+					frm.set_value('arch', 'Upper');
+					frm.set_value('quadrant', 'Upper Right');
+				} else if (quadrant_code === "UL") {  // Upper Left
+					frm.set_value('arch', 'Upper');
+					frm.set_value('quadrant', 'Upper Left');
+				} else if (quadrant_code === "LL") {  // Lower Left
+					frm.set_value('arch', 'Lower');
+					frm.set_value('quadrant', 'Lower Left');
+				} else if (quadrant_code === "LR") {  // Lower Right
+					frm.set_value('arch', 'Lower');
+					frm.set_value('quadrant', 'Lower Right');
+				}
+				
+				// Position based on letter (A=1, B=2, C=3, D=4, E=5)
+				if (letter && letter.length === 1 && letter >= 'A' && letter <= 'E') {
+					frm.set_value('position_in_quadrant', letter.charCodeAt(0) - 'A'.charCodeAt(0) + 1);
+				}
 			}
 		}
 	}
