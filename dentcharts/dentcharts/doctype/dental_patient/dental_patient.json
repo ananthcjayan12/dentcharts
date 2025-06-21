@@ -1,0 +1,149 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:healthcare_patient",
+ "creation": "2024-01-01 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "healthcare_patient",
+  "patient_name",
+  "section_break_3",
+  "dental_history",
+  "dental_allergies",
+  "previous_dental_work",
+  "column_break_7",
+  "dental_insurance",
+  "emergency_contact",
+  "emergency_phone",
+  "section_break_11",
+  "preferred_dentist",
+  "column_break_13",
+  "patient_photo",
+  "section_break_15",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "healthcare_patient",
+   "fieldtype": "Link",
+   "label": "Healthcare Patient",
+   "options": "Patient",
+   "reqd": 1
+  },
+  {
+   "fieldname": "patient_name",
+   "fieldtype": "Data",
+   "label": "Patient Name",
+   "read_only": 1,
+   "fetch_from": "healthcare_patient.patient_name"
+  },
+  {
+   "fieldname": "section_break_3",
+   "fieldtype": "Section Break",
+   "label": "Dental Information"
+  },
+  {
+   "fieldname": "dental_history",
+   "fieldtype": "Text",
+   "label": "Dental History"
+  },
+  {
+   "fieldname": "dental_allergies",
+   "fieldtype": "Small Text",
+   "label": "Dental Allergies"
+  },
+  {
+   "fieldname": "previous_dental_work",
+   "fieldtype": "Text",
+   "label": "Previous Dental Work"
+  },
+  {
+   "fieldname": "column_break_7",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "dental_insurance",
+   "fieldtype": "Small Text",
+   "label": "Dental Insurance"
+  },
+  {
+   "fieldname": "emergency_contact",
+   "fieldtype": "Data",
+   "label": "Emergency Contact"
+  },
+  {
+   "fieldname": "emergency_phone",
+   "fieldtype": "Data",
+   "label": "Emergency Phone"
+  },
+  {
+   "fieldname": "section_break_11",
+   "fieldtype": "Section Break",
+   "label": "Preferences"
+  },
+  {
+   "fieldname": "preferred_dentist",
+   "fieldtype": "Link",
+   "label": "Preferred Dentist",
+   "options": "Healthcare Practitioner"
+  },
+  {
+   "fieldname": "column_break_13",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "patient_photo",
+   "fieldtype": "Attach Image",
+   "label": "Patient Photo"
+  },
+  {
+   "fieldname": "section_break_15",
+   "fieldtype": "Section Break",
+   "label": "Additional Notes"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Notes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Patient Management",
+ "name": "Dental Patient",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Healthcare Practitioner",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "patient_name,healthcare_patient",
+ "sort_field": "patient_name",
+ "sort_order": "ASC",
+ "title_field": "patient_name",
+ "track_changes": 1
+} 

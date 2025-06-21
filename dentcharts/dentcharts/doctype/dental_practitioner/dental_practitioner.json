@@ -1,0 +1,141 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:healthcare_practitioner",
+ "creation": "2024-01-01 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "healthcare_practitioner",
+  "practitioner_name",
+  "section_break_3",
+  "dental_license_number",
+  "specialization",
+  "years_of_experience",
+  "column_break_7",
+  "consultation_fee",
+  "available_for_consultation",
+  "section_break_10",
+  "biography",
+  "section_break_12",
+  "clinic_association",
+  "primary_clinic"
+ ],
+ "fields": [
+  {
+   "fieldname": "healthcare_practitioner",
+   "fieldtype": "Link",
+   "label": "Healthcare Practitioner",
+   "options": "Healthcare Practitioner",
+   "reqd": 1
+  },
+  {
+   "fieldname": "practitioner_name",
+   "fieldtype": "Data",
+   "label": "Practitioner Name",
+   "read_only": 1,
+   "fetch_from": "healthcare_practitioner.practitioner_name"
+  },
+  {
+   "fieldname": "section_break_3",
+   "fieldtype": "Section Break",
+   "label": "Dental Information"
+  },
+  {
+   "fieldname": "dental_license_number",
+   "fieldtype": "Data",
+   "label": "Dental License Number"
+  },
+  {
+   "fieldname": "specialization",
+   "fieldtype": "Select",
+   "label": "Specialization",
+   "options": "General Dentistry\nOrthodontics\nEndodontics\nPeriodontics\nOral Surgery\nProsthodontics\nPediatric Dentistry\nOral Pathology\nDental Public Health"
+  },
+  {
+   "fieldname": "years_of_experience",
+   "fieldtype": "Int",
+   "label": "Years of Experience"
+  },
+  {
+   "fieldname": "column_break_7",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "consultation_fee",
+   "fieldtype": "Currency",
+   "label": "Consultation Fee"
+  },
+  {
+   "fieldname": "available_for_consultation",
+   "fieldtype": "Check",
+   "label": "Available for Consultation",
+   "default": 1
+  },
+  {
+   "fieldname": "section_break_10",
+   "fieldtype": "Section Break",
+   "label": "Biography"
+  },
+  {
+   "fieldname": "biography",
+   "fieldtype": "Text",
+   "label": "Biography"
+  },
+  {
+   "fieldname": "section_break_12",
+   "fieldtype": "Section Break",
+   "label": "Clinic Association"
+  },
+  {
+   "fieldname": "clinic_association",
+   "fieldtype": "Link",
+   "label": "Clinic Association",
+   "options": "Dental Clinic"
+  },
+  {
+   "fieldname": "primary_clinic",
+   "fieldtype": "Check",
+   "label": "Primary Clinic",
+   "default": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Dentcharts",
+ "name": "Dental Practitioner",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Healthcare Practitioner",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "search_fields": "practitioner_name,healthcare_practitioner,specialization",
+ "sort_field": "practitioner_name",
+ "sort_order": "ASC",
+ "title_field": "practitioner_name",
+ "track_changes": 1
+} 
