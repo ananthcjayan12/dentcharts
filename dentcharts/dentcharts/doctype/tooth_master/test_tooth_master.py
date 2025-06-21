@@ -12,11 +12,11 @@ class TestToothMaster(unittest.TestCase):
 		frappe.db.delete("Tooth Master", {"tooth_number": ["in", ["TEST1", "TEST2"]]})
 		
 	def test_tooth_creation(self):
-		# Test creating a standard tooth
+		# Test creating a standard tooth with FDI numbering
 		tooth = frappe.get_doc({
 			"doctype": "Tooth Master",
 			"tooth_number": "TEST1",
-			"universal_number": 1,
+			"universal_number": 11,  # FDI: Upper Right Central Incisor
 			"tooth_name": "Test Central Incisor",
 			"tooth_type": "Incisor",
 			"dentition_type": "Permanent"
@@ -26,14 +26,14 @@ class TestToothMaster(unittest.TestCase):
 		# Check computed fields
 		self.assertEqual(tooth.arch, "Upper")
 		self.assertEqual(tooth.quadrant, "Upper Right")
-		self.assertEqual(tooth.position_in_quadrant, 8)
+		self.assertEqual(tooth.position_in_quadrant, 1)
 	
 	def test_universal_number_validation(self):
-		# Test invalid universal number for permanent teeth
+		# Test invalid universal number for permanent teeth (FDI)
 		tooth = frappe.get_doc({
 			"doctype": "Tooth Master",
 			"tooth_number": "TEST2",
-			"universal_number": 50,  # Invalid
+			"universal_number": 19,  # Invalid FDI number
 			"tooth_name": "Test Tooth",
 			"tooth_type": "Incisor",
 			"dentition_type": "Permanent"
@@ -43,12 +43,12 @@ class TestToothMaster(unittest.TestCase):
 			tooth.insert()
 	
 	def test_quadrant_calculation(self):
-		# Test different quadrants
+		# Test different quadrants with FDI numbering
 		test_cases = [
-			{"num": 1, "arch": "Upper", "quadrant": "Upper Right"},
-			{"num": 9, "arch": "Upper", "quadrant": "Upper Left"},
-			{"num": 17, "arch": "Lower", "quadrant": "Lower Left"},
-			{"num": 25, "arch": "Lower", "quadrant": "Lower Right"}
+			{"num": 11, "arch": "Upper", "quadrant": "Upper Right"},
+			{"num": 21, "arch": "Upper", "quadrant": "Upper Left"},
+			{"num": 31, "arch": "Lower", "quadrant": "Lower Left"},
+			{"num": 41, "arch": "Lower", "quadrant": "Lower Right"}
 		]
 		
 		for i, case in enumerate(test_cases):
@@ -74,7 +74,7 @@ class TestToothMaster(unittest.TestCase):
 		tooth = frappe.get_doc({
 			"doctype": "Tooth Master",
 			"tooth_number": "TEST_SURF",
-			"universal_number": 6,
+			"universal_number": 16,  # FDI: Upper Right First Molar
 			"tooth_name": "Test Molar",
 			"tooth_type": "Molar",
 			"dentition_type": "Permanent",
@@ -101,14 +101,14 @@ class TestToothMaster(unittest.TestCase):
 		new_count = frappe.db.count("Tooth Master", {"dentition_type": "Permanent"})
 		self.assertGreater(new_count, existing_count)
 		
-		# Verify specific teeth exist
-		tooth_1 = frappe.get_doc("Tooth Master", "1")
-		self.assertEqual(tooth_1.tooth_name, "Upper Right Central Incisor")
-		self.assertEqual(tooth_1.tooth_type, "Incisor")
+		# Verify specific teeth exist with FDI numbering
+		tooth_11 = frappe.get_doc("Tooth Master", "11")
+		self.assertEqual(tooth_11.tooth_name, "Upper Right Central Incisor")
+		self.assertEqual(tooth_11.tooth_type, "Incisor")
 		
-		tooth_32 = frappe.get_doc("Tooth Master", "32")
-		self.assertEqual(tooth_32.tooth_name, "Lower Right Third Molar (Wisdom)")
-		self.assertEqual(tooth_32.tooth_type, "Wisdom Tooth")
+		tooth_48 = frappe.get_doc("Tooth Master", "48")
+		self.assertEqual(tooth_48.tooth_name, "Lower Right Third Molar (Wisdom)")
+		self.assertEqual(tooth_48.tooth_type, "Wisdom Tooth")
 	
 	def tearDown(self):
 		# Clean up test data

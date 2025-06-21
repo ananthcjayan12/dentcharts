@@ -59,28 +59,30 @@ frappe.ui.form.on('Tooth Master', {
 	},
 	
 	set_computed_fields: function(frm) {
-		// This mirrors the Python logic for setting computed fields
+		// This mirrors the Python logic for FDI numbering system
 		if (frm.doc.dentition_type === "Permanent" && frm.doc.universal_number) {
 			let num = frm.doc.universal_number;
 			
-			if (num >= 1 && num <= 16) {
+			// FDI notation: First digit = quadrant, Second digit = position
+			let quadrant_digit = Math.floor(num / 10);
+			let position_digit = num % 10;
+			
+			if (quadrant_digit === 1) {  // Upper Right (11-18)
 				frm.set_value('arch', 'Upper');
-				if (num >= 1 && num <= 8) {
-					frm.set_value('quadrant', 'Upper Right');
-					frm.set_value('position_in_quadrant', 9 - num);
-				} else {
-					frm.set_value('quadrant', 'Upper Left');
-					frm.set_value('position_in_quadrant', num - 8);
-				}
-			} else if (num >= 17 && num <= 32) {
+				frm.set_value('quadrant', 'Upper Right');
+				frm.set_value('position_in_quadrant', position_digit);
+			} else if (quadrant_digit === 2) {  // Upper Left (21-28)
+				frm.set_value('arch', 'Upper');
+				frm.set_value('quadrant', 'Upper Left');
+				frm.set_value('position_in_quadrant', position_digit);
+			} else if (quadrant_digit === 3) {  // Lower Left (31-38)
 				frm.set_value('arch', 'Lower');
-				if (num >= 17 && num <= 24) {
-					frm.set_value('quadrant', 'Lower Left');
-					frm.set_value('position_in_quadrant', num - 16);
-				} else {
-					frm.set_value('quadrant', 'Lower Right');
-					frm.set_value('position_in_quadrant', 33 - num);
-				}
+				frm.set_value('quadrant', 'Lower Left');
+				frm.set_value('position_in_quadrant', position_digit);
+			} else if (quadrant_digit === 4) {  // Lower Right (41-48)
+				frm.set_value('arch', 'Lower');
+				frm.set_value('quadrant', 'Lower Right');
+				frm.set_value('position_in_quadrant', position_digit);
 			}
 		}
 	}
