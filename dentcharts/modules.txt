@@ -1,1 +1,6 @@
 Dentcharts
+Patient Management
+Dental Charting  
+Appointment Scheduling
+Payment Management
+Reports & Analytics

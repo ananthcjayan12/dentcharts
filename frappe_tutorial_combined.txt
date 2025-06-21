@@ -1,0 +1,975 @@
+Frappe Framework Tutorial 
+In this guide, you will learn how to create a web application from scratch using the Frappe Framework.
+
+Who is this for? 
+This guide is intended for software developers who are familiar with how web applications are built. The Frappe Framework is powered by Python, JavaScript and Redis, to name a few technologies and supports MariaDB and PostgreSQL databases. Jinja is used as the templating engine for Web Views and Print formats. Redis is used for caching, maintaing job queues and realtime updates. However, you may not need to be proficient in all these tools to get started with it.
+
+Frappe Framework and the apps you build on it require git for version control and update management via Bench. It is also expected that you are familiar with basic git commands.
+
+What are we building? 
+We will build a simple Library Management System in which the Librarian can log in and manage Articles and Memberships. We will build the following models:
+
+Article: A Book or similar item that can be rented.
+Library Member: A user who is subscribed to a membership.
+Library Transaction: An Issue or Return of an article.
+Library Membership: A document that represents an active membership of a Library Member.
+Library Settings: Settings that define values like Loan Period and the maximum number of articles that can be issued at a time.
+The Librarian will log in to an interface known as Desk, a rich admin interface that ships with the framework. The Desk provides many standard views like List view, Form view, Report view, etc, and many features like Role-based Permissions.
+
+We will also create public Web Views which can be accessed by the Library Members where they can browse available Articles.
+
+Install and Setup Bench 
+Bench is the command line tool to manage Frappe apps and sites.
+
+Installation 
+If you haven't installed Bench, follow the Installation guide. After installation, you should be able to run commands that start with bench.
+
+Run the following command to test your installation:
+
+$ bench --version
+5.1.0
+Create the frappe-bench directory 
+Let's create our project folder which will contain our apps and sites. Run the following command:
+
+$ bench init frappe-bench
+This will create a directory named frappe-bench in your current working directory. It will do the following:
+
+Create a python virtual environment under env directory.
+Fetch and install the frappe app as a python package.
+Install node modules of frappe.
+Build static assets.
+Directory Structure 
+.
+├── Procfile
+├── apps
+│   └── frappe
+├── config
+│   ├── pids
+│   ├── redis_cache.conf
+│   ├── redis_queue.conf
+│   └── redis_socketio.conf
+├── env
+│   ├── bin
+│   ├── include
+│   ├── lib
+│   └── share
+├── logs
+│   ├── backup.log
+│   └── bench.log
+└── sites
+    ├── apps.txt
+    ├── assets
+    └── common_site_config.json
+env: Python virtual environment
+config: Config files for Redis and Nginx
+logs: Log files for every process (web, worker)
+sites: Sites directory
+
+assets: Static assets that served via Nginx in production
+apps.txt: List of installed frappe apps
+common_site_config.json: Site config that is available in all sites
+apps: Apps directory
+
+frappe: The Frappe app directory
+Procfile: List of processes that run in development
+Start the Bench Server 
+Now that we have created our frappe-bench directory, we can start the Frappe web server by running the following command:
+
+$ cd frappe-bench
+$ bench start
+18:16:36 system | redis_cache.1 started (pid=11231)
+18:16:36 system | redis_socketio.1 started (pid=11233)
+18:16:36 system | redis_queue.1 started (pid=11234)
+18:16:36 system | socketio.1 started (pid=11236)
+18:16:36 system | web.1 started (pid=11237)
+18:16:36 system | watch.1 started (pid=11240)
+18:16:36 system | schedule.1 started (pid=11241)
+18:16:36 system | worker_short.1 started (pid=11242)
+18:16:36 redis_queue.1 | 11234:C 10 Jul 2020 18:16:36.320 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+18:16:36 redis_queue.1 | 11234:C 10 Jul 2020 18:16:36.320 # Redis version=6.0.5, bits=64, commit=00000000, modified=0, pid=11234, just started
+18:16:36 redis_queue.1 | 11234:C 10 Jul 2020 18:16:36.320 # Configuration loaded
+18:16:36 system | worker_long.1 started (pid=11244)
+18:16:36 redis_cache.1 | 11231:C 10 Jul 2020 18:16:36.318 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+18:16:36 redis_cache.1 | 11231:C 10 Jul 2020 18:16:36.318 # Redis version=6.0.5, bits=64, commit=00000000, modified=0, pid=11231, just started
+18:16:36 redis_cache.1 | 11231:C 10 Jul 2020 18:16:36.318 # Configuration loaded
+18:16:36 redis_cache.1 | 11231:M 10 Jul 2020 18:16:36.320 * Increased maximum number of open files to 10032 (it was originally set to 256).
+18:16:36 redis_queue.1 | 11234:M 10 Jul 2020 18:16:36.325 * Increased maximum number of open files to 10032 (it was originally set to 256).
+18:16:36 system | worker_default.1 started (pid=11245)
+18:16:36 redis_cache.1 | 11231:M 10 Jul 2020 18:16:36.337 * Running mode=standalone, port=13000.
+18:16:36 redis_cache.1 | 11231:M 10 Jul 2020 18:16:36.337 # Server initialized
+18:16:36 redis_cache.1 | 11231:M 10 Jul 2020 18:16:36.337 * Ready to accept connections
+18:16:36 redis_queue.1 | 11234:M 10 Jul 2020 18:16:36.367 * Running mode=standalone, port=11000.
+18:16:36 redis_queue.1 | 11234:M 10 Jul 2020 18:16:36.367 # Server initialized
+18:16:36 redis_queue.1 | 11234:M 10 Jul 2020 18:16:36.367 * Ready to accept connections
+18:16:36 redis_socketio.1 | 11233:C 10 Jul 2020 18:16:36.359 # oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+18:16:36 redis_socketio.1 | 11233:C 10 Jul 2020 18:16:36.359 # Redis version=6.0.5, bits=64, commit=00000000, modified=0, pid=11233, just started
+18:16:36 redis_socketio.1 | 11233:C 10 Jul 2020 18:16:36.359 # Configuration loaded
+18:16:36 redis_socketio.1 | 11233:M 10 Jul 2020 18:16:36.374 * Increased maximum number of open files to 10032 (it was originally set to 256).
+18:16:36 redis_socketio.1 | 11233:M 10 Jul 2020 18:16:36.417 * Running mode=standalone, port=12000.
+18:16:36 redis_socketio.1 | 11233:M 10 Jul 2020 18:16:36.418 # Server initialized
+18:16:36 redis_socketio.1 | 11233:M 10 Jul 2020 18:16:36.418 * Ready to accept connections
+18:16:37 socketio.1 | listening on *: 9000
+18:16:41 web.1 | * Running on http://0.0.0.0:8000/ (Press CTRL+C to quit)
+18:16:41 web.1 | * Restarting with fsevents reloader
+18:16:41 watch.1 | yarn run v1.22.4
+18:16:41 watch.1 | $ node rollup/watch.js
+18:16:42 watch.1 |
+18:16:42 watch.1 | Rollup Watcher Started
+18:16:42 watch.1 |
+18:16:42 watch.1 | Watching...
+18:16:42 web.1 | * Debugger is active!
+18:16:42 web.1 | * Debugger PIN: 100-672-925
+18:16:43 watch.1 | Rebuilding frappe-web-b4.css
+18:16:44 watch.1 | Rebuilding frappe-chat-web.css
+18:16:44 watch.1 | Rebuilding chat.js
+18:16:45 watch.1 | Rebuilding frappe-recorder.min.js
+18:16:48 watch.1 | Rebuilding checkout.min.js
+18:16:48 watch.1 | Rebuilding frappe-web.min.js
+18:16:51 watch.1 | Rebuilding bootstrap-4-web.min.js
+18:16:52 watch.1 | Rebuilding control.min.js
+18:16:54 watch.1 | Rebuilding dialog.min.js
+18:16:57 watch.1 | Rebuilding desk.min.css
+18:16:57 watch.1 | Rebuilding frappe-rtl.css
+18:16:58 watch.1 | Rebuilding printview.css
+18:16:58 watch.1 | Rebuilding desk.min.js
+18:17:04 watch.1 | Rebuilding form.min.css
+18:17:04 watch.1 | Rebuilding form.min.js
+18:17:07 watch.1 | Rebuilding list.min.css
+18:17:07 watch.1 | Rebuilding list.min.js
+18:17:09 watch.1 | Rebuilding report.min.css
+18:17:09 watch.1 | Rebuilding report.min.js
+18:17:12 watch.1 | Rebuilding web_form.min.js
+18:17:12 watch.1 | Rebuilding web_form.css
+18:17:13 watch.1 | Rebuilding email.css
+18:17:13 watch.1 | Rebuilding social.min.js
+18:17:13 watch.1 | Rebuilding barcode_scanner.min.js
+18:17:15 watch.1 | Rebuilding data_import_tools.min.js
+
+
+This will start several processes including a Python web server based on Gunicorn, redis servers for caching, job queuing and socketio pub-sub, background workers, node server for socketio and a node server for compiling JS/CSS files.
+
+The web server will start listening on the port 8000 but we don't have any sites yet to serve. Our next step is to create our app and create a site that will have this app installed.
+
+Make sure not to close the terminal where bench start is running. To run bench commands, create another terminal and cd into the frappe-bench directory.
+
+Good job on following the tutorial so far!Create an App 
+Create a Frappe app scaffold using the bench CLI.
+
+Create app 
+Before we start, make sure you're in a bench directory. To confirm, run bench find .:
+
+$ bench find .
+/home/frappe/frappe-bench is a bench directory!
+
+
+To create our Library Management app, run the new-app command:
+
+bench new-app library_management
+You should get some prompts, and output like the following. You can enter information manually, or press enter to select the defaults
+
+App Title (default: Library Management):
+App Description: Library Management System
+App Publisher: Faris Ansari
+App Email: faris@example.com
+App Icon (default 'octicon octicon-file-directory'):
+App Color (default 'grey'):
+App License (default 'MIT'):
+'library_management' created at /home/frappe/frappe-bench/apps/library_management
+
+Installing library_management
+$ ./env/bin/pip install -q -U -e ./apps/library_management
+$ bench build --app library_management
+yarn run v1.22.4
+$ FRAPPE_ENV=production node rollup/build.js --app library_management
+Production mode
+✔ Built js/moment-bundle.min.js
+✔ Built js/libs.min.js
+✨  Done in 1.95s.
+You will be prompted with details of your app, fill them up and an app named library_management will be created in the apps folder.
+
+To see a complete list of all icons supported in the octicons library, check out https://primer.style/octicons/
+
+App directory structure 
+Your app directory structure should look something like this:
+
+apps/library_management
+├── README.md
+├── library_management
+│   ├── hooks.py
+│   ├── library_management
+│ │ └── __init__.py
+│ ├── modules.txt
+│ ├── patches.txt
+│ ├── public
+│ │ ├── css
+│ │ └── js
+│ ├── templates
+│ │ ├── __init__.py
+│ │ ├── includes
+│ │ └── pages
+│ │ └── __init__.py
+│ └── www
+└── pyproject.toml
+
+
+library_management: This directory will contain all the source code for your app
+
+public: Store static files that will be served from Nginx in production
+templates: Jinja templates used to render web views
+www: Web pages that are served based on their directory path
+library_management: Default Module bootstrapped with app
+modules.txt: List of modules defined in the app
+patches.txt: Patch entries for database migrations
+hooks.py: Hooks used to extend or intercept standard functionality provided by the framework
+pyproject.toml: Specifies how your app is built, you can optionally add 3rd party Python dependencies here which will get installed when your app is installed.Create a Site 
+Each site comes with a database. They may be customized throughsite specific scripting or Apps may be installed on them.
+
+Create a new site 
+To create a new site, run the following command from the frappe-bench directory:
+
+$ bench new-site library.localhost
+MySQL root password:
+
+Installing frappe...
+Updating DocTypes for frappe        : [========================================] 100%
+Set Administrator password:
+*** Scheduler is disabled ***
+Current Site set to library.localhost
+This command will create a new database, so you need to enter your MariaDB root password. It will also ask to set the password for the Administrator user, just set a password that you won't forget. This will be useful later.
+
+Now, you will have a new folder named library.localhost in the sites directory.
+
+If site creation fails for any reason, you'll be prompted to roll back the changes. This will delete the library.localhost or equivalent in your sites directory, and delete the database/user that was created. This will allow you to easily retry without having to manually cleanup the unusable site.
+
+Site Directory Structure 
+The site directory structure will look something like this:
+
+sites/library.localhost
+├── indexes
+│   └── web_routes
+├── locks
+├── logs
+├── private
+│   ├── backups
+│   └── files
+├── public
+│   └── files
+└── site_config.json
+
+
+
+The indexes folder has indexes generated via Website Search.
+
+The locks folder maintains file based locks over in-site documents as well as indicators of the state of the site itself.
+
+As you can see, the private folder will contain any database backups and private files. Private files are user uploaded files that need authentication to be accessible.
+
+The public folder will contain files that are accessible without authentication. This can contain website images that should be accessible without login.
+
+The site_config.json file contains configuration that is specific to this site which should not be version controlled. This is similar to an environment variables file. If you look at the contents of the file, it contains the database configuration values for this site.
+
+{
+ "db_name": "_ad03fa1a016ca1c4",
+ "db_password": "pz1d2gN5y35ydRO5",
+ "db_type": "mariadb"
+}
+
+
+Access site in your browser 
+bench allows you to create multiple sites and access them separately in the browser on the same port. This is what we call multi-tenancy support in bench.
+
+Frappe will identify which site to serve by matching the hostname of the request with the site name, so you should be able to access your site on http://library.localhost:8000
+
+If this does not work for you it's because we have to tell our operating system that library.localhost should point to localhost. To do that, you can add the following entry to your /etc/hosts file.
+
+127.0.0.1 library.localhost
+
+
+This will map library.localhost to localhost. Bench has a convenient command to do just that.
+
+$ bench --site library.localhost add-to-hosts
+
+
+This will ask for your root password and will add an entry to your /etc/hosts file.
+
+Site Login Page
+
+Great, now you can access your site at http://library.localhost:8000. Congratulations for making it this far.
+
+Install app on site 
+To install our Library Management app on our site, run the following command:
+
+$ bench --site library.localhost install-app library_management
+
+Installing library_management...
+
+
+To confirm if the app was installed, run the following command:
+
+$ bench --site library.localhost list-apps
+frappe
+library_management
+
+
+You should see frappe and library_management as installed apps on your site.
+
+When you create a new site, the frappe app is installed by default.
+
+Login to Desk 
+To create DocTypes in our app, we must log in to Desk. Go to http://library.localhost:8000 and it should show you a login page.
+
+Enter Administrator as the user and password that you set while creating the site.
+
+Setup Wizard
+
+After successful login, you will see the setup wizard. This is a one-time setup wizard used to set up localization details for your site. Go ahead, select your language, and complete the wizard.
+
+Good job making it this far!
+
+You should see the Desk that looks something like this:
+
+Desk
+
+Site commands 
+We ran a couple of bench commands with the --site option. These commands are called site commands.
+
+Here are some of the useful site commands.
+
+Python Console
+
+# access the python console
+$ bench --site library.localhost console
+Apps in this namespace:
+frappe, library_management
+
+In [1]:
+
+
+MariaDB Console
+
+# access the mariadb console
+$ bench --site library.localhost mariadb
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 2333498
+Server version: 10.4.13-MariaDB Homebrew
+
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+MariaDB [_ad03fa1a016ca1c4]>
+
+
+Database Backup
+
+$ bench --site library.localhost backup
+Backup Summary for library.localhost at 2020-10-06 23:21:17.277960
+Config  : ./library.localhost/private/backups/20201006_232116-library_test-site_config_backup.json   94.0B
+Database: ./library.localhost/private/backups/20201006_232116-library_test-database.sql.gz           217.4KiB
+Backup for Site library.localhost has been successfully completed
+
+
+You can see a list of all site commands by running the following command:
+
+$ bench --help
+Usage: bench frappe [OPTIONS] COMMAND [ARGS]...
+
+Options:
+  --site TEXT
+  --profile Profile
+  --verbose Verbose
+  --force Force
+  --help Show this message and exit.
+
+Commands:
+  add-system-manager          Add a new system manager to a site
+  add-to-email-queue          Add an email to the Email Queue
+  add-to-hosts                Add site to hosts
+  backup                      Backup
+  browse                      Opens the site on web browser
+  build                       Minify + concatenate JS and CSS files, build...
+  build-message-files         Build message files for translation
+  build-search-index
+  bulk-rename                 Rename multiple records via CSV file
+  clear-cache                 Clear cache, doctype cache and defaults
+  clear-website-cache         Clear website cache
+  console                     Start ipython console for a site
+  data-import                 Import documents in bulk from CSV or XLSX...
+  destroy-all-sessions        Clear sessions of all users (logs them out)
+
+
+Create a DocType 
+DocType is analogous to a Model in other frameworks. Apart from defining properties, it also defines the behavior of the Model.
+
+Enable Developer Mode 
+Before we can create DocTypes, we need to enable developer mode on our bench. This will enable boilerplate creation when we create doctypes and we can track them into version control with our app.
+
+Go to your terminal and quit the bench server if it's already running then from the frappe-bench directory, run the following command:
+
+bench set-config -g developer_mode true
+bench start
+Creating a DocType 
+While in Desk, navigate to the DocType List using the Awesomebar. This list will include DocTypes bundled with the framework, those that are a part of the installed Frappe apps and custom ones, which you can create specific to each site.
+
+The first doctype we will create is Article. To create it, click on New.
+
+Enter Name as Article
+Select Library Management in Module
+Add the following fields in the Fields table:
+
+Article Name (Data, Mandatory)
+Image (Attach Image)
+Author (Data)
+Description (Text Editor)
+ISBN (Data)
+Status (Select) - Enter two options: Issued and Available (Type Issued, hit enter, then type Available)
+Publisher (Data)
+Refer the following GIF to check how it should be done:
+
+Article DocType
+
+After adding the fields, click on Save.
+
+You will see a Go to Article List button at the top right of the form. Click on it to go to the Article List. Here you will see a blank list with no records because the table has no records.
+
+Let's create some records. But before that, we need to clear the Desk cache. Click on the Settings dropdown on the right side of the navbar and click on Reload.
+
+Now, you should see the New button. Click on it and you will see the Form view of the Article doctype. Fill in the form and click on Save. You have created your first Article document. Go back to the list view and you should see one record.
+
+Article New Form
+
+What happened when you created the Article DocType? 
+1. Database Table
+
+A database table with the name tabArticle was created with the fields we specified in the fields table. You can confirm this by checking it from the MariaDB console
+
+bench --site library.localhost mariadb
+Welcome to the MariaDB monitor.  Commands end with ; or \g.
+Your MariaDB connection id is 2445938
+Server version: 10.4.13-MariaDB Homebrew
+
+Copyright (c) 2000, 2018, Oracle, MariaDB Corporation Ab and others.
+
+Type 'help;' or '\h' for help. Type '\c' to clear the current input statement.
+
+MariaDB [_ad03fa1a016ca1c4]> desc tabArticle;
++--------------+--------------+------+-----+-----------+-------+
+| Field        | Type         | Null | Key | Default   | Extra |
++--------------+--------------+------+-----+-----------+-------+
+| name         | varchar(140) | NO   | PRI | NULL      |       |
+| creation     | datetime(6)  | YES  |     | NULL      |       |
+| modified     | datetime(6)  | YES  | MUL | NULL      |       |
+| modified_by  | varchar(140) | YES  |     | NULL      |       |
+| owner        | varchar(140) | YES  |     | NULL      |       |
+| docstatus    | int(1)       | NO   |     | 0         |       |
+| parent       | varchar(140) | YES  | MUL | NULL      |       |
+| parentfield  | varchar(140) | YES  |     | NULL      |       |
+| parenttype   | varchar(140) | YES  |     | NULL      |       |
+| idx          | int(8)       | NO   |     | 0         |       |
+| article_name | varchar(140) | YES  |     | NULL      |       |
+| image        | text         | YES  |     | NULL      |       |
+| author       | varchar(140) | YES  |     | NULL      |       |
+| description  | longtext     | YES  |     | NULL      |       |
+| isbn         | varchar(140) | YES  |     | NULL      |       |
+| status       | varchar(140) | YES  |     | Available |       |
+| publisher    | varchar(140) | YES  |     | NULL      |       |
+| _user_tags   | text         | YES  |     | NULL      |       |
+| _comments    | text         | YES  |     | NULL      |       |
+| _assign      | text         | YES  |     | NULL      |       |
+| _liked_by    | text         | YES  |     | NULL      |       |
++--------------+--------------+------+-----+-----------+-------+
+21 rows in set (0.002 sec)
+
+MariaDB [_ad03fa1a016ca1c4]>
+The fields we specified in Title Case were converted to snake case automatically, and are used as the column names in the table. For e.g., article_name, image, author , and description.
+
+However, many other fields were created like name, creation, modified, modified_by . These are standard fields created for all doctypes. name is the primary key column.
+
+If you created a record with the Form, you can also run a standard select query to get the rows.
+
+MariaDB [_ad03fa1a016ca1c4]> select * from tabArticle;
++------------+----------------------------+----------------------------+---------------+---------------+-----------+--------+-------------+------------+-----+-----------------------------+--
+| name       | creation                   | modified                   | modified_by   | owner         | docstatus | parent | parentfield | parenttype | idx | article_name                | i
++------------+----------------------------+----------------------------+---------------+---------------+-----------+--------+-------------+------------+-----+-----------------------------+--
+| bd514646b9 | 2020-10-10 16:24:43.033457 | 2020-10-10 16:24:43.033457 | Administrator | Administrator |         0 | NULL   | NULL        | NULL       |   0 | The Girl with all the Gifts | N
++------------+----------------------------+----------------------------+---------------+---------------+-----------+--------+-------------+------------+-----+-----------------------------+--
+
+MariaDB [_ad03fa1a016ca1c4]>
+2. Desk Views
+
+There are a number of views that were also created for our DocType. The Article List is the list view that shows the records from the database table. The Form view is the view that is shown when you want to create a new document or view an existing one.
+
+3. Form Layout
+
+If you notice, the layout of fields in the form is according to how you ordered them in the Fields table. For e.g., Article Name is the first field followed by Image which is followed by Author. In later parts of the tutorial we will learn how to customize this further.
+
+4. Boilerplate code
+
+NOTE
+
+Make sure you uncheck the 'Custom?' checkbox in the doctype configuration. Otherwise the files discussed below won't be generated. An explaination for this is given here
+
+If you look at the changes in your app, you should find a number of files that were created. Go to your terminal and from the frappe-bench directory run the following commands.
+
+$ cd apps/library_management
+$ git status -u
+On branch master
+Untracked files:
+  (use "git add <file>..." to include in what will be committed)
+    library_management/library_management/doctype/__init__.py
+    library_management/library_management/doctype/article/__init__.py
+    library_management/library_management/doctype/article/article.js
+    library_management/library_management/doctype/article/article.json
+    library_management/library_management/doctype/article/article.py
+    library_management/library_management/doctype/article/test_article.py
+
+nothing added to commit but untracked files present (use "git add" to track)
+
+
+article.json - JSON file that defines the doctype attributes
+
+article.js - Client-side controller for the Form view
+
+article.py - Python controller for Article
+
+test_article.py - Python Unit Test boilerplate for writing tests
+
+As you can see, a DocType describes a lot of things about the model. Not only does it define the table and column names but also how it will be rendered in various views in the Desk.
+
+Good job following the tutorial so far. Let's keep going!
+
+Next: DocType FeaturesDocType Features 
+In the previous chapter, we created the Article doctype. Let's see what other features we can customize.
+
+Naming 
+If you created a document with the Form, you might have noticed that the name value of the document was a randomly generated hash. Let's make a change so that the Article Name we provide becomes the name of the document.
+
+To do that, open the doctype list from the search bar and click on Article. Now, scroll down to the Naming section and in the Auto Name field enter field:article_name. Click on Save.
+
+Now, go back to the Article List and create a new article again.
+
+
+
+Now, the name of the document will be the Article Name and it must be unique across Articles. So you cannot create another article with the same name.
+
+You can also check the database records by running a select query in the mariadb console.
+
+MariaDB [_ad03fa1a016ca1c4]> select * from tabArticle;
+
+| ------------ | ---------------------------- | ---------------------------- | --------------- | --------------- | ----------- | -------- | ------- |
+| name | creation | modified | modified_by | owner | docstatus | parent | parent
+| ------------ | ---------------------------- | ---------------------------- | --------------- | --------------- | ----------- | -------- | ------- |
+| bd514646b9 | 2020-10-10 16:24:43.033457 | 2020-10-10 16:24:43.033457 | Administrator | Administrator | 0 | NULL | NULL
+| Catch 22 | 2020-10-10 16:41:49.734499 | 2020-10-10 16:41:49.734499 | Administrator | Administrator | 0 | NULL | NULL
+| ------------ | ---------------------------- | ---------------------------- | --------------- | --------------- | ----------- | -------- | ------- |
+
+Learn more about various types of DocType Naming.
+
+Form Layout 
+Let's customize the layout of how the fields are laid out in the form while making good use of the available space. Go to the Article doctype, scroll to the Fields section, and add two new fields of type Column Break and Section Break. We will also hide the Image field as it is not needed to be shown in the form. Check out the GIF to see it in action.
+
+
+
+Form Settings
+
+Go to the Article doctype and scroll down to the Form Settings section. Enter image in the Image Field. This will show the image at the left top of the form. You can also enable Allow Rename to allow renaming of documents.
+
+
+
+Permissions 
+You can also configure what roles you want to allow and which actions you want to restrict for a DocType. Go to the Article doctype, scroll down to the Permission Rules section, and add the roles.
+
+You can also configure the type of action that is allowed for a particular role. Let's add a Librarian role that has permission for all actions and a Library Member role that has permission for Read action.
+
+
+
+You can test this by creating a new User that has the Librarian role, and another User that has the Library Member role. Login with each user, and see what actions are allowed.Controller Methods 
+Controller methods allow you to write business logic during the lifecycle of a document.
+
+Let's create our second doctype: Library Member. It will have the following fields:
+
+First Name (Data, Mandatory)
+Last Name (Data)
+Full Name (Data, Read Only)
+Email Address (Data)
+Phone (Data)
+
+
+After you have created the doctype, go to Library Member list, clear the cache from Settings > Reload and create a new Library Member.
+
+If you notice, the Full Name field is not shown in the form. This is because we set it as Read Only. It will be shown only when it has some value.
+
+Let's write code in our python controller class such that Full Name is computed automatically from First Name and Last Name.
+
+Open your code editor and open the file library_member.py and make the following changes:
+
+library_member.py
+
+class LibraryMember(Document):
+    #this method will run every time a document is saved
+    def before_save(self):
+        self.full_name = f'{self.first_name} {self.last_name or ""}'
+
+
+
+NOTE
+
+If the above snippet doesn't work for you , make sure server side scripts are enabled, and then restart bench
+
+bench set-config -g server_script_enabled true
+
+
+We wrote the logic in the before_save method which runs every time a document is saved. This is one of the many hooks provided by the Document class. You can learn more about all the available hooks at Controller docs.
+
+Now, go back and create another Library Member and see the Full Name show up after save.Types of DocType 
+Let's learn about the different types of doctype in the framework by creating more doctypes.
+
+Library Membership 
+Let's create another doctype: Library Membership. It will have the following fields:
+
+Library Member (Link, Mandatory)
+Full Name (Data, Read Only)
+From Date (Date)
+To Date (Date)
+Paid (Check)
+It will have Is Submittable enabled. It will have Naming set as LMS.##### and restricted to Librarian role. Also, the Title Field should be set to full_name in the View Settings section.
+
+Library Membership DocType
+
+The Link field Library Member is similar to a Foreign Key column in other frameworks. It will let you link the value to a record in another DocType. In this case, it links to a record of Library Member DocType.
+
+The Full Name field is a Read Only field that will be automatically fetched from from the full_name field in the linked record Library Member.
+
+Now, go to the Library Membership list and create a new document. You will see that the Library Member field is a dropdown with existing records shown as options. Select a Library Member and the Full Name will be fetched automatically. Pretty cool, right?
+
+Linked DocTypes 
+Linked DocTypes are DocTypes that are linked in other doctypes as Link fields. All doctypes are linkable. We can classify doctypes broadly into Master and Transactional based on the type of data they store. Article, Library Member are examples of Master data because they represent an entity (physical or virtual). Library Membership is an example of doctype which stores transactional data.
+
+Submittable DocTypes 
+When you enable Is Submittable in a DocType is becomes a Submittable DocType. A Submittable doctype can have 3 states: Draft, Submitted and Cancelled. A document in the Draft state can be changed like any document, however once it is in Submitted state, the value of any field in the document cannot be changed. A Submitted document can be Cancelled, which makes the document invalid. If you notice, an extra field was added in our Library Membership doctype called Amended From. This field is used to keep track of amendments in documents. Once a document is Cancelled, it can only be amended, which means it can be duplicated and the cancelled document will be linked to the new amended document via the Amended From field.
+
+Controller Validation for Membership 
+Now, let's write code that will make sure whenever a Library Membership is created, there is no active membership for the Member.
+
+library_membership.py
+
+import frappe
+from frappe.model.document import Document
+from frappe.model.docstatus import DocStatus
+
+
+class LibraryMembership(Document):
+    # check before submitting this document
+    def before_submit(self):
+        exists = frappe.db.exists(
+            "Library Membership",
+            {
+                "library_member": self.library_member,
+                "docstatus": DocStatus.submitted(),
+                # check if the membership's end date is later than this membership's start date
+                "to_date": (">", self.from_date),
+            },
+        )
+        if exists:
+            frappe.throw("There is an active membership for this member")
+We wrote our logic in the before_submit method which will run before we submit the document. We used the frappe.db.exists method to check if a Library Membership record exists with our provided filters. If it exists, we used frappe.throw to stop the execution of program with a message that will show up letting the user know the reason.
+
+Now, try creating a Library Membership with an overlapping period and you should see an error when you submit the document.
+
+Library Membership Validation
+
+Library Transaction 
+Let's create a DocType to record an Issue or Return of an Article by a Library Member who has an active membership.
+
+This doctype will be called Library Transaction and will have the following fields:
+
+Article - Link to Article
+Library Member - Link to Library Member
+Type - Select with 2 options: Issue and Return
+Date - Date of Transaction
+This doctype will also be a Submittable doctype.
+
+Library Transaction Doctype
+
+Validation for Transaction 
+When an Article is issued, we should verify whether the Library Member has an active membership. We should also check whether the Article is available for Issue. Let's write the code for these validations.
+
+library_transaction.py
+
+import frappe
+from frappe.model.document import Document
+from frappe.model.docstatus import DocStatus
+
+
+class LibraryTransaction(Document):
+    def before_submit(self):
+        if self.type == "Issue":
+            self.validate_issue()
+            # set the article status to be Issued
+            article = frappe.get_doc("Article", self.article)
+            article.status = "Issued"
+            article.save()
+
+        elif self.type == "Return":
+            self.validate_return()
+            # set the article status to be Available
+            article = frappe.get_doc("Article", self.article)
+            article.status = "Available"
+            article.save()
+
+    def validate_issue(self):
+        self.validate_membership()
+        article = frappe.get_doc("Article", self.article)
+        # article cannot be issued if it is already issued
+        if article.status == "Issued":
+            frappe.throw("Article is already issued by another member")
+
+    def validate_return(self):
+        article = frappe.get_doc("Article", self.article)
+        # article cannot be returned if it is not issued first
+        if article.status == "Available":
+            frappe.throw("Article cannot be returned without being issued first")
+
+    def validate_membership(self):
+        # check if a valid membership exist for this library member
+        valid_membership = frappe.db.exists(
+            "Library Membership",
+            {
+                "library_member": self.library_member,
+                "docstatus": DocStatus.submitted(),
+                "from_date": ("<", self.date),
+                "to_date": (">", self.date),
+            },
+        )
+        if not valid_membership:
+            frappe.throw("The member does not have a valid membership")
+
+There is a lot of code here but it should be self explanatory. There are inline code comments for more explanation.
+
+Library Settings 
+Let's create the last doctype for our app: Library Settings. It will have the following fields:
+
+Loan Period - Will define the loan period in number of days
+Maximum Number of Issued Articles - Restrict the maximum number of articles that can be issued by a single member
+Since we don't need to have multiple records for these settings, we will enable Is Single for this doctype.
+
+Library Settings Doctype
+
+After creating the doctype, click on Go to Library Settings, to go to the form and set the values for Loan Period and Maximum Number of Issued Articles.
+
+Single DocTypes 
+When a DocType has Is Single enabled, it will become a Single DocType. A single doctype is similar to singleton records in other frameworks. It does not create a new database table. Instead all single values are stored in a single table called tabSingles. It is used usually for storing global settings.
+
+Validation for Library Settings 
+Let's make the change in Library Membership such that, the To Date automatically computed based on the Loan Period and the From Date.
+
+library_membership.py
+
+from frappe.model.document import Document
+from frappe.model.docstatus import DocStatus
+
+import frappe
+
+
+class LibraryMembership(Document):
+    # check before submitting this document
+    def before_submit(self):
+        exists = frappe.db.exists(
+            "Library Membership",
+            {
+                "library_member": self.library_member,
+                "docstatus": DocStatus.submitted(),
+                # check if the membership's end date is later than this membership's start date
+                "to_date": (">", self.from_date),
+            },
+        )
+        if exists:
+            frappe.throw("There is an active membership for this member")
+
+        # get loan period and compute to_date by adding loan_period to from_date
+        loan_period = frappe.db.get_single_value("Library Settings", "loan_period")
+        self.to_date = frappe.utils.add_days(self.from_date, loan_period or 30)
+We have used frappe.db.get_single_value method to get the value of loan_period from the Library Settings doctype.
+
+Now, let's make the change in Library Transaction such that when an Article is Issued, it checks whether the maximum limit is reached.
+
+library_transaction.py
+
+import frappe
+from frappe.model.document import Document
+from frappe.model.docstatus import DocStatus
+
+
+class LibraryTransaction(Document):
+    def before_submit(self):
+        if self.type == "Issue":
+            self.validate_issue()
+            self.validate_maximum_limit()
+            # set the article status to be Issued
+            article = frappe.get_doc("Article", self.article)
+            article.status = "Issued"
+            article.save()
+
+        elif self.type == "Return":
+            self.validate_return()
+            # set the article status to be Available
+            article = frappe.get_doc("Article", self.article)
+            article.status = "Available"
+            article.save()
+
+    def validate_issue(self):
+        self.validate_membership()
+        article = frappe.get_doc("Article", self.article)
+        # article cannot be issued if it is already issued
+        if article.status == "Issued":
+            frappe.throw("Article is already issued by another member")
+
+    def validate_return(self):
+        article = frappe.get_doc("Article", self.article)
+        # article cannot be returned if it is not issued first
+        if article.status == "Available":
+            frappe.throw("Article cannot be returned without being issued first")
+
+    def validate_maximum_limit(self):
+        max_articles = frappe.db.get_single_value("Library Settings", "max_articles")
+        count = frappe.db.count(
+            "Library Transaction",
+            {
+                "library_member": self.library_member,
+                "type": "Issue",
+                "docstatus": DocStatus.submitted(),
+            },
+        )
+        if count >= max_articles:
+            frappe.throw("Maximum limit reached for issuing articles")
+
+    def validate_membership(self):
+        # check if a valid membership exist for this library member
+        valid_membership = frappe.db.exists(
+            "Library Membership",
+            {
+                "library_member": self.library_member,
+                "docstatus": DocStatus.submitted(),
+                "from_date": ("<", self.date),
+                "to_date": (">", self.date),
+            },
+        )
+        if not valid_membership:
+            frappe.throw("The member does not have a valid membership")
+
+We added a validate_maximum_limit method and used frappe.db.count to count the number of transactions made by the member.
+
+With that, we have covered the basics of doctype creation and types of doctype. We also wrote business logic for various doctypes.
+
+Good job making it this far. Let's keep going.Form Scripts 
+Form Scripts are client-side javascript code that enhances the UX of your Forms.
+
+Let's say you want to create a membership for a member. To do this, you have to go to the Library Membership list, create a new form, select the member and other fields and then save.
+
+Similarly, when you want to create a transaction against a member, you have to make a new Library Transaction form.
+
+We can make this process easier. Write the following code in library_member.js
+
+frappe.ui.form.on('Library Member', {
+ refresh: function(frm) {
+ frm.add_custom_button('Create Membership', () => {
+ frappe.new_doc('Library Membership', {
+ library_member: frm.doc.name
+ })
+ })
+ frm.add_custom_button('Create Transaction', () => {
+ frappe.new_doc('Library Transaction', {
+ library_member: frm.doc.name
+ })
+ })
+ }
+});
+Now, refresh your page and go to the Library Member form. You should see two buttons on the top right. Click on them to try them out. They will automatically set the Library Member in each of those documents making the process easier.
+
+Library Member Form Actions
+
+We have only scratched the surface here. You can do a lot more with Form Scripts. Learn more about the API at Form Scripts API.
+
+Web View Pages 
+Web View Pages are server rendered pages for your website visitors.
+
+We have been exclusively working with the Desk which is the admin interface accessible by System Users. Usually you will want to give limited access to your customers. In our case, we want Library Members to be able to view available Articles that they can issue from our website. Web View Pages can help us achieve that.
+
+Go to Article doctype, and scroll down to the Web View section.
+
+Enable Has Web View and Allow Guest to View
+Enter articles in the Route field
+Add fields named Route and Published in the fields table
+Click on Save
+The published field will help filter out those documents which are not supposed to be shown in web view, otherwise you will run into an error.
+
+
+
+
+
+We have now enabled web views for Article doctype. This means you can now view details of an Article on your website without logging into Desk. Let's test this out by creating a new Article. You should see See on Website at the top left of your form. Click on it to view the web view of the Article.
+
+Customize Web View Template 
+The default web view that is generated is pretty barebones and serves only as a starting point for us to customize it. When we made Article a web view, two HTML files were created namely: article.html and article_row.html
+
+Let's edit article.html first. Frappe uses Bootstrap 4 by default for it's web views. So, you can use any valid Bootstrap 4 markup to style your pages. Add the following HTML to article.html.
+
+{% extends "templates/web.html" %}
+
+{% block page_content %}
+
+
+
+![{{ title }}]({{ image }})
+
+
+{{ title }}
+===========
+
+
+By {{ author }}
+
+
+
+
+ {%- if status == 'Available' -%}
+
+ Available
+ {%- elif status == 'Issued' -%}
+
+ Issued
+
+ {%- endif -%}
+
+
+
+Publisher: **{{ publisher }}**
+ISBN: **{{ isbn }}**
+
+{{ description }}
+
+
+
+
+
+{% endblock %}
+Now, go to any Article and click on See on Website. If you have filled in all fields of your Article, you should see a page like this:
+
+Article Portal Page
+
+Now, open http://library.test:8000/articles. This should show the list of articles, but it is also pretty barebones. Let's customize the HTML.
+
+Edit the article\_row.html and add the following HTML:
+
+
+
+![{{ doc.name }}]({{ doc.image }})
+
+
+[{{ doc.name }}]({{ doc.route }})
+By {{ doc.author }}
+
+
+
+
+Now, the articles list should look prettier. You can click on any article to view it's details.
