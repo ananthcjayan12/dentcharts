@@ -1,0 +1,159 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:tooth_number",
+ "creation": "2024-01-01 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "tooth_number",
+  "universal_number",
+  "tooth_name",
+  "section_break_4",
+  "tooth_type",
+  "quadrant",
+  "dentition_type",
+  "column_break_8",
+  "arch",
+  "position_in_quadrant",
+  "section_break_11",
+  "surfaces",
+  "column_break_13",
+  "is_active",
+  "section_break_15",
+  "description",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "tooth_number",
+   "fieldtype": "Data",
+   "label": "Tooth Number",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "universal_number",
+   "fieldtype": "Int",
+   "label": "Universal Number",
+   "reqd": 1
+  },
+  {
+   "fieldname": "tooth_name",
+   "fieldtype": "Data",
+   "label": "Tooth Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_4",
+   "fieldtype": "Section Break",
+   "label": "Tooth Classification"
+  },
+  {
+   "fieldname": "tooth_type",
+   "fieldtype": "Select",
+   "label": "Tooth Type",
+   "options": "Incisor\nCanine\nPremolar\nMolar\nWisdom Tooth",
+   "reqd": 1
+  },
+  {
+   "fieldname": "quadrant",
+   "fieldtype": "Select",
+   "label": "Quadrant",
+   "options": "Upper Right\nUpper Left\nLower Left\nLower Right",
+   "reqd": 1
+  },
+  {
+   "fieldname": "dentition_type",
+   "fieldtype": "Select",
+   "label": "Dentition Type",
+   "options": "Permanent\nPrimary",
+   "reqd": 1,
+   "default": "Permanent"
+  },
+  {
+   "fieldname": "column_break_8",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "arch",
+   "fieldtype": "Select",
+   "label": "Arch",
+   "options": "Upper\nLower",
+   "reqd": 1
+  },
+  {
+   "fieldname": "position_in_quadrant",
+   "fieldtype": "Int",
+   "label": "Position in Quadrant",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_11",
+   "fieldtype": "Section Break",
+   "label": "Tooth Surfaces"
+  },
+  {
+   "fieldname": "surfaces",
+   "fieldtype": "JSON",
+   "label": "Available Surfaces",
+   "default": "[\"Occlusal\", \"Mesial\", \"Distal\", \"Buccal\", \"Lingual\"]"
+  },
+  {
+   "fieldname": "column_break_13",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Is Active",
+   "default": 1
+  },
+  {
+   "fieldname": "section_break_15",
+   "fieldtype": "Section Break",
+   "label": "Additional Information"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text",
+   "label": "Description"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Notes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Dentcharts",
+ "name": "Tooth Master",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Healthcare Practitioner"
+  }
+ ],
+ "search_fields": "tooth_name,tooth_number,tooth_type",
+ "sort_field": "universal_number",
+ "sort_order": "ASC",
+ "title_field": "tooth_name",
+ "track_changes": 1
+} 

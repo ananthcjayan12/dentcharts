@@ -1,0 +1,181 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:condition_code",
+ "creation": "2024-01-01 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "condition_code",
+  "condition_name",
+  "section_break_3",
+  "category",
+  "severity",
+  "column_break_6",
+  "color_code",
+  "symbol",
+  "section_break_9",
+  "requires_treatment",
+  "is_emergency",
+  "column_break_12",
+  "affects_function",
+  "is_visible",
+  "section_break_15",
+  "standard_treatment",
+  "section_break_17",
+  "description",
+  "notes",
+  "section_break_20",
+  "is_active"
+ ],
+ "fields": [
+  {
+   "fieldname": "condition_code",
+   "fieldtype": "Data",
+   "label": "Condition Code",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "condition_name",
+   "fieldtype": "Data",
+   "label": "Condition Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_3",
+   "fieldtype": "Section Break",
+   "label": "Classification"
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "label": "Category",
+   "options": "Caries\nPeriodontal\nEndodontic\nProsthodontic\nOrthodontic\nOral Surgery\nCosmetic\nPrevention\nEmergency\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "severity",
+   "fieldtype": "Select",
+   "label": "Severity",
+   "options": "Low\nMedium\nHigh\nCritical",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "color_code",
+   "fieldtype": "Color",
+   "label": "Color Code",
+   "description": "Color for dental chart display"
+  },
+  {
+   "fieldname": "symbol",
+   "fieldtype": "Data",
+   "label": "Chart Symbol",
+   "description": "Symbol to display on dental chart"
+  },
+  {
+   "fieldname": "section_break_9",
+   "fieldtype": "Section Break",
+   "label": "Characteristics"
+  },
+  {
+   "fieldname": "requires_treatment",
+   "fieldtype": "Check",
+   "label": "Requires Treatment",
+   "default": 1
+  },
+  {
+   "fieldname": "is_emergency",
+   "fieldtype": "Check",
+   "label": "Is Emergency Condition"
+  },
+  {
+   "fieldname": "column_break_12",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "affects_function",
+   "fieldtype": "Check",
+   "label": "Affects Function"
+  },
+  {
+   "fieldname": "is_visible",
+   "fieldtype": "Check",
+   "label": "Visible Condition",
+   "default": 1
+  },
+  {
+   "fieldname": "section_break_15",
+   "fieldtype": "Section Break",
+   "label": "Treatment Information"
+  },
+  {
+   "fieldname": "standard_treatment",
+   "fieldtype": "Link",
+   "label": "Standard Treatment",
+   "options": "Dental Procedure Master"
+  },
+  {
+   "fieldname": "section_break_17",
+   "fieldtype": "Section Break",
+   "label": "Details"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text Editor",
+   "label": "Description"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "section_break_20",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Is Active",
+   "default": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Dentcharts",
+ "name": "Dental Condition Master",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Healthcare Practitioner",
+   "write": 1
+  }
+ ],
+ "search_fields": "condition_name,category,severity",
+ "sort_field": "condition_name",
+ "sort_order": "ASC",
+ "title_field": "condition_name",
+ "track_changes": 1
+} 

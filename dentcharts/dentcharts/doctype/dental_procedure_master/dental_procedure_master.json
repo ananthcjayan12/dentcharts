@@ -1,0 +1,246 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "field:procedure_code",
+ "creation": "2024-01-01 00:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "procedure_code",
+  "procedure_name",
+  "section_break_3",
+  "category",
+  "complexity",
+  "column_break_6",
+  "duration_minutes",
+  "anesthesia_required",
+  "section_break_9",
+  "standard_fee",
+  "currency",
+  "column_break_12",
+  "insurance_coverage",
+  "billing_code",
+  "section_break_15",
+  "prerequisites",
+  "contraindications",
+  "section_break_18",
+  "instruments_required",
+  "materials_required",
+  "section_break_21",
+  "post_procedure_care",
+  "follow_up_required",
+  "column_break_24",
+  "follow_up_days",
+  "success_rate",
+  "section_break_27",
+  "description",
+  "procedure_steps",
+  "section_break_30",
+  "notes",
+  "is_active"
+ ],
+ "fields": [
+  {
+   "fieldname": "procedure_code",
+   "fieldtype": "Data",
+   "label": "Procedure Code",
+   "reqd": 1,
+   "unique": 1
+  },
+  {
+   "fieldname": "procedure_name",
+   "fieldtype": "Data",
+   "label": "Procedure Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_3",
+   "fieldtype": "Section Break",
+   "label": "Classification"
+  },
+  {
+   "fieldname": "category",
+   "fieldtype": "Select",
+   "label": "Category",
+   "options": "Preventive\nRestorative\nEndodontic\nPeriodontal\nOral Surgery\nProsthodontic\nOrthodontic\nCosmetic\nEmergency\nDiagnostic\nOther",
+   "reqd": 1
+  },
+  {
+   "fieldname": "complexity",
+   "fieldtype": "Select",
+   "label": "Complexity",
+   "options": "Simple\nModerate\nComplex\nAdvanced",
+   "reqd": 1
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "duration_minutes",
+   "fieldtype": "Int",
+   "label": "Duration (Minutes)",
+   "reqd": 1
+  },
+  {
+   "fieldname": "anesthesia_required",
+   "fieldtype": "Select",
+   "label": "Anesthesia Required",
+   "options": "None\nLocal\nNitrous Oxide\nIV Sedation\nGeneral"
+  },
+  {
+   "fieldname": "section_break_9",
+   "fieldtype": "Section Break",
+   "label": "Financial Information"
+  },
+  {
+   "fieldname": "standard_fee",
+   "fieldtype": "Currency",
+   "label": "Standard Fee",
+   "precision": 2
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "fieldname": "column_break_12",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "insurance_coverage",
+   "fieldtype": "Percent",
+   "label": "Typical Insurance Coverage %"
+  },
+  {
+   "fieldname": "billing_code",
+   "fieldtype": "Data",
+   "label": "Insurance/Billing Code"
+  },
+  {
+   "fieldname": "section_break_15",
+   "fieldtype": "Section Break",
+   "label": "Clinical Information"
+  },
+  {
+   "fieldname": "prerequisites",
+   "fieldtype": "Text",
+   "label": "Prerequisites"
+  },
+  {
+   "fieldname": "contraindications",
+   "fieldtype": "Text",
+   "label": "Contraindications"
+  },
+  {
+   "fieldname": "section_break_18",
+   "fieldtype": "Section Break",
+   "label": "Resources Required"
+  },
+  {
+   "fieldname": "instruments_required",
+   "fieldtype": "Text",
+   "label": "Instruments Required"
+  },
+  {
+   "fieldname": "materials_required",
+   "fieldtype": "Text",
+   "label": "Materials Required"
+  },
+  {
+   "fieldname": "section_break_21",
+   "fieldtype": "Section Break",
+   "label": "Follow-up & Care"
+  },
+  {
+   "fieldname": "post_procedure_care",
+   "fieldtype": "Text Editor",
+   "label": "Post-Procedure Care Instructions"
+  },
+  {
+   "fieldname": "follow_up_required",
+   "fieldtype": "Check",
+   "label": "Follow-up Required"
+  },
+  {
+   "fieldname": "column_break_24",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "follow_up_days",
+   "fieldtype": "Int",
+   "label": "Follow-up After (Days)",
+   "depends_on": "follow_up_required"
+  },
+  {
+   "fieldname": "success_rate",
+   "fieldtype": "Percent",
+   "label": "Success Rate %"
+  },
+  {
+   "fieldname": "section_break_27",
+   "fieldtype": "Section Break",
+   "label": "Procedure Details"
+  },
+  {
+   "fieldname": "description",
+   "fieldtype": "Text Editor",
+   "label": "Description"
+  },
+  {
+   "fieldname": "procedure_steps",
+   "fieldtype": "Text Editor",
+   "label": "Procedure Steps"
+  },
+  {
+   "fieldname": "section_break_30",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "label": "Is Active",
+   "default": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Dentcharts",
+ "name": "Dental Procedure Master",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "read": 1,
+   "role": "Healthcare Practitioner",
+   "write": 1
+  }
+ ],
+ "search_fields": "procedure_name,category,complexity",
+ "sort_field": "procedure_name",
+ "sort_order": "ASC",
+ "title_field": "procedure_name",
+ "track_changes": 1
+} 
