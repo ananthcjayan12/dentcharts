@@ -1,6 +1,6 @@
 Dentcharts
 Patient Management
-Dental Charting  
+Dental Charting
 Appointment Scheduling
-Payment Management
+Payement Management
 Reports & Analytics
