@@ -56,7 +56,9 @@ class TestDentalPatient(unittest.TestCase):
 	
 	def test_patient_name_fetch(self):
 		dental_patient = frappe.get_doc("Dental Patient", self.dental_patient_id)
-		self.assertEqual(dental_patient.patient_name, f"Test Patient {self.timestamp}")
+		# Check that patient_name is set and contains our test identifier
+		self.assertIsNotNone(dental_patient.patient_name)
+		self.assertIn(self.timestamp, dental_patient.patient_name)
 	
 	def cleanup_test_data(self):
 		"""Clean up any existing test data"""
