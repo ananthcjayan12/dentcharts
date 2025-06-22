@@ -155,7 +155,7 @@ class TestDentalChart(unittest.TestCase):
 		chart.add_tooth_condition("11", "CAR001", "Occlusal")
 		chart.add_tooth_condition("12", "PER001", "Whole Tooth")
 		chart.add_tooth_procedure("11", "PREV001", "Whole Tooth")
-		chart.add_tooth_procedure("12", "RES001", "Occlusal")
+		chart.add_tooth_procedure("12", "REST001", "Occlusal")
 		chart.save()
 		
 		# Verify counts
@@ -221,7 +221,7 @@ class TestDentalChart(unittest.TestCase):
 		
 		# Add planned procedures
 		chart.add_tooth_procedure("11", "PREV001", "Whole Tooth", status="Planned")
-		chart.add_tooth_procedure("12", "RES001", "Occlusal", status="Planned")
+		chart.add_tooth_procedure("12", "REST001", "Occlusal", status="Planned")
 		chart.save()
 		
 		# Get treatment plan summary
