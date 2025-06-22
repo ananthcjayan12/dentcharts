@@ -17,6 +17,7 @@
   "posting_date",
   "payment_amount",
   "payment_status",
+  "company",
   "section_break_8",
   "payment_method",
   "reference_number",
@@ -94,6 +95,13 @@
    "label": "Payment Status",
    "options": "Received\nProcessing\nCleared\nBounced\nRefunded",
    "reqd": 1
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "default": "Company"
   },
   {
    "fieldname": "section_break_8",

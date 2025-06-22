@@ -42,6 +42,9 @@ class PaymentEntry(Document):
 		
 		if not self.posting_date:
 			self.posting_date = self.payment_date or today()
+		
+		if not self.company:
+			self.company = frappe.defaults.get_user_default("Company") or frappe.db.get_single_value("Global Defaults", "default_company") or "Company"
 	
 	def before_insert(self):
 		"""Actions before inserting payment entry"""
