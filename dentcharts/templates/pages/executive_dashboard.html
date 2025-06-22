@@ -135,6 +135,13 @@
         height: 300px;
         font-size: 1.1rem;
         color: #7f8c8d;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.8);
+        z-index: 10;
     }
     
     .refresh-btn {
@@ -205,25 +212,25 @@
         <div class="kpi-card revenue">
             <div class="kpi-header">
                 <span class="kpi-title">Total Revenue</span>
-                <span class="kpi-trend trend-up" id="revenue-trend">+12.5%</span>
+                <span class="kpi-trend trend-up" id="revenue-trend">0%</span>
             </div>
-            <div class="kpi-value" id="total-revenue">$0</div>
+            <div class="kpi-value" id="total-revenue">$0.00</div>
             <div class="kpi-description">This month's revenue</div>
         </div>
         
         <div class="kpi-card growth">
             <div class="kpi-header">
                 <span class="kpi-title">Revenue Growth</span>
-                <span class="kpi-trend trend-up" id="growth-trend">+8.2%</span>
+                <span class="kpi-trend trend-up" id="growth-trend">0%</span>
             </div>
-            <div class="kpi-value" id="revenue-growth">0%</div>
+            <div class="kpi-value" id="revenue-growth">0.0%</div>
             <div class="kpi-description">Month-over-month growth</div>
         </div>
         
         <div class="kpi-card patients">
             <div class="kpi-header">
                 <span class="kpi-title">Active Patients</span>
-                <span class="kpi-trend trend-up" id="patients-trend">+15</span>
+                <span class="kpi-trend trend-up" id="patients-trend">+0</span>
             </div>
             <div class="kpi-value" id="active-patients">0</div>
             <div class="kpi-description">Patients with appointments</div>
@@ -232,7 +239,7 @@
         <div class="kpi-card collection">
             <div class="kpi-header">
                 <span class="kpi-title">Collection Rate</span>
-                <span class="kpi-trend trend-flat" id="collection-trend">-0.5%</span>
+                <span class="kpi-trend trend-flat" id="collection-trend">0%</span>
             </div>
             <div class="kpi-value" id="collection-rate">0%</div>
             <div class="kpi-description">Payment collection efficiency</div>
@@ -287,232 +294,320 @@ let charts = {};
 
 // Initialize Dashboard
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('Dashboard initializing...');
     loadDashboardData();
 });
 
 // Load Dashboard Data
 async function loadDashboardData() {
     try {
+        console.log('Loading dashboard data...');
         showLoading();
         
         // Fetch data from backend
         const response = await fetch('/api/method/dentcharts.dentcharts.dashboard_utils.get_executive_dashboard_data');
         const result = await response.json();
         
+        console.log('API Response:', result);
+        
         if (result.message && result.message.success) {
             dashboardData = result.message.data;
             updateKPICards();
             createCharts();
         } else {
-            showError('Failed to load dashboard data');
+            console.error('API Error:', result);
+            showError('Failed to load dashboard data: ' + (result.exc || 'Unknown error'));
         }
     } catch (error) {
         console.error('Dashboard data loading error:', error);
-        showError('Error loading dashboard data');
+        showError('Error loading dashboard data: ' + error.message);
     }
 }
 
 // Update KPI Cards
 function updateKPICards() {
-    const { revenue, patients, treatments, collections } = dashboardData;
-    
-    // Update Total Revenue
-    document.getElementById('total-revenue').textContent = formatCurrency(revenue.total_revenue || 0);
-    updateTrend('revenue-trend', revenue.growth_rate || 0);
-    
-    // Update Revenue Growth
-    document.getElementById('revenue-growth').textContent = `${(revenue.growth_rate || 0).toFixed(1)}%`;
-    updateTrend('growth-trend', revenue.growth_rate || 0);
-    
-    // Update Active Patients
-    document.getElementById('active-patients').textContent = patients.active_patients || 0;
-    
-    // Update Collection Rate
-    document.getElementById('collection-rate').textContent = `${(collections.collection_rate || 0).toFixed(1)}%`;
-    updateTrend('collection-trend', collections.collection_rate - 90); // Assuming 90% target
+    try {
+        const { revenue, patients, treatments, collections } = dashboardData;
+        
+        // Update Total Revenue
+        document.getElementById('total-revenue').textContent = formatCurrency(revenue?.total_revenue || 0);
+        updateTrend('revenue-trend', revenue?.growth_rate || 0);
+        
+        // Update Revenue Growth
+        document.getElementById('revenue-growth').textContent = `${(revenue?.growth_rate || 0).toFixed(1)}%`;
+        updateTrend('growth-trend', revenue?.growth_rate || 0);
+        
+        // Update Active Patients
+        document.getElementById('active-patients').textContent = patients?.active_patients || 0;
+        
+        // Update Collection Rate
+        document.getElementById('collection-rate').textContent = `${(collections?.collection_rate || 0).toFixed(1)}%`;
+        updateTrend('collection-trend', (collections?.collection_rate || 90) - 90); // Assuming 90% target
+    } catch (error) {
+        console.error('Error updating KPI cards:', error);
+    }
 }
 
 // Update Trend Indicators
 function updateTrend(elementId, value) {
-    const element = document.getElementById(elementId);
-    const absValue = Math.abs(value);
-    
-    element.className = 'kpi-trend';
-    
-    if (value > 0) {
-        element.classList.add('trend-up');
-        element.textContent = `+${absValue.toFixed(1)}%`;
-    } else if (value < 0) {
-        element.classList.add('trend-down');
-        element.textContent = `-${absValue.toFixed(1)}%`;
-    } else {
-        element.classList.add('trend-flat');
-        element.textContent = '0%';
+    try {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+        
+        const absValue = Math.abs(value);
+        
+        element.className = 'kpi-trend';
+        
+        if (value > 0) {
+            element.classList.add('trend-up');
+            element.textContent = `+${absValue.toFixed(1)}%`;
+        } else if (value < 0) {
+            element.classList.add('trend-down');
+            element.textContent = `-${absValue.toFixed(1)}%`;
+        } else {
+            element.classList.add('trend-flat');
+            element.textContent = '0%';
+        }
+    } catch (error) {
+        console.error('Error updating trend:', error);
     }
 }
 
 // Create Charts
 function createCharts() {
-    createRevenueChart();
-    createDemographicsChart();
-    createTreatmentChart();
-    createCollectionChart();
+    console.log('Creating charts...');
+    removeLoadingSpinners();
+    
+    // Wait a bit for DOM to be ready
+    setTimeout(() => {
+        createRevenueChart();
+        createDemographicsChart();
+        createTreatmentChart();
+        createCollectionChart();
+    }, 100);
 }
 
 // Revenue Trend Chart
 function createRevenueChart() {
-    const ctx = document.getElementById('revenueChart').getContext('2d');
-    
-    // Sample data - would come from dashboardData
-    const data = {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-        datasets: [{
-            label: 'Revenue',
-            data: [12000, 15000, 18000, 16000, 22000, 25000, 28000, 26000, 30000, 32000, 35000, 38000],
-            borderColor: '#36C6AF',
-            backgroundColor: 'rgba(54, 198, 175, 0.1)',
-            borderWidth: 3,
-            fill: true,
-            tension: 0.4
-        }]
-    };
-    
-    charts.revenue = new Chart(ctx, {
-        type: 'line',
-        data: data,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    ticks: {
-                        callback: function(value) {
-                            return '$' + value.toLocaleString();
+    try {
+        const canvas = document.getElementById('revenueChart');
+        if (!canvas) {
+            console.error('Revenue chart canvas not found');
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (charts.revenue) {
+            charts.revenue.destroy();
+        }
+        
+        const data = {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [{
+                label: 'Revenue',
+                data: [12000, 15000, 18000, 16000, 22000, 25000, 28000, 26000, 30000, 32000, 35000, 38000],
+                borderColor: '#36C6AF',
+                backgroundColor: 'rgba(54, 198, 175, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        };
+        
+        charts.revenue = new Chart(ctx, {
+            type: 'line',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
                         }
                     }
                 }
             }
-        }
-    });
+        });
+        
+        console.log('Revenue chart created successfully');
+    } catch (error) {
+        console.error('Error creating revenue chart:', error);
+    }
 }
 
 // Patient Demographics Chart
 function createDemographicsChart() {
-    const ctx = document.getElementById('demographicsChart').getContext('2d');
-    
-    const data = {
-        labels: ['18-35', '36-50', '51-65', 'Over 65', 'Under 18'],
-        datasets: [{
-            data: [35, 28, 22, 12, 3],
-            backgroundColor: [
-                '#36C6AF',
-                '#5E64FF',
-                '#FF6B6B',
-                '#4ECDC4',
-                '#FFA726'
-            ],
-            borderWidth: 0
-        }]
-    };
-    
-    charts.demographics = new Chart(ctx, {
-        type: 'doughnut',
-        data: data,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom'
+    try {
+        const canvas = document.getElementById('demographicsChart');
+        if (!canvas) {
+            console.error('Demographics chart canvas not found');
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (charts.demographics) {
+            charts.demographics.destroy();
+        }
+        
+        const data = {
+            labels: ['18-35', '36-50', '51-65', 'Over 65', 'Under 18'],
+            datasets: [{
+                data: [35, 28, 22, 12, 3],
+                backgroundColor: [
+                    '#36C6AF',
+                    '#5E64FF',
+                    '#FF6B6B',
+                    '#4ECDC4',
+                    '#FFA726'
+                ],
+                borderWidth: 0
+            }]
+        };
+        
+        charts.demographics = new Chart(ctx, {
+            type: 'doughnut',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
                 }
             }
-        }
-    });
+        });
+        
+        console.log('Demographics chart created successfully');
+    } catch (error) {
+        console.error('Error creating demographics chart:', error);
+    }
 }
 
 // Treatment Success Chart
 function createTreatmentChart() {
-    const ctx = document.getElementById('treatmentChart').getContext('2d');
-    
-    const data = {
-        labels: ['Cleanings', 'Fillings', 'Crowns', 'Root Canals', 'Extractions'],
-        datasets: [{
-            label: 'Success Rate (%)',
-            data: [98, 95, 92, 88, 94],
-            backgroundColor: [
-                '#36C6AF',
-                '#5E64FF',
-                '#FF6B6B',
-                '#4ECDC4',
-                '#FFA726'
-            ],
-            borderWidth: 0
-        }]
-    };
-    
-    charts.treatment = new Chart(ctx, {
-        type: 'bar',
-        data: data,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    display: false
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    max: 100,
-                    ticks: {
-                        callback: function(value) {
-                            return value + '%';
+    try {
+        const canvas = document.getElementById('treatmentChart');
+        if (!canvas) {
+            console.error('Treatment chart canvas not found');
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (charts.treatment) {
+            charts.treatment.destroy();
+        }
+        
+        const data = {
+            labels: ['Cleanings', 'Fillings', 'Crowns', 'Root Canals', 'Extractions'],
+            datasets: [{
+                label: 'Success Rate (%)',
+                data: [98, 95, 92, 88, 94],
+                backgroundColor: [
+                    '#36C6AF',
+                    '#5E64FF',
+                    '#FF6B6B',
+                    '#4ECDC4',
+                    '#FFA726'
+                ],
+                borderWidth: 0
+            }]
+        };
+        
+        charts.treatment = new Chart(ctx, {
+            type: 'bar',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
                         }
                     }
                 }
             }
-        }
-    });
+        });
+        
+        console.log('Treatment chart created successfully');
+    } catch (error) {
+        console.error('Error creating treatment chart:', error);
+    }
 }
 
 // Collection Efficiency Chart
 function createCollectionChart() {
-    const ctx = document.getElementById('collectionChart').getContext('2d');
-    
-    const data = {
-        labels: ['Cash', 'Insurance', 'Credit Card', 'Payment Plan'],
-        datasets: [{
-            data: [45, 35, 15, 5],
-            backgroundColor: [
-                '#36C6AF',
-                '#5E64FF', 
-                '#FF6B6B',
-                '#4ECDC4'
-            ],
-            borderWidth: 0
-        }]
-    };
-    
-    charts.collection = new Chart(ctx, {
-        type: 'pie',
-        data: data,
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: {
-                    position: 'bottom'
+    try {
+        const canvas = document.getElementById('collectionChart');
+        if (!canvas) {
+            console.error('Collection chart canvas not found');
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (charts.collection) {
+            charts.collection.destroy();
+        }
+        
+        const data = {
+            labels: ['Cash', 'Insurance', 'Credit Card', 'Payment Plan'],
+            datasets: [{
+                data: [45, 35, 15, 5],
+                backgroundColor: [
+                    '#36C6AF',
+                    '#5E64FF', 
+                    '#FF6B6B',
+                    '#4ECDC4'
+                ],
+                borderWidth: 0
+            }]
+        };
+        
+        charts.collection = new Chart(ctx, {
+            type: 'pie',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
                 }
             }
-        }
-    });
+        });
+        
+        console.log('Collection chart created successfully');
+    } catch (error) {
+        console.error('Error creating collection chart:', error);
+    }
 }
 
 // Utility Functions
@@ -524,14 +619,29 @@ function formatCurrency(amount) {
 }
 
 function showLoading() {
-    // Add loading indicators to chart containers
     const chartContainers = document.querySelectorAll('.chart-container');
     chartContainers.forEach(container => {
-        container.innerHTML = '<div class="loading-spinner">Loading chart data...</div>';
+        if (!container.querySelector('.loading-spinner')) {
+            const spinner = document.createElement('div');
+            spinner.className = 'loading-spinner';
+            spinner.textContent = 'Loading chart data...';
+            container.appendChild(spinner);
+        }
+    });
+}
+
+function removeLoadingSpinners() {
+    const spinners = document.querySelectorAll('.loading-spinner');
+    spinners.forEach(spinner => {
+        spinner.remove();
     });
 }
 
 function showError(message) {
+    // Remove existing error messages
+    const existingErrors = document.querySelectorAll('.error-message');
+    existingErrors.forEach(error => error.remove());
+    
     const container = document.querySelector('.dashboard-container');
     const errorDiv = document.createElement('div');
     errorDiv.className = 'error-message';
@@ -540,6 +650,12 @@ function showError(message) {
 }
 
 function refreshDashboard() {
+    console.log('Refreshing dashboard...');
+    
+    // Remove error messages
+    const existingErrors = document.querySelectorAll('.error-message');
+    existingErrors.forEach(error => error.remove());
+    
     // Destroy existing charts
     Object.values(charts).forEach(chart => {
         if (chart) chart.destroy();
