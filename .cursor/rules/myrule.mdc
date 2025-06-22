@@ -1,0 +1,6 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+This rule is helpfull when running commands , never run frappe bench commands because , bench is situated in server , so just tell me the command and I will run it on server

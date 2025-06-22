@@ -42,12 +42,16 @@ class TreatmentPlan(Document):
 		
 		for item in self.plan_items:
 			# Auto-populate item details if missing
-			if item.procedure_code and not item.estimated_cost:
+			if item.procedure_code:
 				try:
 					procedure = frappe.get_doc("Dental Procedure Master", item.procedure_code)
-					item.estimated_cost = procedure.standard_fee
-					item.estimated_duration = procedure.duration_minutes
-					item.insurance_coverage_percentage = procedure.insurance_coverage_percentage
+					# Only auto-populate if values are not already set
+					if not item.estimated_cost:
+						item.estimated_cost = procedure.standard_fee
+					if not item.estimated_duration:
+						item.estimated_duration = procedure.duration_minutes
+					if not item.insurance_coverage_percentage:
+						item.insurance_coverage_percentage = procedure.insurance_coverage_percentage
 				except frappe.DoesNotExistError:
 					pass
 			
