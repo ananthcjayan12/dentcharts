@@ -113,17 +113,17 @@ class TestDentalConditionMaster(unittest.TestCase):
 		final_count = frappe.db.count("Dental Condition Master")
 		self.assertGreaterEqual(final_count, 20, "Should have at least 20 dental conditions")
 		
-		# Verify specific conditions exist
-		self.assertTrue(frappe.db.exists("Dental Condition Master", "CARIES001"), "Caries condition should exist")
-		self.assertTrue(frappe.db.exists("Dental Condition Master", "PERIO001"), "Periodontal condition should exist")
+		# Verify specific conditions exist (using the actual codes from the method)
+		self.assertTrue(frappe.db.exists("Dental Condition Master", "CAR001"), "Small Cavity condition should exist")
+		self.assertTrue(frappe.db.exists("Dental Condition Master", "PER001"), "Gingivitis condition should exist")
 		
 		# Verify condition details
-		caries = frappe.get_doc("Dental Condition Master", "CARIES001")
-		self.assertEqual(caries.condition_name, "Dental Caries - Initial")
-		self.assertEqual(caries.category, "Caries")
+		small_cavity = frappe.get_doc("Dental Condition Master", "CAR001")
+		self.assertEqual(small_cavity.condition_name, "Small Cavity")
+		self.assertEqual(small_cavity.category, "Caries")
 		
-		gingivitis = frappe.get_doc("Dental Condition Master", "PERIO001")
-		self.assertEqual(gingivitis.condition_name, "Gingivitis - Mild")
+		gingivitis = frappe.get_doc("Dental Condition Master", "PER001")
+		self.assertEqual(gingivitis.condition_name, "Gingivitis")
 		self.assertEqual(gingivitis.category, "Periodontal")
 	
 	def tearDown(self):

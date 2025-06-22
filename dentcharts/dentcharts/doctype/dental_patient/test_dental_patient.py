@@ -4,12 +4,13 @@
 import frappe
 import unittest
 import time
+import random
 
 
 class TestDentalPatient(unittest.TestCase):
 	def setUp(self):
-		# Use timestamp to ensure unique test data
-		self.timestamp = str(int(time.time()))
+		# Use timestamp + random number to ensure unique test data
+		self.timestamp = str(int(time.time())) + str(random.randint(1000, 9999))
 		self.patient_id = f"PAT-TEST-{self.timestamp}"
 		self.dental_patient_id = f"DP-TEST-{self.timestamp}"
 		
@@ -26,6 +27,11 @@ class TestDentalPatient(unittest.TestCase):
 			"sex": "Male"
 		})
 		patient.insert()
+		frappe.db.commit()  # Ensure the patient is committed to DB
+		
+		# Verify patient exists before creating dental patient
+		if not frappe.db.exists("Patient", self.patient_id):
+			raise Exception(f"Patient {self.patient_id} was not created successfully")
 		
 		# Create a test dental patient
 		dental_patient = frappe.get_doc({
@@ -37,6 +43,7 @@ class TestDentalPatient(unittest.TestCase):
 			"emergency_phone": "1234567890"
 		})
 		dental_patient.insert()
+		frappe.db.commit()
 	
 	def test_dental_patient_creation(self):
 		dental_patient = frappe.get_doc("Dental Patient", self.dental_patient_id)
@@ -53,13 +60,21 @@ class TestDentalPatient(unittest.TestCase):
 		existing_dental_patients = frappe.get_all("Dental Patient", 
 			filters={"name": ["like", "DP-TEST-%"]}, pluck="name")
 		for dp_name in existing_dental_patients:
-			frappe.delete_doc("Dental Patient", dp_name, force=True)
+			try:
+				frappe.delete_doc("Dental Patient", dp_name, force=True)
+			except:
+				pass
 		
 		# Clean up patients
 		existing_patients = frappe.get_all("Patient", 
 			filters={"name": ["like", "PAT-TEST-%"]}, pluck="name")
 		for p_name in existing_patients:
-			frappe.delete_doc("Patient", p_name, force=True)
+			try:
+				frappe.delete_doc("Patient", p_name, force=True)
+			except:
+				pass
+		
+		frappe.db.commit()
 	
 	def tearDown(self):
 		# Clean up test data
@@ -68,5 +83,6 @@ class TestDentalPatient(unittest.TestCase):
 				frappe.delete_doc("Dental Patient", self.dental_patient_id, force=True)
 			if frappe.db.exists("Patient", self.patient_id):
 				frappe.delete_doc("Patient", self.patient_id, force=True)
+			frappe.db.commit()
 		except Exception:
 			pass  # Ignore cleanup errors 
