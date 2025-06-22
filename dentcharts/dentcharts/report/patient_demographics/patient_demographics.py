@@ -95,7 +95,7 @@ def get_data(filters):
             AVG(DATEDIFF(CURDATE(), p.dob) / 365.25) as avg_age
         FROM `tabPatient` p
         INNER JOIN `tabDental Patient` dp ON p.name = dp.healthcare_patient
-        WHERE p.disabled = 0 {conditions}
+        WHERE 1=1 {conditions}
         GROUP BY age_group, gender
         ORDER BY 
             CASE age_group
@@ -131,7 +131,7 @@ def get_data(filters):
         INNER JOIN `tabDental Patient` dp ON p.name = dp.healthcare_patient
         LEFT JOIN `tabDental Appointment` da ON p.name = da.patient 
             AND da.status IN ('Confirmed', 'Completed')
-        WHERE p.disabled = 0 {conditions}
+        WHERE 1=1 {conditions}
         GROUP BY age_group, gender
     """, (six_months_ago, six_months_ago), as_dict=True)
     
@@ -254,7 +254,7 @@ def get_patient_summary_data(filters=None):
             COUNT(CASE WHEN p.creation >= DATE_SUB(CURDATE(), INTERVAL 1 MONTH) THEN 1 END) as new_patients_1m
         FROM `tabPatient` p
         INNER JOIN `tabDental Patient` dp ON p.name = dp.healthcare_patient
-        WHERE p.disabled = 0 {conditions}
+        WHERE 1=1 {conditions}
     """, as_dict=True)
     
     return summary[0] if summary else {}
