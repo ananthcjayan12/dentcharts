@@ -1,0 +1,697 @@
+{% extends "templates/web.html" %}
+
+{% block title %}Financial Dashboard - Dental ERP{% endblock %}
+
+{% block head_include %}
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+    .dashboard-container {
+        padding: 20px;
+        background-color: #f8f9fa;
+        min-height: 100vh;
+    }
+    
+    .dashboard-header {
+        margin-bottom: 30px;
+        text-align: center;
+    }
+    
+    .dashboard-title {
+        font-size: 2.5rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 10px;
+    }
+    
+    .dashboard-subtitle {
+        font-size: 1.1rem;
+        color: #7f8c8d;
+        margin-bottom: 0;
+    }
+    
+    .kpi-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .kpi-card {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        border-left: 4px solid;
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .kpi-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    }
+    
+    .kpi-card.revenue { border-left-color: #36C6AF; }
+    .kpi-card.outstanding { border-left-color: #FF6B6B; }
+    .kpi-card.insurance { border-left-color: #5E64FF; }
+    .kpi-card.avg-invoice { border-left-color: #FFA726; }
+    
+    .kpi-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 15px;
+    }
+    
+    .kpi-title {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #7f8c8d;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .kpi-trend {
+        font-size: 0.8rem;
+        font-weight: 600;
+        padding: 4px 8px;
+        border-radius: 20px;
+    }
+    
+    .trend-up { background-color: #d4edda; color: #155724; }
+    .trend-down { background-color: #f8d7da; color: #721c24; }
+    .trend-flat { background-color: #fff3cd; color: #856404; }
+    
+    .kpi-value {
+        font-size: 2.2rem;
+        font-weight: 700;
+        color: #2c3e50;
+        margin-bottom: 5px;
+    }
+    
+    .kpi-description {
+        font-size: 0.85rem;
+        color: #95a5a6;
+    }
+    
+    .charts-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+        gap: 20px;
+        margin-bottom: 30px;
+    }
+    
+    .chart-card {
+        background: white;
+        border-radius: 12px;
+        padding: 25px;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.07);
+        transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    
+    .chart-card:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .chart-title {
+        font-size: 1.3rem;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 20px;
+        text-align: center;
+    }
+    
+    .chart-container {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+    
+    .loading-spinner {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 300px;
+        font-size: 1.1rem;
+        color: #7f8c8d;
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(255, 255, 255, 0.8);
+        z-index: 10;
+    }
+    
+    .refresh-btn {
+        position: fixed;
+        bottom: 30px;
+        right: 30px;
+        background: #36C6AF;
+        color: white;
+        border: none;
+        border-radius: 50px;
+        padding: 15px 25px;
+        font-size: 1rem;
+        font-weight: 600;
+        cursor: pointer;
+        box-shadow: 0 4px 12px rgba(54, 198, 175, 0.3);
+        transition: all 0.2s ease;
+    }
+    
+    .refresh-btn:hover {
+        background: #2ba085;
+        transform: translateY(-2px);
+        box-shadow: 0 6px 16px rgba(54, 198, 175, 0.4);
+    }
+    
+    .error-message {
+        background: #f8d7da;
+        color: #721c24;
+        padding: 15px;
+        border-radius: 8px;
+        margin: 20px 0;
+        text-align: center;
+    }
+    
+    @media (max-width: 768px) {
+        .dashboard-container {
+            padding: 15px;
+        }
+        
+        .dashboard-title {
+            font-size: 2rem;
+        }
+        
+        .kpi-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .charts-row {
+            grid-template-columns: 1fr;
+        }
+        
+        .chart-container {
+            height: 250px;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block page_content %}
+<div class="dashboard-container">
+    <!-- Dashboard Header -->
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">Financial Dashboard</h1>
+        <p class="dashboard-subtitle">Revenue analytics and payment tracking for your dental practice</p>
+    </div>
+    
+    <!-- KPI Cards Row -->
+    <div class="kpi-row">
+        <div class="kpi-card revenue">
+            <div class="kpi-header">
+                <span class="kpi-title">This Month Revenue</span>
+                <span class="kpi-trend trend-up" id="revenue-trend">0%</span>
+            </div>
+            <div class="kpi-value" id="monthly-revenue">$12,450</div>
+            <div class="kpi-description">Current month's total revenue</div>
+        </div>
+        
+        <div class="kpi-card outstanding">
+            <div class="kpi-header">
+                <span class="kpi-title">Outstanding Balance</span>
+                <span class="kpi-trend trend-down" id="outstanding-trend">0%</span>
+            </div>
+            <div class="kpi-value" id="outstanding-balance">$3,240</div>
+            <div class="kpi-description">Unpaid patient balances</div>
+        </div>
+        
+        <div class="kpi-card insurance">
+            <div class="kpi-header">
+                <span class="kpi-title">Insurance Coverage</span>
+                <span class="kpi-trend trend-flat" id="insurance-trend">0%</span>
+            </div>
+            <div class="kpi-value" id="insurance-coverage">68%</div>
+            <div class="kpi-description">Average insurance coverage</div>
+        </div>
+        
+        <div class="kpi-card avg-invoice">
+            <div class="kpi-header">
+                <span class="kpi-title">Avg Invoice Value</span>
+                <span class="kpi-trend trend-up" id="invoice-trend">0%</span>
+            </div>
+            <div class="kpi-value" id="avg-invoice">$285</div>
+            <div class="kpi-description">Average invoice amount</div>
+        </div>
+    </div>
+    
+    <!-- Charts Row -->
+    <div class="charts-row">
+        <!-- Revenue by Payment Method -->
+        <div class="chart-card">
+            <h3 class="chart-title">Revenue by Payment Method</h3>
+            <div class="chart-container">
+                <canvas id="paymentMethodChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Collection Efficiency Trend -->
+        <div class="chart-card">
+            <h3 class="chart-title">Collection Efficiency Trend</h3>
+            <div class="chart-container">
+                <canvas id="collectionChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Outstanding Balances Aging -->
+        <div class="chart-card">
+            <h3 class="chart-title">Outstanding Balances Aging</h3>
+            <div class="chart-container">
+                <canvas id="agingChart"></canvas>
+            </div>
+        </div>
+        
+        <!-- Insurance vs Cash Revenue -->
+        <div class="chart-card">
+            <h3 class="chart-title">Insurance vs Cash Revenue</h3>
+            <div class="chart-container">
+                <canvas id="insuranceCashChart"></canvas>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Refresh Button -->
+    <button class="refresh-btn" onclick="refreshDashboard()">
+        🔄 Refresh Data
+    </button>
+</div>
+
+<script>
+// Dashboard Data Management
+let dashboardData = {};
+let charts = {};
+
+// Initialize Dashboard
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Financial Dashboard initializing...');
+    loadDashboardData();
+});
+
+// Load Dashboard Data
+async function loadDashboardData() {
+    try {
+        console.log('Loading financial dashboard data...');
+        showLoading();
+        
+        // For now, use sample data - will be replaced with real API call
+        dashboardData = {
+            revenue: {
+                monthly_revenue: 12450,
+                revenue_trend: 8.5
+            },
+            outstanding: {
+                balance: 3240,
+                trend: -12.3
+            },
+            insurance: {
+                coverage_rate: 68,
+                trend: 2.1
+            },
+            invoices: {
+                avg_value: 285,
+                trend: 5.2
+            }
+        };
+        
+        updateKPICards();
+        createCharts();
+    } catch (error) {
+        console.error('Dashboard data loading error:', error);
+        showError('Error loading dashboard data: ' + error.message);
+    }
+}
+
+// Update KPI Cards
+function updateKPICards() {
+    try {
+        const { revenue, outstanding, insurance, invoices } = dashboardData;
+        
+        // Update Monthly Revenue
+        document.getElementById('monthly-revenue').textContent = formatCurrency(revenue?.monthly_revenue || 12450);
+        updateTrend('revenue-trend', revenue?.revenue_trend || 0);
+        
+        // Update Outstanding Balance
+        document.getElementById('outstanding-balance').textContent = formatCurrency(outstanding?.balance || 3240);
+        updateTrend('outstanding-trend', outstanding?.trend || 0);
+        
+        // Update Insurance Coverage
+        document.getElementById('insurance-coverage').textContent = `${insurance?.coverage_rate || 68}%`;
+        updateTrend('insurance-trend', insurance?.trend || 0);
+        
+        // Update Average Invoice
+        document.getElementById('avg-invoice').textContent = formatCurrency(invoices?.avg_value || 285);
+        updateTrend('invoice-trend', invoices?.trend || 0);
+    } catch (error) {
+        console.error('Error updating KPI cards:', error);
+    }
+}
+
+// Update Trend Indicators
+function updateTrend(elementId, value) {
+    try {
+        const element = document.getElementById(elementId);
+        if (!element) return;
+        
+        const absValue = Math.abs(value);
+        
+        element.className = 'kpi-trend';
+        
+        if (value > 0) {
+            element.classList.add('trend-up');
+            element.textContent = `+${absValue.toFixed(1)}%`;
+        } else if (value < 0) {
+            element.classList.add('trend-down');
+            element.textContent = `-${absValue.toFixed(1)}%`;
+        } else {
+            element.classList.add('trend-flat');
+            element.textContent = '0%';
+        }
+    } catch (error) {
+        console.error('Error updating trend:', error);
+    }
+}
+
+// Create Charts
+function createCharts() {
+    console.log('Creating financial charts...');
+    removeLoadingSpinners();
+    
+    // Wait a bit for DOM to be ready
+    setTimeout(() => {
+        createPaymentMethodChart();
+        createCollectionChart();
+        createAgingChart();
+        createInsuranceCashChart();
+    }, 100);
+}
+
+// Revenue by Payment Method Chart
+function createPaymentMethodChart() {
+    try {
+        const canvas = document.getElementById('paymentMethodChart');
+        if (!canvas) {
+            console.error('Payment method chart canvas not found');
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (charts.paymentMethod) {
+            charts.paymentMethod.destroy();
+        }
+        
+        const data = {
+            labels: ['Insurance', 'Cash', 'Credit Card', 'Check', 'Payment Plan'],
+            datasets: [{
+                data: [45, 25, 20, 7, 3],
+                backgroundColor: [
+                    '#36C6AF',
+                    '#5E64FF',
+                    '#FF6B6B',
+                    '#4ECDC4',
+                    '#FFA726'
+                ],
+                borderWidth: 0
+            }]
+        };
+        
+        charts.paymentMethod = new Chart(ctx, {
+            type: 'doughnut',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+        
+        console.log('Payment method chart created successfully');
+    } catch (error) {
+        console.error('Error creating payment method chart:', error);
+    }
+}
+
+// Collection Efficiency Trend Chart
+function createCollectionChart() {
+    try {
+        const canvas = document.getElementById('collectionChart');
+        if (!canvas) {
+            console.error('Collection chart canvas not found');
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (charts.collection) {
+            charts.collection.destroy();
+        }
+        
+        const data = {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [{
+                label: 'Collection Rate (%)',
+                data: [92.5, 94.2, 91.8, 93.6, 95.1, 94.7, 93.2, 95.8, 94.3, 96.1, 94.9, 95.5],
+                borderColor: '#5E64FF',
+                backgroundColor: 'rgba(94, 100, 255, 0.1)',
+                borderWidth: 3,
+                fill: true,
+                tension: 0.4
+            }]
+        };
+        
+        charts.collection = new Chart(ctx, {
+            type: 'line',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: false,
+                        min: 90,
+                        max: 100,
+                        ticks: {
+                            callback: function(value) {
+                                return value + '%';
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        console.log('Collection chart created successfully');
+    } catch (error) {
+        console.error('Error creating collection chart:', error);
+    }
+}
+
+// Outstanding Balances Aging Chart
+function createAgingChart() {
+    try {
+        const canvas = document.getElementById('agingChart');
+        if (!canvas) {
+            console.error('Aging chart canvas not found');
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (charts.aging) {
+            charts.aging.destroy();
+        }
+        
+        const data = {
+            labels: ['0-30 days', '31-60 days', '61-90 days', '90+ days'],
+            datasets: [{
+                label: 'Outstanding Amount',
+                data: [15420, 8750, 4320, 2180],
+                backgroundColor: '#FF6B6B',
+                borderColor: '#e74c3c',
+                borderWidth: 2
+            }]
+        };
+        
+        charts.aging = new Chart(ctx, {
+            type: 'bar',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        console.log('Aging chart created successfully');
+    } catch (error) {
+        console.error('Error creating aging chart:', error);
+    }
+}
+
+// Insurance vs Cash Revenue Chart
+function createInsuranceCashChart() {
+    try {
+        const canvas = document.getElementById('insuranceCashChart');
+        if (!canvas) {
+            console.error('Insurance cash chart canvas not found');
+            return;
+        }
+        
+        const ctx = canvas.getContext('2d');
+        
+        // Destroy existing chart if it exists
+        if (charts.insuranceCash) {
+            charts.insuranceCash.destroy();
+        }
+        
+        const data = {
+            labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+            datasets: [
+                {
+                    label: 'Insurance Revenue',
+                    data: [18500, 21200, 19800, 22100, 24300, 23800, 25100, 24600, 26200, 25800, 27300, 26900],
+                    borderColor: '#36C6AF',
+                    backgroundColor: 'rgba(54, 198, 175, 0.1)',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.4
+                },
+                {
+                    label: 'Cash Revenue',
+                    data: [12400, 14100, 13200, 15800, 16900, 17200, 16800, 18100, 17500, 19200, 18600, 19800],
+                    borderColor: '#5E64FF',
+                    backgroundColor: 'rgba(94, 100, 255, 0.1)',
+                    borderWidth: 3,
+                    fill: false,
+                    tension: 0.4
+                }
+            ]
+        };
+        
+        charts.insuranceCash = new Chart(ctx, {
+            type: 'line',
+            data: data,
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'bottom'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) {
+                                return '$' + value.toLocaleString();
+                            }
+                        }
+                    }
+                }
+            }
+        });
+        
+        console.log('Insurance cash chart created successfully');
+    } catch (error) {
+        console.error('Error creating insurance cash chart:', error);
+    }
+}
+
+// Utility Functions
+function formatCurrency(amount) {
+    return new Intl.NumberFormat('en-US', {
+        style: 'currency',
+        currency: 'USD'
+    }).format(amount);
+}
+
+function showLoading() {
+    const chartContainers = document.querySelectorAll('.chart-container');
+    chartContainers.forEach(container => {
+        if (!container.querySelector('.loading-spinner')) {
+            const spinner = document.createElement('div');
+            spinner.className = 'loading-spinner';
+            spinner.textContent = 'Loading chart data...';
+            container.appendChild(spinner);
+        }
+    });
+}
+
+function removeLoadingSpinners() {
+    const spinners = document.querySelectorAll('.loading-spinner');
+    spinners.forEach(spinner => {
+        spinner.remove();
+    });
+}
+
+function showError(message) {
+    // Remove existing error messages
+    const existingErrors = document.querySelectorAll('.error-message');
+    existingErrors.forEach(error => error.remove());
+    
+    const container = document.querySelector('.dashboard-container');
+    const errorDiv = document.createElement('div');
+    errorDiv.className = 'error-message';
+    errorDiv.textContent = message;
+    container.insertBefore(errorDiv, container.firstChild);
+}
+
+function refreshDashboard() {
+    console.log('Refreshing financial dashboard...');
+    
+    // Remove error messages
+    const existingErrors = document.querySelectorAll('.error-message');
+    existingErrors.forEach(error => error.remove());
+    
+    // Destroy existing charts
+    Object.values(charts).forEach(chart => {
+        if (chart) chart.destroy();
+    });
+    charts = {};
+    
+    // Reload data
+    loadDashboardData();
+}
+
+// Auto-refresh every 5 minutes
+setInterval(refreshDashboard, 300000);
+</script>
+{% endblock %} 

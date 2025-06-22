@@ -22,47 +22,31 @@ from dentcharts.dentcharts.dashboard_utils import (
 # ============================================================================
 
 def get_executive_dashboard_charts():
-    """Get all charts for Executive Dashboard"""
+    """Get chart configurations for Executive Dashboard"""
     return [
         {
-            "chart_name": _("Monthly Revenue Trend"),
+            "name": "Monthly Revenue Trend",
             "chart_type": "Line",
             "timeseries": 1,
-            "filters_json": '{}',
-            "source": "Monthly Revenue Trend",
-            "module": "Dentcharts",
-            "width": "Half",
-            "color": "#36C6AF"
+            "filters_json": '{"period_type": "Monthly"}',
+            "source": "Revenue Analysis",
+            "x_field": "period",
+            "y_axis": [{"y_field": "total_revenue", "color": "#36C6AF"}]
         },
         {
-            "chart_name": _("Patient Demographics"),
+            "name": "Patient Demographics",
             "chart_type": "Donut",
-            "timeseries": 0,
-            "filters_json": '{}',
             "source": "Patient Demographics",
-            "module": "Dentcharts",
-            "width": "Half",
-            "color": "#5E64FF"
+            "x_field": "age_group",
+            "y_axis": [{"y_field": "patient_count", "color": "#5E64FF"}]
         },
         {
-            "chart_name": _("Treatment Success Rate"),
+            "name": "Top Procedures Revenue",
             "chart_type": "Bar",
-            "timeseries": 0,
-            "filters_json": '{}',
-            "source": "Treatment Success Rate",
-            "module": "Dentcharts",
-            "width": "Half",
-            "color": "#FF6B6B"
-        },
-        {
-            "chart_name": _("Collection Efficiency"),
-            "chart_type": "Percentage",
-            "timeseries": 0,
-            "filters_json": '{}',
-            "source": "Collection Efficiency",
-            "module": "Dentcharts",
-            "width": "Half",
-            "color": "#4ECDC4"
+            "source": "Treatment Success Metrics",
+            "x_field": "procedure_name",
+            "y_axis": [{"y_field": "total_revenue", "color": "#FF6B6B"}],
+            "filters_json": '{"limit": 10}'
         }
     ]
 
@@ -232,37 +216,37 @@ def get_collection_efficiency_data(chart_name=None, filters=None):
 # ============================================================================
 
 def get_clinical_dashboard_charts():
-    """Get all charts for Clinical Dashboard"""
+    """Get chart configurations for Clinical Dashboard"""
     return [
         {
-            "chart_name": _("Procedure Success Rates"),
+            "name": "Treatment Success Rates",
             "chart_type": "Bar",
-            "timeseries": 0,
-            "filters_json": '{}',
-            "source": "Procedure Success Rates",
-            "module": "Dentcharts",
-            "width": "Full",
-            "color": "#36C6AF"
+            "source": "Treatment Success Metrics",
+            "x_field": "procedure_name",
+            "y_axis": [{"y_field": "success_rate", "color": "#36C6AF"}]
         },
         {
-            "chart_name": _("Emergency Cases Trend"),
+            "name": "Emergency Treatments Trend",
             "chart_type": "Line",
             "timeseries": 1,
-            "filters_json": '{}',
-            "source": "Emergency Cases Trend",
-            "module": "Dentcharts",
-            "width": "Half",
-            "color": "#FF6B6B"
+            "source": "Emergency Treatments",
+            "x_field": "date",
+            "y_axis": [{"y_field": "emergency_count", "color": "#FF6B6B"}]
         },
         {
-            "chart_name": _("Practitioner Performance"),
+            "name": "Procedure Categories",
+            "chart_type": "Donut",
+            "source": "Treatment Success Metrics",
+            "x_field": "procedure_category",
+            "y_axis": [{"y_field": "procedure_count", "color": "#4ECDC4"}]
+        },
+        {
+            "name": "Complication Rates",
             "chart_type": "Bar",
-            "timeseries": 0,
-            "filters_json": '{}',
-            "source": "Practitioner Performance",
-            "module": "Dentcharts",
-            "width": "Half",
-            "color": "#5E64FF"
+            "source": "Treatment Success Metrics",
+            "x_field": "procedure_name",
+            "y_axis": [{"y_field": "complication_rate", "color": "#FFA726"}],
+            "filters_json": '{"show_complications": 1}'
         }
     ]
 
@@ -393,37 +377,40 @@ def get_practitioner_performance_data(chart_name=None, filters=None):
 # ============================================================================
 
 def get_financial_dashboard_charts():
-    """Get all charts for Financial Dashboard"""
+    """Get chart configurations for Financial Dashboard"""
     return [
         {
-            "chart_name": _("Revenue by Payment Method"),
-            "chart_type": "Pie",
-            "timeseries": 0,
-            "filters_json": '{}',
-            "source": "Revenue by Payment Method",
-            "module": "Dentcharts",
-            "width": "Half",
-            "color": "#36C6AF"
+            "name": "Revenue by Payment Method",
+            "chart_type": "Donut",
+            "source": "Revenue Analysis",
+            "x_field": "payment_method",
+            "y_axis": [{"y_field": "amount", "color": "#36C6AF"}]
         },
         {
-            "chart_name": _("Outstanding Balances Aging"),
-            "chart_type": "Bar",
-            "timeseries": 0,
-            "filters_json": '{}',
-            "source": "Outstanding Balances Aging",
-            "module": "Dentcharts",
-            "width": "Half",
-            "color": "#FF6B6B"
-        },
-        {
-            "chart_name": _("Monthly Revenue vs Collections"),
+            "name": "Collection Efficiency Trend",
             "chart_type": "Line",
             "timeseries": 1,
-            "filters_json": '{}',
-            "source": "Monthly Revenue vs Collections",
-            "module": "Dentcharts",
-            "width": "Full",
-            "color": "#5E64FF"
+            "source": "Revenue Analysis",
+            "x_field": "period",
+            "y_axis": [{"y_field": "collection_rate", "color": "#5E64FF"}]
+        },
+        {
+            "name": "Outstanding Balances Aging",
+            "chart_type": "Bar",
+            "source": "Outstanding Balances",
+            "x_field": "aging_period",
+            "y_axis": [{"y_field": "balance_amount", "color": "#FF6B6B"}]
+        },
+        {
+            "name": "Insurance vs Cash Revenue",
+            "chart_type": "Line",
+            "timeseries": 1,
+            "source": "Revenue Analysis",
+            "x_field": "period",
+            "y_axis": [
+                {"y_field": "insurance_revenue", "color": "#36C6AF"},
+                {"y_field": "cash_revenue", "color": "#5E64FF"}
+            ]
         }
     ]
 
@@ -558,37 +545,35 @@ def get_monthly_revenue_vs_collections_data(chart_name=None, filters=None):
 # ============================================================================
 
 def get_operational_dashboard_charts():
-    """Get all charts for Operational Dashboard"""
+    """Get chart configurations for Operational Dashboard"""
     return [
         {
-            "chart_name": _("Today's Appointments Status"),
+            "name": "Daily Appointment Status",
             "chart_type": "Donut",
-            "timeseries": 0,
-            "filters_json": '{}',
-            "source": "Today's Appointments Status",
-            "module": "Dentcharts",
-            "width": "Half",
-            "color": "#36C6AF"
+            "source": "Daily Operations",
+            "x_field": "appointment_status",
+            "y_axis": [{"y_field": "count", "color": "#4ECDC4"}]
         },
         {
-            "chart_name": _("Practitioner Utilization"),
+            "name": "Practitioner Utilization",
             "chart_type": "Bar",
-            "timeseries": 0,
-            "filters_json": '{}',
             "source": "Practitioner Utilization",
-            "module": "Dentcharts",
-            "width": "Half",
-            "color": "#5E64FF"
+            "x_field": "practitioner",
+            "y_axis": [{"y_field": "utilization_rate", "color": "#36C6AF"}]
         },
         {
-            "chart_name": _("Weekly Appointment Trend"),
+            "name": "Hourly Patient Flow",
             "chart_type": "Line",
-            "timeseries": 1,
-            "filters_json": '{}',
-            "source": "Weekly Appointment Trend",
-            "module": "Dentcharts",
-            "width": "Full",
-            "color": "#FF6B6B"
+            "source": "Patient Flow",
+            "x_field": "hour",
+            "y_axis": [{"y_field": "patient_count", "color": "#5E64FF"}]
+        },
+        {
+            "name": "Weekly Capacity Utilization",
+            "chart_type": "Bar",
+            "source": "Capacity Analysis",
+            "x_field": "day_of_week",
+            "y_axis": [{"y_field": "utilization_percentage", "color": "#FFA726"}]
         }
     ]
 
@@ -695,4 +680,319 @@ def get_weekly_appointment_trend_data(chart_name=None, filters=None):
         }
     except Exception as e:
         frappe.log_error(f"Weekly Appointment Trend Chart Error: {str(e)}")
-        return {"labels": [], "datasets": []} 
+        return {"labels": [], "datasets": []}
+
+def get_dashboard_chart_data(chart_name, filters=None):
+    """Get data for specific dashboard chart"""
+    if not filters:
+        filters = {}
+    
+    # Map chart names to data functions
+    chart_data_map = {
+        "Monthly Revenue Trend": get_revenue_trend_data,
+        "Patient Demographics": get_patient_demographics_data,
+        "Top Procedures Revenue": get_top_procedures_data,
+        "Treatment Success Rates": get_treatment_success_data,
+        "Emergency Treatments Trend": get_emergency_treatments_data,
+        "Procedure Categories": get_procedure_categories_data,
+        "Complication Rates": get_complication_rates_data,
+        "Revenue by Payment Method": get_payment_method_data,
+        "Collection Efficiency Trend": get_collection_efficiency_data,
+        "Outstanding Balances Aging": get_outstanding_balances_data,
+        "Insurance vs Cash Revenue": get_insurance_cash_data,
+        "Daily Appointment Status": get_daily_appointments_data,
+        "Practitioner Utilization": get_practitioner_utilization_data,
+        "Hourly Patient Flow": get_patient_flow_data,
+        "Weekly Capacity Utilization": get_capacity_utilization_data
+    }
+    
+    data_function = chart_data_map.get(chart_name)
+    if data_function:
+        return data_function(filters)
+    
+    return {"labels": [], "datasets": []}
+
+# Chart Data Functions
+def get_revenue_trend_data(filters):
+    """Get revenue trend data for charts"""
+    from dentcharts.dentcharts.report.revenue_analysis.revenue_analysis import execute
+    
+    # Set default date range if not provided
+    if not filters.get('from_date'):
+        filters['from_date'] = add_months(getdate(), -12)
+    if not filters.get('to_date'):
+        filters['to_date'] = getdate()
+    
+    columns, data = execute(filters)
+    
+    labels = [row[0] for row in data if row[0]]  # Period column
+    values = [flt(row[1]) for row in data if row[1]]  # Revenue column
+    
+    return {
+        "labels": labels,
+        "datasets": [{
+            "name": "Revenue",
+            "values": values,
+            "chartType": "line"
+        }]
+    }
+
+def get_patient_demographics_data(filters):
+    """Get patient demographics data for donut chart"""
+    from dentcharts.dentcharts.report.patient_demographics.patient_demographics import execute
+    
+    if not filters.get('from_date'):
+        filters['from_date'] = add_months(getdate(), -12)
+    if not filters.get('to_date'):
+        filters['to_date'] = getdate()
+    
+    columns, data = execute(filters)
+    
+    labels = [row[0] for row in data if row[0]]  # Age group column
+    values = [cint(row[2]) for row in data if row[2]]  # Patient count column
+    
+    return {
+        "labels": labels,
+        "datasets": [{
+            "name": "Patients",
+            "values": values,
+            "chartType": "donut"
+        }]
+    }
+
+def get_top_procedures_data(filters):
+    """Get top procedures by revenue"""
+    from dentcharts.dentcharts.report.treatment_success_metrics.treatment_success_metrics import execute
+    
+    if not filters.get('from_date'):
+        filters['from_date'] = add_months(getdate(), -6)
+    if not filters.get('to_date'):
+        filters['to_date'] = getdate()
+    
+    columns, data = execute(filters)
+    
+    # Sort by revenue and take top 10
+    sorted_data = sorted(data, key=lambda x: flt(x[6]) if len(x) > 6 else 0, reverse=True)[:10]
+    
+    labels = [row[0] for row in sorted_data if row[0]]  # Procedure name
+    values = [flt(row[6]) for row in sorted_data if len(row) > 6]  # Revenue column
+    
+    return {
+        "labels": labels,
+        "datasets": [{
+            "name": "Revenue",
+            "values": values,
+            "chartType": "bar"
+        }]
+    }
+
+def get_treatment_success_data(filters):
+    """Get treatment success rates"""
+    from dentcharts.dentcharts.report.treatment_success_metrics.treatment_success_metrics import execute
+    
+    if not filters.get('from_date'):
+        filters['from_date'] = add_months(getdate(), -6)
+    if not filters.get('to_date'):
+        filters['to_date'] = getdate()
+    
+    columns, data = execute(filters)
+    
+    labels = [row[0] for row in data if row[0]]  # Procedure name
+    values = [flt(row[3]) for row in data if len(row) > 3]  # Success rate column
+    
+    return {
+        "labels": labels,
+        "datasets": [{
+            "name": "Success Rate (%)",
+            "values": values,
+            "chartType": "bar"
+        }]
+    }
+
+def get_emergency_treatments_data(filters):
+    """Get emergency treatments trend"""
+    # This would need to be implemented based on your emergency treatment tracking
+    # For now, return sample data
+    return {
+        "labels": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        "datasets": [{
+            "name": "Emergency Cases",
+            "values": [12, 8, 15, 6, 10, 14],
+            "chartType": "line"
+        }]
+    }
+
+def get_procedure_categories_data(filters):
+    """Get procedure categories distribution"""
+    data = frappe.db.sql("""
+        SELECT 
+            dpm.procedure_category,
+            COUNT(tp.name) as procedure_count
+        FROM `tabTooth Procedure` tp
+        JOIN `tabDental Procedure Master` dpm ON tp.procedure = dpm.name
+        WHERE tp.status = 'Completed'
+        AND tp.completion_date BETWEEN %s AND %s
+        GROUP BY dpm.procedure_category
+        ORDER BY procedure_count DESC
+    """, (filters.get('from_date', add_months(getdate(), -6)), 
+          filters.get('to_date', getdate())), as_dict=True)
+    
+    labels = [row.procedure_category for row in data]
+    values = [row.procedure_count for row in data]
+    
+    return {
+        "labels": labels,
+        "datasets": [{
+            "name": "Procedures",
+            "values": values,
+            "chartType": "donut"
+        }]
+    }
+
+def get_complication_rates_data(filters):
+    """Get complication rates by procedure"""
+    # This would need to be implemented based on your complication tracking
+    # For now, return sample data
+    return {
+        "labels": ["Root Canal", "Extraction", "Crown", "Filling", "Cleaning"],
+        "datasets": [{
+            "name": "Complication Rate (%)",
+            "values": [2.1, 1.5, 0.8, 0.3, 0.1],
+            "chartType": "bar"
+        }]
+    }
+
+def get_payment_method_data(filters):
+    """Get revenue by payment method"""
+    data = frappe.db.sql("""
+        SELECT 
+            pe.mode_of_payment,
+            SUM(pe.paid_amount) as amount
+        FROM `tabPayment Entry` pe
+        WHERE pe.docstatus = 1
+        AND pe.posting_date BETWEEN %s AND %s
+        GROUP BY pe.mode_of_payment
+        ORDER BY amount DESC
+    """, (filters.get('from_date', add_months(getdate(), -3)), 
+          filters.get('to_date', getdate())), as_dict=True)
+    
+    labels = [row.mode_of_payment or 'Unknown' for row in data]
+    values = [flt(row.amount) for row in data]
+    
+    return {
+        "labels": labels,
+        "datasets": [{
+            "name": "Amount",
+            "values": values,
+            "chartType": "donut"
+        }]
+    }
+
+def get_collection_efficiency_data(filters):
+    """Get collection efficiency trend"""
+    # This would calculate collection efficiency over time
+    # For now, return sample data
+    return {
+        "labels": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        "datasets": [{
+            "name": "Collection Rate (%)",
+            "values": [92.5, 94.2, 91.8, 93.6, 95.1, 94.7],
+            "chartType": "line"
+        }]
+    }
+
+def get_outstanding_balances_data(filters):
+    """Get outstanding balances by aging"""
+    # This would need to be implemented based on your payment tracking
+    # For now, return sample data
+    return {
+        "labels": ["0-30 days", "31-60 days", "61-90 days", "90+ days"],
+        "datasets": [{
+            "name": "Outstanding Amount",
+            "values": [15420, 8750, 4320, 2180],
+            "chartType": "bar"
+        }]
+    }
+
+def get_insurance_cash_data(filters):
+    """Get insurance vs cash revenue trend"""
+    # This would need to be implemented based on your payment tracking
+    # For now, return sample data
+    return {
+        "labels": ["Jan", "Feb", "Mar", "Apr", "May", "Jun"],
+        "datasets": [
+            {
+                "name": "Insurance Revenue",
+                "values": [18500, 21200, 19800, 22100, 24300, 23800],
+                "chartType": "line"
+            },
+            {
+                "name": "Cash Revenue", 
+                "values": [12400, 14100, 13200, 15800, 16900, 17200],
+                "chartType": "line"
+            }
+        ]
+    }
+
+def get_daily_appointments_data(filters):
+    """Get today's appointment status"""
+    today = getdate()
+    data = frappe.db.sql("""
+        SELECT 
+            da.status,
+            COUNT(*) as count
+        FROM `tabDental Appointment` da
+        WHERE DATE(da.appointment_date) = %s
+        GROUP BY da.status
+    """, (today,), as_dict=True)
+    
+    labels = [row.status for row in data]
+    values = [row.count for row in data]
+    
+    return {
+        "labels": labels,
+        "datasets": [{
+            "name": "Appointments",
+            "values": values,
+            "chartType": "donut"
+        }]
+    }
+
+def get_practitioner_utilization_data(filters):
+    """Get practitioner utilization rates"""
+    # This would calculate utilization based on scheduled vs available time
+    # For now, return sample data
+    return {
+        "labels": ["Dr. Smith", "Dr. Johnson", "Dr. Brown", "Dr. Davis"],
+        "datasets": [{
+            "name": "Utilization Rate (%)",
+            "values": [87.5, 92.3, 78.9, 85.1],
+            "chartType": "bar"
+        }]
+    }
+
+def get_patient_flow_data(filters):
+    """Get hourly patient flow"""
+    # This would track patient check-ins by hour
+    # For now, return sample data
+    return {
+        "labels": ["8 AM", "9 AM", "10 AM", "11 AM", "12 PM", "1 PM", "2 PM", "3 PM", "4 PM", "5 PM"],
+        "datasets": [{
+            "name": "Patient Count",
+            "values": [3, 8, 12, 15, 8, 10, 14, 12, 9, 4],
+            "chartType": "line"
+        }]
+    }
+
+def get_capacity_utilization_data(filters):
+    """Get weekly capacity utilization"""
+    # This would calculate capacity utilization by day of week
+    # For now, return sample data
+    return {
+        "labels": ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"],
+        "datasets": [{
+            "name": "Utilization (%)",
+            "values": [85.2, 92.7, 88.4, 91.3, 87.9, 76.5],
+            "chartType": "bar"
+        }]
+    } 
