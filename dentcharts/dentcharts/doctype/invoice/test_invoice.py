@@ -6,6 +6,14 @@ from dentcharts.dentcharts.doctype.invoice.invoice import Invoice
 class TestInvoice(unittest.TestCase):
 	def setUp(self):
 		"""Set up test data"""
+		# Create Dentistry Medical Department if not exists
+		if not frappe.db.exists("Medical Department", "Dentistry"):
+			department = frappe.get_doc({
+				"doctype": "Medical Department",
+				"department": "Dentistry"
+			})
+			department.insert()
+		
 		# Create test patient if not exists
 		if not frappe.db.exists("Patient", "TEST-PATIENT-001"):
 			patient = frappe.get_doc({
