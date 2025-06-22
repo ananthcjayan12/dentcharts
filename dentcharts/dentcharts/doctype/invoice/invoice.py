@@ -208,10 +208,15 @@ class Invoice(Document):
 			"reference_number": reference_number
 		})
 		payment_entry.insert()
-		payment_entry.submit()
 		
-		# Note: Invoice will be updated by Payment Entry's on_submit hook
-		# No need to manually update here as it will be done by update_invoice_payment()
+		# Update invoice amounts manually
+		self.paid_amount = flt(self.paid_amount or 0) + flt(payment_amount)
+		self.outstanding_amount = flt(self.total_amount) - flt(self.paid_amount)
+		
+		# Update payment status
+		self.update_payment_status()
+		
+		self.save()
 		
 		return payment_entry.name
 	
