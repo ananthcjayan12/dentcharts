@@ -1,0 +1,354 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2024-01-15 10:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "basic_info_section",
+  "healthcare_appointment",
+  "appointment_type",
+  "priority",
+  "column_break_4",
+  "appointment_date",
+  "appointment_time",
+  "duration_minutes",
+  "section_break_8",
+  "patient",
+  "practitioner",
+  "dental_clinic",
+  "column_break_12",
+  "chief_complaint",
+  "treatment_plan",
+  "dental_chart",
+  "procedure_details_section",
+  "planned_procedures",
+  "chair_room_section",
+  "chair_number",
+  "room_number",
+  "column_break_19",
+  "equipment_required",
+  "special_instructions",
+  "status_section",
+  "status",
+  "confirmation_status",
+  "column_break_24",
+  "reminder_sent",
+  "follow_up_appointment",
+  "cancellation_reason",
+  "cost_section",
+  "estimated_cost",
+  "insurance_authorization",
+  "column_break_29",
+  "patient_portion",
+  "payment_status",
+  "notes_section",
+  "practitioner_notes",
+  "column_break_33",
+  "patient_notes",
+  "amended_from",
+  "naming_series"
+ ],
+ "fields": [
+  {
+   "fieldname": "basic_info_section",
+   "fieldtype": "Section Break",
+   "label": "Basic Information"
+  },
+  {
+   "fieldname": "healthcare_appointment",
+   "fieldtype": "Link",
+   "label": "Healthcare Appointment",
+   "options": "Patient Appointment",
+   "unique": 1
+  },
+  {
+   "fieldname": "appointment_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Appointment Type",
+   "options": "Consultation\nRoutine Checkup\nCleaning\nFilling\nRoot Canal\nExtraction\nEmergency\nFollow-up\nCosmetic\nOrthodontic",
+   "reqd": 1
+  },
+  {
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "label": "Priority",
+   "options": "Low\nMedium\nHigh\nUrgent",
+   "default": "Medium"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "appointment_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Appointment Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "appointment_time",
+   "fieldtype": "Time",
+   "in_list_view": 1,
+   "label": "Appointment Time",
+   "reqd": 1
+  },
+  {
+   "fieldname": "duration_minutes",
+   "fieldtype": "Int",
+   "label": "Duration (Minutes)",
+   "default": "60"
+  },
+  {
+   "fieldname": "section_break_8",
+   "fieldtype": "Section Break",
+   "label": "Patient & Practitioner"
+  },
+  {
+   "fieldname": "patient",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Patient",
+   "options": "Patient",
+   "reqd": 1
+  },
+  {
+   "fieldname": "practitioner",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Practitioner",
+   "options": "Healthcare Practitioner",
+   "reqd": 1
+  },
+  {
+   "fieldname": "dental_clinic",
+   "fieldtype": "Link",
+   "label": "Dental Clinic",
+   "options": "Dental Clinic"
+  },
+  {
+   "fieldname": "column_break_12",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "chief_complaint",
+   "fieldtype": "Small Text",
+   "label": "Chief Complaint"
+  },
+  {
+   "fieldname": "treatment_plan",
+   "fieldtype": "Link",
+   "label": "Treatment Plan",
+   "options": "Treatment Plan"
+  },
+  {
+   "fieldname": "dental_chart",
+   "fieldtype": "Link",
+   "label": "Dental Chart",
+   "options": "Dental Chart"
+  },
+  {
+   "fieldname": "procedure_details_section",
+   "fieldtype": "Section Break",
+   "label": "Procedure Details"
+  },
+  {
+   "fieldname": "planned_procedures",
+   "fieldtype": "Table",
+   "label": "Planned Procedures",
+   "options": "Appointment Procedure"
+  },
+  {
+   "fieldname": "chair_room_section",
+   "fieldtype": "Section Break",
+   "label": "Chair & Room Assignment"
+  },
+  {
+   "fieldname": "chair_number",
+   "fieldtype": "Data",
+   "label": "Chair Number"
+  },
+  {
+   "fieldname": "room_number",
+   "fieldtype": "Data",
+   "label": "Room Number"
+  },
+  {
+   "fieldname": "column_break_19",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "equipment_required",
+   "fieldtype": "Small Text",
+   "label": "Equipment Required"
+  },
+  {
+   "fieldname": "special_instructions",
+   "fieldtype": "Text",
+   "label": "Special Instructions"
+  },
+  {
+   "fieldname": "status_section",
+   "fieldtype": "Section Break",
+   "label": "Status & Follow-up"
+  },
+  {
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Scheduled\nConfirmed\nIn Progress\nCompleted\nCancelled\nNo Show\nRescheduled",
+   "default": "Scheduled",
+   "reqd": 1
+  },
+  {
+   "fieldname": "confirmation_status",
+   "fieldtype": "Select",
+   "label": "Confirmation Status",
+   "options": "Pending\nConfirmed\nDeclined",
+   "default": "Pending"
+  },
+  {
+   "fieldname": "column_break_24",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "reminder_sent",
+   "fieldtype": "Check",
+   "label": "Reminder Sent"
+  },
+  {
+   "fieldname": "follow_up_appointment",
+   "fieldtype": "Link",
+   "label": "Follow-up Appointment",
+   "options": "Dental Appointment"
+  },
+  {
+   "fieldname": "cancellation_reason",
+   "fieldtype": "Small Text",
+   "label": "Cancellation Reason"
+  },
+  {
+   "fieldname": "cost_section",
+   "fieldtype": "Section Break",
+   "label": "Cost & Payment"
+  },
+  {
+   "fieldname": "estimated_cost",
+   "fieldtype": "Currency",
+   "label": "Estimated Cost"
+  },
+  {
+   "fieldname": "insurance_authorization",
+   "fieldtype": "Data",
+   "label": "Insurance Authorization #"
+  },
+  {
+   "fieldname": "column_break_29",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "patient_portion",
+   "fieldtype": "Currency",
+   "label": "Patient Portion"
+  },
+  {
+   "fieldname": "payment_status",
+   "fieldtype": "Select",
+   "label": "Payment Status",
+   "options": "Pending\nPartial\nPaid\nRefunded",
+   "default": "Pending"
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes"
+  },
+  {
+   "fieldname": "practitioner_notes",
+   "fieldtype": "Text",
+   "label": "Practitioner Notes"
+  },
+  {
+   "fieldname": "column_break_33",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "patient_notes",
+   "fieldtype": "Text",
+   "label": "Patient Notes"
+  },
+  {
+   "fieldname": "amended_from",
+   "fieldtype": "Link",
+   "label": "Amended From",
+   "no_copy": 1,
+   "options": "Dental Appointment",
+   "print_hide": 1,
+   "read_only": 1
+  },
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Naming Series",
+   "options": "DENT-APT-.YYYY.-",
+   "default": "DENT-APT-.YYYY.-"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "is_submittable": 1,
+ "links": [],
+ "modified": "2024-01-15 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Dentcharts",
+ "name": "Dental Appointment",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Healthcare Administrator",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Physician",
+   "share": 1,
+   "submit": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Patient",
+   "share": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "patient",
+ "track_changes": 1
+} 
