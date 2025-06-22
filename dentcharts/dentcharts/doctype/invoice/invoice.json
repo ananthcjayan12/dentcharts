@@ -121,7 +121,8 @@
    "in_list_view": 1,
    "label": "Invoice Status",
    "options": "Draft\nSent\nPaid\nPartially Paid\nOverdue\nCancelled",
-   "reqd": 1
+   "reqd": 1,
+   "allow_on_submit": 1
   },
   {
    "default": "Normal",
@@ -228,19 +229,22 @@
    "fieldtype": "Select",
    "label": "Payment Status",
    "options": "Unpaid\nPartially Paid\nPaid\nOverpaid\nRefunded",
-   "reqd": 1
+   "reqd": 1,
+   "allow_on_submit": 1
   },
   {
    "fieldname": "paid_amount",
    "fieldtype": "Currency",
    "label": "Paid Amount",
-   "read_only": 1
+   "read_only": 1,
+   "allow_on_submit": 1
   },
   {
    "fieldname": "outstanding_amount",
    "fieldtype": "Currency",
    "label": "Outstanding Amount",
-   "read_only": 1
+   "read_only": 1,
+   "allow_on_submit": 1
   },
   {
    "fieldname": "column_break_31",
