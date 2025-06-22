@@ -380,7 +380,18 @@ class TestDentalAppointment(unittest.TestCase):
 		
 		# Verify all appointments are in schedule
 		self.assertEqual(len(schedule), 3)
-		scheduled_times = [apt.appointment_time for apt in schedule]
+		scheduled_times = []
+		for apt in schedule:
+			# Handle both string and timedelta formats
+			if isinstance(apt.appointment_time, str):
+				scheduled_times.append(apt.appointment_time)
+			else:
+				# Convert timedelta to string format
+				total_seconds = int(apt.appointment_time.total_seconds())
+				hours = total_seconds // 3600
+				minutes = (total_seconds % 3600) // 60
+				scheduled_times.append(f"{hours:02d}:{minutes:02d}:00")
+		
 		for time_slot in times:
 			self.assertIn(time_slot, scheduled_times)
 	
