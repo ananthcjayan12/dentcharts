@@ -249,7 +249,6 @@
    "label": "Approval & Tracking"
   },
   {
-   "default": "user",
    "fieldname": "created_by",
    "fieldtype": "Link",
    "label": "Created By",
