@@ -14,7 +14,7 @@ class TestInvoice(unittest.TestCase):
 				"last_name": "Patient",
 				"patient_name": "Test Patient",
 				"sex": "Male",
-				"blood_group": "O+",
+				"blood_group": "O Positive",
 				"mobile": "1234567890"
 			})
 			patient.insert()
