@@ -14,11 +14,16 @@ class AppointmentProcedure(Document):
 	def set_procedure_details(self):
 		"""Auto-populate procedure details from master data"""
 		if self.procedure_code:
-			procedure_master = frappe.get_doc("Dental Procedure Master", self.procedure_code)
-			
-			# Set duration and cost from master data
-			self.estimated_duration = procedure_master.duration_minutes
-			self.estimated_cost = procedure_master.standard_fee
+			try:
+				procedure_master = frappe.get_doc("Dental Procedure Master", self.procedure_code)
+				
+				# Set duration and cost from master data
+				self.estimated_duration = procedure_master.duration_minutes
+				self.estimated_cost = procedure_master.standard_fee
+			except frappe.DoesNotExistError:
+				# If procedure master doesn't exist, set default values
+				self.estimated_duration = 60
+				self.estimated_cost = 100
 	
 	def validate_tooth_surface_combination(self):
 		"""Validate tooth and surface combination"""

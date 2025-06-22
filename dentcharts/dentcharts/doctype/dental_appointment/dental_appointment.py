@@ -85,6 +85,21 @@ class DentalAppointment(Document):
 		total_cost = 0
 		
 		for procedure in self.planned_procedures:
+			# Auto-populate procedure details if missing
+			if procedure.procedure_code and (not procedure.estimated_cost or not procedure.estimated_duration):
+				try:
+					procedure_master = frappe.get_doc("Dental Procedure Master", procedure.procedure_code)
+					if not procedure.estimated_cost:
+						procedure.estimated_cost = procedure_master.standard_fee
+					if not procedure.estimated_duration:
+						procedure.estimated_duration = procedure_master.duration_minutes
+				except frappe.DoesNotExistError:
+					# Set defaults if master data doesn't exist
+					if not procedure.estimated_cost:
+						procedure.estimated_cost = 100
+					if not procedure.estimated_duration:
+						procedure.estimated_duration = 60
+			
 			if procedure.estimated_duration:
 				total_duration += procedure.estimated_duration
 			if procedure.estimated_cost:
@@ -352,7 +367,13 @@ class DentalAppointment(Document):
 			# Check if slot conflicts with existing appointments
 			is_available = True
 			for apt in existing_appointments:
-				apt_start_minutes = int(apt.appointment_time.split(':')[0]) * 60 + int(apt.appointment_time.split(':')[1])
+				# Handle both string and timedelta formats
+				if isinstance(apt.appointment_time, str):
+					time_parts = apt.appointment_time.split(':')
+					apt_start_minutes = int(time_parts[0]) * 60 + int(time_parts[1])
+				else:
+					# Handle timedelta object
+					apt_start_minutes = int(apt.appointment_time.total_seconds() // 60)
 				apt_end_minutes = apt_start_minutes + (apt.duration_minutes or 60)
 				
 				if (current_time < apt_end_minutes and slot_end_minutes > apt_start_minutes):
