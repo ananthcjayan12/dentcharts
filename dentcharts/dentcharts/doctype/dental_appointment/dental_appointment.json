@@ -142,9 +142,8 @@
   },
   {
    "fieldname": "treatment_plan",
-   "fieldtype": "Link",
-   "label": "Treatment Plan",
-   "options": "Treatment Plan"
+   "fieldtype": "Data",
+   "label": "Treatment Plan Reference"
   },
   {
    "fieldname": "dental_chart",
