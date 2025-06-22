@@ -73,11 +73,17 @@ class TreatmentPlan(Document):
 		self.total_estimated_duration = total_duration
 		
 		# Calculate overall insurance amounts
-		if self.insurance_coverage_percentage and total_cost:
+		# Prioritize individual item calculations over plan-level percentage
+		individual_insurance_total = sum([flt(item.insurance_amount) for item in self.plan_items])
+		
+		if individual_insurance_total > 0:
+			# Use sum of individual item insurance amounts
+			self.insurance_amount = individual_insurance_total
+		elif self.insurance_coverage_percentage and total_cost:
+			# Fall back to plan-level percentage if no individual amounts
 			self.insurance_amount = flt(total_cost * self.insurance_coverage_percentage / 100)
 		else:
-			# Calculate from individual items
-			self.insurance_amount = sum([flt(item.insurance_amount) for item in self.plan_items])
+			self.insurance_amount = 0
 		
 		self.patient_portion = flt(total_cost - self.insurance_amount)
 	

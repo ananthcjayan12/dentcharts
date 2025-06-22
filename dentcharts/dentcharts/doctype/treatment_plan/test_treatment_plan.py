@@ -383,6 +383,22 @@ class TestTreatmentPlan(unittest.TestCase):
 	
 	def test_auto_populate_procedure_details(self):
 		"""Test auto-population of procedure details from master data"""
+		# Create a test procedure master record first
+		try:
+			test_procedure = frappe.get_doc({
+				"doctype": "Dental Procedure Master",
+				"procedure_code": "TEST-AUTO-POPULATE",
+				"procedure_name": "Test Auto Populate Procedure",
+				"category": "Preventive",
+				"standard_fee": 100.0,
+				"duration_minutes": 30,
+				"insurance_coverage": 50
+			})
+			test_procedure.insert(ignore_permissions=True)
+		except Exception:
+			# If procedure master creation fails, skip this test
+			self.skipTest("Cannot create test procedure master")
+		
 		plan = frappe.get_doc({
 			"doctype": "Treatment Plan",
 			"patient": self.patient_id,
@@ -390,17 +406,23 @@ class TestTreatmentPlan(unittest.TestCase):
 			"plan_items": [
 				{
 					"treatment_sequence": 1,
-					"procedure_code": "TEST-PROC-016"  # Should auto-populate details
+					"procedure_code": "TEST-AUTO-POPULATE"  # Should auto-populate details
 				}
 			]
 		})
 		plan.insert()
 		
 		item = plan.plan_items[0]
-		# Should have auto-populated cost and duration (if master data exists)
-		# If master data doesn't exist, should have default values
-		self.assertIsNotNone(item.estimated_cost)
-		self.assertIsNotNone(item.estimated_duration)
+		# Should have auto-populated cost and duration from master data
+		self.assertEqual(item.estimated_cost, 100.0)
+		self.assertEqual(item.estimated_duration, 30)
+		self.assertEqual(item.insurance_coverage_percentage, 50)
+		
+		# Clean up test procedure
+		try:
+			frappe.delete_doc("Dental Procedure Master", "TEST-AUTO-POPULATE", force=True)
+		except Exception:
+			pass
 	
 	def ensure_test_data(self):
 		"""Ensure we have the required master data for testing"""
