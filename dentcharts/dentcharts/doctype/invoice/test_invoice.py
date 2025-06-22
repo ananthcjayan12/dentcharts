@@ -10,22 +10,32 @@ class TestInvoice(unittest.TestCase):
 		if not frappe.db.exists("Patient", "TEST-PATIENT-001"):
 			patient = frappe.get_doc({
 				"doctype": "Patient",
+				"first_name": "Test",
+				"last_name": "Patient",
 				"patient_name": "Test Patient",
-				"name": "TEST-PATIENT-001",
 				"sex": "Male",
-				"blood_group": "O+"
+				"blood_group": "O+",
+				"mobile": "1234567890"
 			})
 			patient.insert()
+			# Store the auto-generated name for use in tests
+			self.test_patient_id = patient.name
+		else:
+			self.test_patient_id = "TEST-PATIENT-001"
 		
 		# Create test practitioner if not exists
 		if not frappe.db.exists("Healthcare Practitioner", "TEST-PRACTITIONER-001"):
 			practitioner = frappe.get_doc({
 				"doctype": "Healthcare Practitioner",
+				"first_name": "Test",
+				"last_name": "Dentist",
 				"practitioner_name": "Dr. Test Dentist",
-				"name": "TEST-PRACTITIONER-001",
 				"department": "Dentistry"
 			})
 			practitioner.insert()
+			self.test_practitioner_id = practitioner.name
+		else:
+			self.test_practitioner_id = "TEST-PRACTITIONER-001"
 		
 		# Create test procedure if not exists
 		if not frappe.db.exists("Dental Procedure Master", "TEST-PROC-001"):
@@ -42,8 +52,8 @@ class TestInvoice(unittest.TestCase):
 		"""Test basic invoice creation"""
 		invoice = frappe.get_doc({
 			"doctype": "Invoice",
-			"patient": "TEST-PATIENT-001",
-			"practitioner": "TEST-PRACTITIONER-001",
+			"patient": self.test_patient_id,
+			"practitioner": self.test_practitioner_id,
 			"invoice_date": today(),
 			"invoice_items": [{
 				"procedure_code": "TEST-PROC-001",
@@ -64,8 +74,8 @@ class TestInvoice(unittest.TestCase):
 		"""Test automatic due date calculation"""
 		invoice = frappe.get_doc({
 			"doctype": "Invoice",
-			"patient": "TEST-PATIENT-001",
-			"practitioner": "TEST-PRACTITIONER-001",
+			"patient": self.test_patient_id,
+			"practitioner": self.test_practitioner_id,
 			"invoice_date": today(),
 			"payment_terms": "Net 30",
 			"invoice_items": [{
@@ -84,8 +94,8 @@ class TestInvoice(unittest.TestCase):
 		"""Test insurance amount calculation"""
 		invoice = frappe.get_doc({
 			"doctype": "Invoice",
-			"patient": "TEST-PATIENT-001",
-			"practitioner": "TEST-PRACTITIONER-001",
+			"patient": self.test_patient_id,
+			"practitioner": self.test_practitioner_id,
 			"invoice_date": today(),
 			"insurance_coverage_percentage": 80,
 			"invoice_items": [{
@@ -104,8 +114,8 @@ class TestInvoice(unittest.TestCase):
 		"""Test payment recording functionality"""
 		invoice = frappe.get_doc({
 			"doctype": "Invoice",
-			"patient": "TEST-PATIENT-001",
-			"practitioner": "TEST-PRACTITIONER-001",
+			"patient": self.test_patient_id,
+			"practitioner": self.test_practitioner_id,
 			"invoice_date": today(),
 			"invoice_items": [{
 				"procedure_code": "TEST-PROC-001",
@@ -137,8 +147,8 @@ class TestInvoice(unittest.TestCase):
 		"""Test calculation with multiple invoice items"""
 		invoice = frappe.get_doc({
 			"doctype": "Invoice",
-			"patient": "TEST-PATIENT-001",
-			"practitioner": "TEST-PRACTITIONER-001",
+			"patient": self.test_patient_id,
+			"practitioner": self.test_practitioner_id,
 			"invoice_date": today(),
 			"invoice_items": [
 				{
@@ -166,8 +176,8 @@ class TestInvoice(unittest.TestCase):
 		with self.assertRaises(frappe.ValidationError):
 			invoice = frappe.get_doc({
 				"doctype": "Invoice",
-				"patient": "TEST-PATIENT-001",
-				"practitioner": "TEST-PRACTITIONER-001",
+				"patient": self.test_patient_id,
+				"practitioner": self.test_practitioner_id,
 				"invoice_date": today(),
 				"invoice_items": []
 			})
@@ -177,8 +187,8 @@ class TestInvoice(unittest.TestCase):
 		with self.assertRaises(frappe.ValidationError):
 			invoice = frappe.get_doc({
 				"doctype": "Invoice",
-				"patient": "TEST-PATIENT-001",
-				"practitioner": "TEST-PRACTITIONER-001",
+				"patient": self.test_patient_id,
+				"practitioner": self.test_practitioner_id,
 				"invoice_date": today(),
 				"due_date": add_days(today(), -1),  # Due date before invoice date
 				"invoice_items": [{
@@ -195,8 +205,8 @@ class TestInvoice(unittest.TestCase):
 		past_date = add_days(today(), -45)
 		invoice = frappe.get_doc({
 			"doctype": "Invoice",
-			"patient": "TEST-PATIENT-001",
-			"practitioner": "TEST-PRACTITIONER-001",
+			"patient": self.test_patient_id,
+			"practitioner": self.test_practitioner_id,
 			"invoice_date": past_date,
 			"due_date": add_days(past_date, 30),
 			"late_fee_applicable": 1,
@@ -218,8 +228,8 @@ class TestInvoice(unittest.TestCase):
 		# Create test invoice
 		invoice = frappe.get_doc({
 			"doctype": "Invoice",
-			"patient": "TEST-PATIENT-001",
-			"practitioner": "TEST-PRACTITIONER-001",
+			"patient": self.test_patient_id,
+			"practitioner": self.test_practitioner_id,
 			"invoice_date": today(),
 			"invoice_items": [{
 				"procedure_code": "TEST-PROC-001",
@@ -230,7 +240,7 @@ class TestInvoice(unittest.TestCase):
 		invoice.insert()
 		
 		# Test get_outstanding_invoices_for_patient
-		outstanding_invoices = Invoice.get_outstanding_invoices_for_patient("TEST-PATIENT-001")
+		outstanding_invoices = Invoice.get_outstanding_invoices_for_patient(self.test_patient_id)
 		self.assertGreater(len(outstanding_invoices), 0)
 		
 		# Test get_overdue_invoices (should be empty for new invoice)
@@ -241,9 +251,10 @@ class TestInvoice(unittest.TestCase):
 	def tearDown(self):
 		"""Clean up test data"""
 		# Delete test invoices
-		frappe.db.sql("DELETE FROM `tabInvoice` WHERE patient = 'TEST-PATIENT-001'")
-		frappe.db.sql("DELETE FROM `tabPayment Entry` WHERE patient = 'TEST-PATIENT-001'")
-		frappe.db.commit()
+		if hasattr(self, 'test_patient_id'):
+			frappe.db.sql("DELETE FROM `tabInvoice` WHERE patient = %s", self.test_patient_id)
+			frappe.db.sql("DELETE FROM `tabPayment Entry` WHERE patient = %s", self.test_patient_id)
+			frappe.db.commit()
 
 if __name__ == '__main__':
 	unittest.main() 
