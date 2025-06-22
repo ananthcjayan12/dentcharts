@@ -1,0 +1,111 @@
+{
+ "add_total_row": 1,
+ "columns": [
+  {
+   "fieldname": "procedure_name",
+   "fieldtype": "Data",
+   "label": "Procedure",
+   "width": 200
+  },
+  {
+   "fieldname": "total_procedures",
+   "fieldtype": "Int",
+   "label": "Total Procedures",
+   "width": 130
+  },
+  {
+   "fieldname": "completed_procedures",
+   "fieldtype": "Int",
+   "label": "Completed",
+   "width": 110
+  },
+  {
+   "fieldname": "success_rate",
+   "fieldtype": "Percent",
+   "label": "Success Rate",
+   "width": 120
+  },
+  {
+   "fieldname": "avg_duration_days",
+   "fieldtype": "Float",
+   "label": "Avg Duration (Days)",
+   "width": 150
+  },
+  {
+   "fieldname": "avg_cost",
+   "fieldtype": "Currency",
+   "label": "Average Cost",
+   "width": 130
+  },
+  {
+   "fieldname": "total_revenue",
+   "fieldtype": "Currency",
+   "label": "Total Revenue",
+   "width": 140
+  },
+  {
+   "fieldname": "complication_rate",
+   "fieldtype": "Percent",
+   "label": "Complication Rate",
+   "width": 140
+  }
+ ],
+ "creation": "2024-01-15 11:00:00.000000",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date",
+   "default": "Today",
+   "reqd": 1
+  },
+  {
+   "fieldname": "to_date",
+   "fieldtype": "Date",
+   "label": "To Date", 
+   "default": "Today",
+   "reqd": 1
+  },
+  {
+   "fieldname": "practitioner",
+   "fieldtype": "Link",
+   "label": "Healthcare Practitioner",
+   "options": "Healthcare Practitioner",
+   "reqd": 0
+  },
+  {
+   "fieldname": "procedure_category",
+   "fieldtype": "Select",
+   "label": "Procedure Category",
+   "options": "\nPreventive\nRestorative\nEndodontic\nPeriodontal\nOral Surgery\nOrthodontic\nCosmetic\nProsthodontic",
+   "reqd": 0
+  }
+ ],
+ "idx": 3,
+ "is_standard": "Yes",
+ "letter_head": "Dental Clinic Letterhead",
+ "modified": "2024-01-15 11:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Dentcharts",
+ "name": "Treatment Success Metrics",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "query": "",
+ "ref_doctype": "Tooth Procedure",
+ "report_name": "Treatment Success Metrics",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "Healthcare Administrator"
+  },
+  {
+   "role": "Physician"
+  },
+  {
+   "role": "System Manager"
+  }
+ ]
+} 

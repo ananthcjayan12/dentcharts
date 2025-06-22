@@ -1,0 +1,105 @@
+{
+ "add_total_row": 1,
+ "columns": [
+  {
+   "fieldname": "age_group",
+   "fieldtype": "Data",
+   "label": "Age Group",
+   "width": 120
+  },
+  {
+   "fieldname": "gender",
+   "fieldtype": "Data", 
+   "label": "Gender",
+   "width": 100
+  },
+  {
+   "fieldname": "patient_count",
+   "fieldtype": "Int",
+   "label": "Patient Count",
+   "width": 120
+  },
+  {
+   "fieldname": "percentage",
+   "fieldtype": "Percent",
+   "label": "Percentage",
+   "width": 120
+  },
+  {
+   "fieldname": "avg_age",
+   "fieldtype": "Float",
+   "label": "Average Age",
+   "width": 120
+  },
+  {
+   "fieldname": "new_patients_last_6m",
+   "fieldtype": "Int",
+   "label": "New (6 Months)",
+   "width": 140
+  },
+  {
+   "fieldname": "active_patients",
+   "fieldtype": "Int",
+   "label": "Active Patients",
+   "width": 130
+  }
+ ],
+ "creation": "2024-01-15 10:00:00.000000",
+ "disabled": 0,
+ "docstatus": 0,
+ "doctype": "Report",
+ "filters": [
+  {
+   "fieldname": "from_date",
+   "fieldtype": "Date",
+   "label": "From Date",
+   "default": "Today",
+   "reqd": 0
+  },
+  {
+   "fieldname": "to_date", 
+   "fieldtype": "Date",
+   "label": "To Date",
+   "default": "Today",
+   "reqd": 0
+  },
+  {
+   "fieldname": "clinic",
+   "fieldtype": "Link",
+   "label": "Dental Clinic",
+   "options": "Dental Clinic",
+   "reqd": 0
+  },
+  {
+   "fieldname": "practitioner",
+   "fieldtype": "Link", 
+   "label": "Healthcare Practitioner",
+   "options": "Healthcare Practitioner",
+   "reqd": 0
+  }
+ ],
+ "idx": 1,
+ "is_standard": "Yes",
+ "letter_head": "Dental Clinic Letterhead",
+ "modified": "2024-01-15 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Dentcharts",
+ "name": "Patient Demographics",
+ "owner": "Administrator",
+ "prepared_report": 0,
+ "query": "",
+ "ref_doctype": "Dental Patient",
+ "report_name": "Patient Demographics",
+ "report_type": "Script Report",
+ "roles": [
+  {
+   "role": "Healthcare Administrator"
+  },
+  {
+   "role": "Physician"
+  },
+  {
+   "role": "System Manager"
+  }
+ ]
+} 
