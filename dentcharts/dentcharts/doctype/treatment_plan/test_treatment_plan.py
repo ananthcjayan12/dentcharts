@@ -129,7 +129,7 @@ class TestTreatmentPlan(unittest.TestCase):
 			"plan_items": [
 				{
 					"treatment_sequence": 1,
-					"procedure_code": "PREV001",  # Routine Cleaning
+					"procedure_code": "TEST-PROC-001",  # Non-existent procedure
 					"priority": "Medium",
 					"estimated_cost": 150.0,
 					"estimated_duration": 60
@@ -154,13 +154,13 @@ class TestTreatmentPlan(unittest.TestCase):
 			"plan_items": [
 				{
 					"treatment_sequence": 1,
-					"procedure_code": "REST001",  # Composite Filling
+					"procedure_code": "TEST-PROC-002",  # Non-existent procedure
 					"estimated_cost": 250.0,
 					"insurance_coverage_percentage": 80
 				},
 				{
 					"treatment_sequence": 2,
-					"procedure_code": "PREV001",  # Routine Cleaning
+					"procedure_code": "TEST-PROC-003",  # Non-existent procedure
 					"estimated_cost": 150.0,
 					"insurance_coverage_percentage": 70
 				}
@@ -191,17 +191,17 @@ class TestTreatmentPlan(unittest.TestCase):
 			"plan_items": [
 				{
 					"treatment_sequence": 1,
-					"procedure_code": "REST001",
+					"procedure_code": "TEST-PROC-004",
 					"item_status": "Completed"
 				},
 				{
 					"treatment_sequence": 2,
-					"procedure_code": "PREV001",
+					"procedure_code": "TEST-PROC-005",
 					"item_status": "Planned"
 				},
 				{
 					"treatment_sequence": 3,
-					"procedure_code": "PREV002",
+					"procedure_code": "TEST-PROC-006",
 					"item_status": "Completed"
 				}
 			]
@@ -222,7 +222,7 @@ class TestTreatmentPlan(unittest.TestCase):
 			"plan_items": [
 				{
 					"treatment_sequence": 1,
-					"procedure_code": "REST001",
+					"procedure_code": "TEST-PROC-007",
 					"item_status": "Planned"
 				}
 			]
@@ -256,11 +256,11 @@ class TestTreatmentPlan(unittest.TestCase):
 				"plan_items": [
 					{
 						"treatment_sequence": 1,
-						"procedure_code": "REST001"
+						"procedure_code": "TEST-PROC-008"
 					},
 					{
 						"treatment_sequence": 1,  # Duplicate sequence
-						"procedure_code": "PREV001"
+						"procedure_code": "TEST-PROC-009"
 					}
 				]
 			})
@@ -273,11 +273,11 @@ class TestTreatmentPlan(unittest.TestCase):
 			"dentist": self.dentist_id,
 			"plan_items": [
 				{
-					"procedure_code": "REST001"
+					"procedure_code": "TEST-PROC-010"
 					# No sequence number provided
 				},
 				{
-					"procedure_code": "PREV001"
+					"procedure_code": "TEST-PROC-011"
 					# No sequence number provided
 				}
 			]
@@ -300,7 +300,7 @@ class TestTreatmentPlan(unittest.TestCase):
 				"plan_items": [
 					{
 						"treatment_sequence": 1,
-						"procedure_code": "REST001"
+						"procedure_code": "TEST-PROC-012"
 					}
 				]
 			})
@@ -317,7 +317,7 @@ class TestTreatmentPlan(unittest.TestCase):
 				"plan_items": [
 					{
 						"treatment_sequence": 1,
-						"procedure_code": "REST001"
+						"procedure_code": "TEST-PROC-013"
 					}
 				]
 			})
@@ -332,7 +332,7 @@ class TestTreatmentPlan(unittest.TestCase):
 			"plan_items": [
 				{
 					"treatment_sequence": 1,
-					"procedure_code": "REST001",
+					"procedure_code": "TEST-PROC-014",
 					"tooth_number": "11",
 					"surface": "Occlusal",
 					"priority": "High",
@@ -368,7 +368,7 @@ class TestTreatmentPlan(unittest.TestCase):
 			"plan_items": [
 				{
 					"treatment_sequence": 1,
-					"procedure_code": "REST001",
+					"procedure_code": "TEST-PROC-015",
 					"item_status": "Planned"
 				}
 			]
@@ -390,7 +390,7 @@ class TestTreatmentPlan(unittest.TestCase):
 			"plan_items": [
 				{
 					"treatment_sequence": 1,
-					"procedure_code": "REST001"  # Should auto-populate details
+					"procedure_code": "TEST-PROC-016"  # Should auto-populate details
 				}
 			]
 		})
@@ -404,13 +404,9 @@ class TestTreatmentPlan(unittest.TestCase):
 	
 	def ensure_test_data(self):
 		"""Ensure we have the required master data for testing"""
-		# Create standard procedures if they don't exist
-		if not frappe.db.exists("Dental Procedure Master", "REST001"):
-			try:
-				from dentcharts.dentcharts.doctype.dental_procedure_master.dental_procedure_master import DentalProcedureMaster
-				DentalProcedureMaster.create_standard_procedures()
-			except Exception:
-				pass  # Skip if procedure creation fails
+		# No need to create procedure master data since we're using non-existent procedure codes
+		# This prevents auto-population from interfering with our test expectations
+		pass
 	
 	def cleanup_test_data(self):
 		"""Clean up any existing test data"""
