@@ -58,8 +58,9 @@ class Invoice(Document):
 		subtotal = 0
 		
 		for item in self.invoice_items:
-			if item.amount:
-				subtotal += flt(item.amount)
+			# Always calculate total_amount for each item to ensure consistency
+			item.total_amount = flt(item.quantity or 1) * flt(item.amount or 0)
+			subtotal += flt(item.total_amount)
 		
 		self.subtotal = subtotal
 		
@@ -321,7 +322,7 @@ class Invoice(Document):
 				"payment_status": ["in", ["Unpaid", "Partially Paid"]],
 				"invoice_status": ["!=", "Cancelled"]
 			},
-			fields=["name", "patient", "patient_name", "due_date", "outstanding_amount", "days_overdue"]
+			fields=["name", "patient", "patient_name", "due_date", "outstanding_amount"]
 		)
 	
 	def get_payment_history(self):

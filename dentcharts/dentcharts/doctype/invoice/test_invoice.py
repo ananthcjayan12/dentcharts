@@ -138,6 +138,10 @@ class TestInvoice(unittest.TestCase):
 		})
 		
 		invoice.insert()
+		
+		# Approve the invoice before submitting
+		invoice.approved_by = frappe.session.user
+		invoice.save()
 		invoice.submit()
 		
 		# Record partial payment
