@@ -39,6 +39,9 @@ class PaymentEntry(Document):
 		
 		if not self.payment_date:
 			self.payment_date = today()
+		
+		if not self.posting_date:
+			self.posting_date = self.payment_date or today()
 	
 	def before_insert(self):
 		"""Actions before inserting payment entry"""
