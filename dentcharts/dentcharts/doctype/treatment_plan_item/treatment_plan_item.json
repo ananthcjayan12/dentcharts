@@ -136,7 +136,7 @@
    "fieldtype": "Column Break"
   },
   {
-   "fetch_from": "procedure_code.insurance_coverage_percentage",
+   "fetch_from": "procedure_code.insurance_coverage",
    "fieldname": "insurance_coverage_percentage",
    "fieldtype": "Percent",
    "label": "Insurance Coverage %"
