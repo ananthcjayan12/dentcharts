@@ -31,14 +31,17 @@ class DentalPatient(Document):
 	
 	def before_save(self):
 		# Create dental chart if it doesn't exist
-		# Note: Disabled until Phase 3 when Dental Chart DocType is created
-		# self.ensure_dental_chart_exists()
-		pass
+		self.ensure_dental_chart_exists()
 	
 	def ensure_dental_chart_exists(self):
 		"""Ensure a dental chart exists for this patient"""
-		# Will be implemented in Phase 3 when Dental Chart DocType is created
-		pass
-		# if not frappe.db.exists("Dental Chart", {"patient": self.name}):
-		# 	# Will be implemented in Phase 3
-		# 	pass 
+		if not frappe.db.exists("Dental Chart", {"patient": self.healthcare_patient}):
+			# Create a new dental chart for this patient
+			chart = frappe.get_doc({
+				"doctype": "Dental Chart",
+				"patient": self.healthcare_patient,
+				"dentist": frappe.db.get_single_value("Global Defaults", "default_practitioner") or "Administrator",
+				"chart_type": "Comprehensive",
+				"status": "Draft"
+			})
+			chart.insert(ignore_permissions=True) 

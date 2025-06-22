@@ -1,0 +1,329 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2024-01-15 10:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "patient_section",
+  "patient",
+  "patient_name",
+  "chart_date",
+  "dentist",
+  "dentist_name",
+  "column_break_6",
+  "status",
+  "chart_type",
+  "clinic",
+  "clinic_name",
+  "chart_details_section",
+  "chief_complaint",
+  "medical_history",
+  "dental_history",
+  "column_break_14",
+  "examination_findings",
+  "treatment_plan",
+  "notes",
+  "tooth_conditions_section",
+  "tooth_conditions",
+  "tooth_procedures_section",
+  "tooth_procedures",
+  "chart_summary_section",
+  "total_conditions",
+  "total_procedures",
+  "column_break_23",
+  "emergency_conditions",
+  "treatment_required",
+  "estimated_cost",
+  "timestamps_section",
+  "created_by",
+  "created_on",
+  "column_break_29",
+  "last_modified_by",
+  "last_modified_on"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Chart ID",
+   "options": "CHART-.YYYY.-.MM.-.#####",
+   "reqd": 1
+  },
+  {
+   "fieldname": "patient_section",
+   "fieldtype": "Section Break",
+   "label": "Patient Information"
+  },
+  {
+   "fieldname": "patient",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Patient",
+   "options": "Patient",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "patient.patient_name",
+   "fieldname": "patient_name",
+   "fieldtype": "Data",
+   "label": "Patient Name",
+   "read_only": 1
+  },
+  {
+   "default": "Today",
+   "fieldname": "chart_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Chart Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "dentist",
+   "fieldtype": "Link",
+   "label": "Dentist",
+   "options": "Healthcare Practitioner",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "dentist.practitioner_name",
+   "fieldname": "dentist_name",
+   "fieldtype": "Data",
+   "label": "Dentist Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Draft",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Draft\nActive\nCompleted\nCancelled",
+   "reqd": 1
+  },
+  {
+   "default": "Comprehensive",
+   "fieldname": "chart_type",
+   "fieldtype": "Select",
+   "label": "Chart Type",
+   "options": "Comprehensive\nLimited Exam\nEmergency\nFollow-up\nConsultation"
+  },
+  {
+   "fieldname": "clinic",
+   "fieldtype": "Link",
+   "label": "Clinic",
+   "options": "Dental Clinic"
+  },
+  {
+   "fetch_from": "clinic.clinic_name",
+   "fieldname": "clinic_name",
+   "fieldtype": "Data",
+   "label": "Clinic Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "chart_details_section",
+   "fieldtype": "Section Break",
+   "label": "Chart Details"
+  },
+  {
+   "fieldname": "chief_complaint",
+   "fieldtype": "Small Text",
+   "label": "Chief Complaint"
+  },
+  {
+   "fieldname": "medical_history",
+   "fieldtype": "Text",
+   "label": "Medical History"
+  },
+  {
+   "fieldname": "dental_history",
+   "fieldtype": "Text",
+   "label": "Dental History"
+  },
+  {
+   "fieldname": "column_break_14",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "examination_findings",
+   "fieldtype": "Text",
+   "label": "Examination Findings"
+  },
+  {
+   "fieldname": "treatment_plan",
+   "fieldtype": "Text",
+   "label": "Treatment Plan"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Additional Notes"
+  },
+  {
+   "fieldname": "tooth_conditions_section",
+   "fieldtype": "Section Break",
+   "label": "Tooth Conditions"
+  },
+  {
+   "fieldname": "tooth_conditions",
+   "fieldtype": "Table",
+   "label": "Tooth Conditions",
+   "options": "Tooth Condition"
+  },
+  {
+   "fieldname": "tooth_procedures_section",
+   "fieldtype": "Section Break",
+   "label": "Tooth Procedures"
+  },
+  {
+   "fieldname": "tooth_procedures",
+   "fieldtype": "Table",
+   "label": "Tooth Procedures",
+   "options": "Tooth Procedure"
+  },
+  {
+   "fieldname": "chart_summary_section",
+   "fieldtype": "Section Break",
+   "label": "Chart Summary"
+  },
+  {
+   "default": "0",
+   "fieldname": "total_conditions",
+   "fieldtype": "Int",
+   "label": "Total Conditions",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "total_procedures",
+   "fieldtype": "Int",
+   "label": "Total Procedures",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_23",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "emergency_conditions",
+   "fieldtype": "Int",
+   "label": "Emergency Conditions",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "treatment_required",
+   "fieldtype": "Check",
+   "label": "Treatment Required"
+  },
+  {
+   "default": "0",
+   "fieldname": "estimated_cost",
+   "fieldtype": "Currency",
+   "label": "Estimated Treatment Cost",
+   "read_only": 1
+  },
+  {
+   "fieldname": "timestamps_section",
+   "fieldtype": "Section Break",
+   "label": "Timestamps"
+  },
+  {
+   "fieldname": "created_by",
+   "fieldtype": "Data",
+   "label": "Created By",
+   "read_only": 1
+  },
+  {
+   "fieldname": "created_on",
+   "fieldtype": "Datetime",
+   "label": "Created On",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_29",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "last_modified_by",
+   "fieldtype": "Data",
+   "label": "Last Modified By",
+   "read_only": 1
+  },
+  {
+   "fieldname": "last_modified_on",
+   "fieldtype": "Datetime",
+   "label": "Last Modified On",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [
+  {
+   "link_doctype": "Tooth Condition",
+   "link_fieldname": "dental_chart"
+  },
+  {
+   "link_doctype": "Tooth Procedure",
+   "link_fieldname": "dental_chart"
+  }
+ ],
+ "modified": "2024-01-15 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Dentcharts",
+ "name": "Dental Chart",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Healthcare Administrator",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Physician",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Patient",
+   "share": 1
+  }
+ ],
+ "sort_field": "chart_date",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "patient_name",
+ "track_changes": 1,
+ "track_seen": 1,
+ "track_views": 1
+} 

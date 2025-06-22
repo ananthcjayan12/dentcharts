@@ -1,0 +1,199 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-15 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "tooth_number",
+  "tooth_name",
+  "surface",
+  "column_break_4",
+  "procedure_code",
+  "procedure_name",
+  "complexity",
+  "procedure_details_section",
+  "status",
+  "planned_date",
+  "completed_date",
+  "column_break_11",
+  "planned_by",
+  "performed_by",
+  "duration_minutes",
+  "cost_section",
+  "standard_fee",
+  "actual_fee",
+  "column_break_17",
+  "insurance_covered",
+  "patient_portion",
+  "notes_section",
+  "notes",
+  "follow_up_required",
+  "follow_up_date"
+ ],
+ "fields": [
+  {
+   "fieldname": "tooth_number",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Tooth Number",
+   "options": "Tooth Master",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "tooth_number.tooth_name",
+   "fieldname": "tooth_name",
+   "fieldtype": "Data",
+   "label": "Tooth Name",
+   "read_only": 1
+  },
+  {
+   "default": "Whole Tooth",
+   "fieldname": "surface",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Surface",
+   "options": "Whole Tooth\nOcclusal\nMesial\nDistal\nBuccal\nLingual\nIncisal\nCervical"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "procedure_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Procedure",
+   "options": "Dental Procedure Master",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "procedure_code.procedure_name",
+   "fieldname": "procedure_name",
+   "fieldtype": "Data",
+   "label": "Procedure Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "procedure_code.complexity",
+   "fieldname": "complexity",
+   "fieldtype": "Data",
+   "label": "Complexity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "procedure_details_section",
+   "fieldtype": "Section Break",
+   "label": "Procedure Details"
+  },
+  {
+   "default": "Planned",
+   "fieldname": "status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Planned\nScheduled\nIn Progress\nCompleted\nCancelled\nPostponed"
+  },
+  {
+   "default": "Today",
+   "fieldname": "planned_date",
+   "fieldtype": "Date",
+   "label": "Planned Date"
+  },
+  {
+   "fieldname": "completed_date",
+   "fieldtype": "Date",
+   "label": "Completed Date"
+  },
+  {
+   "fieldname": "column_break_11",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "user",
+   "fieldname": "planned_by",
+   "fieldtype": "Link",
+   "label": "Planned By",
+   "options": "User"
+  },
+  {
+   "fieldname": "performed_by",
+   "fieldtype": "Link",
+   "label": "Performed By",
+   "options": "Healthcare Practitioner"
+  },
+  {
+   "fetch_from": "procedure_code.duration_minutes",
+   "fieldname": "duration_minutes",
+   "fieldtype": "Int",
+   "label": "Duration (Minutes)"
+  },
+  {
+   "fieldname": "cost_section",
+   "fieldtype": "Section Break",
+   "label": "Cost Information"
+  },
+  {
+   "fetch_from": "procedure_code.standard_fee",
+   "fieldname": "standard_fee",
+   "fieldtype": "Currency",
+   "label": "Standard Fee",
+   "read_only": 1
+  },
+  {
+   "fieldname": "actual_fee",
+   "fieldtype": "Currency",
+   "label": "Actual Fee"
+  },
+  {
+   "fieldname": "column_break_17",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "0",
+   "fieldname": "insurance_covered",
+   "fieldtype": "Currency",
+   "label": "Insurance Covered"
+  },
+  {
+   "fieldname": "patient_portion",
+   "fieldtype": "Currency",
+   "label": "Patient Portion"
+  },
+  {
+   "fieldname": "notes_section",
+   "fieldtype": "Section Break",
+   "label": "Notes & Follow-up"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Procedure Notes"
+  },
+  {
+   "default": "0",
+   "fetch_from": "procedure_code.follow_up_required",
+   "fieldname": "follow_up_required",
+   "fieldtype": "Check",
+   "label": "Follow-up Required"
+  },
+  {
+   "fieldname": "follow_up_date",
+   "fieldtype": "Date",
+   "label": "Follow-up Date"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "modified": "2024-01-15 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Dentcharts",
+ "name": "Tooth Procedure",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "tooth_number",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+} 

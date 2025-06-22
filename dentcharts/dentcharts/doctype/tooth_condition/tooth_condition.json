@@ -1,0 +1,128 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-15 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "tooth_number",
+  "tooth_name",
+  "surface",
+  "column_break_4",
+  "condition_code",
+  "condition_name",
+  "severity",
+  "condition_details_section",
+  "notes",
+  "date_identified",
+  "column_break_10",
+  "identified_by",
+  "requires_treatment",
+  "is_emergency"
+ ],
+ "fields": [
+  {
+   "fieldname": "tooth_number",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Tooth Number",
+   "options": "Tooth Master",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "tooth_number.tooth_name",
+   "fieldname": "tooth_name",
+   "fieldtype": "Data",
+   "label": "Tooth Name",
+   "read_only": 1
+  },
+  {
+   "default": "Whole Tooth",
+   "fieldname": "surface",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Surface",
+   "options": "Whole Tooth\nOcclusal\nMesial\nDistal\nBuccal\nLingual\nIncisal\nCervical"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "condition_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Condition",
+   "options": "Dental Condition Master",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "condition_code.condition_name",
+   "fieldname": "condition_name",
+   "fieldtype": "Data",
+   "label": "Condition Name",
+   "read_only": 1
+  },
+  {
+   "fetch_from": "condition_code.severity",
+   "fieldname": "severity",
+   "fieldtype": "Data",
+   "label": "Severity",
+   "read_only": 1
+  },
+  {
+   "fieldname": "condition_details_section",
+   "fieldtype": "Section Break",
+   "label": "Condition Details"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Small Text",
+   "label": "Notes"
+  },
+  {
+   "default": "Today",
+   "fieldname": "date_identified",
+   "fieldtype": "Date",
+   "label": "Date Identified"
+  },
+  {
+   "fieldname": "column_break_10",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "user",
+   "fieldname": "identified_by",
+   "fieldtype": "Link",
+   "label": "Identified By",
+   "options": "User"
+  },
+  {
+   "default": "1",
+   "fetch_from": "condition_code.requires_treatment",
+   "fieldname": "requires_treatment",
+   "fieldtype": "Check",
+   "label": "Requires Treatment"
+  },
+  {
+   "default": "0",
+   "fetch_from": "condition_code.is_emergency",
+   "fieldname": "is_emergency",
+   "fieldtype": "Check",
+   "label": "Emergency Condition"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "modified": "2024-01-15 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Dentcharts",
+ "name": "Tooth Condition",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "tooth_number",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+} 
