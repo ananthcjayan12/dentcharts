@@ -1,0 +1,328 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "naming_series:",
+ "creation": "2024-01-15 10:00:00.000000",
+ "default_view": "List",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "naming_series",
+  "patient",
+  "patient_name",
+  "dentist",
+  "dentist_name",
+  "dental_chart",
+  "column_break_6",
+  "plan_date",
+  "plan_status",
+  "priority_level",
+  "section_break_10",
+  "treatment_goals",
+  "chief_complaint",
+  "column_break_13",
+  "alternative_options",
+  "clinical_notes",
+  "section_break_16",
+  "plan_items",
+  "section_break_18",
+  "total_estimated_cost",
+  "total_estimated_duration",
+  "column_break_21",
+  "insurance_coverage_percentage",
+  "insurance_amount",
+  "patient_portion",
+  "section_break_25",
+  "plan_progress",
+  "completed_items",
+  "total_items",
+  "column_break_29",
+  "start_date",
+  "target_completion_date",
+  "actual_completion_date",
+  "section_break_33",
+  "created_by",
+  "approved_by",
+  "column_break_36",
+  "approval_date",
+  "last_updated"
+ ],
+ "fields": [
+  {
+   "fieldname": "naming_series",
+   "fieldtype": "Select",
+   "label": "Series",
+   "options": "TP-.YYYY.-",
+   "reqd": 1
+  },
+  {
+   "fieldname": "patient",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Patient",
+   "options": "Patient",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "patient.patient_name",
+   "fieldname": "patient_name",
+   "fieldtype": "Data",
+   "label": "Patient Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dentist",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Dentist",
+   "options": "Healthcare Practitioner",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "dentist.practitioner_name",
+   "fieldname": "dentist_name",
+   "fieldtype": "Data",
+   "label": "Dentist Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "dental_chart",
+   "fieldtype": "Link",
+   "label": "Dental Chart",
+   "options": "Dental Chart"
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Today",
+   "fieldname": "plan_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Plan Date",
+   "reqd": 1
+  },
+  {
+   "default": "Draft",
+   "fieldname": "plan_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Plan Status",
+   "options": "Draft\nActive\nIn Progress\nCompleted\nCancelled\nOn Hold",
+   "reqd": 1
+  },
+  {
+   "default": "Routine",
+   "fieldname": "priority_level",
+   "fieldtype": "Select",
+   "label": "Priority Level",
+   "options": "Routine\nUrgent\nEmergency",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_10",
+   "fieldtype": "Section Break",
+   "label": "Treatment Details"
+  },
+  {
+   "fieldname": "treatment_goals",
+   "fieldtype": "Text",
+   "label": "Treatment Goals"
+  },
+  {
+   "fieldname": "chief_complaint",
+   "fieldtype": "Small Text",
+   "label": "Chief Complaint"
+  },
+  {
+   "fieldname": "column_break_13",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "alternative_options",
+   "fieldtype": "Text",
+   "label": "Alternative Treatment Options"
+  },
+  {
+   "fieldname": "clinical_notes",
+   "fieldtype": "Text",
+   "label": "Clinical Notes"
+  },
+  {
+   "fieldname": "section_break_16",
+   "fieldtype": "Section Break",
+   "label": "Treatment Plan Items"
+  },
+  {
+   "fieldname": "plan_items",
+   "fieldtype": "Table",
+   "label": "Plan Items",
+   "options": "Treatment Plan Item",
+   "reqd": 1
+  },
+  {
+   "fieldname": "section_break_18",
+   "fieldtype": "Section Break",
+   "label": "Cost Summary"
+  },
+  {
+   "fieldname": "total_estimated_cost",
+   "fieldtype": "Currency",
+   "label": "Total Estimated Cost",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_estimated_duration",
+   "fieldtype": "Int",
+   "label": "Total Estimated Duration (Minutes)",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_21",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "insurance_coverage_percentage",
+   "fieldtype": "Percent",
+   "label": "Insurance Coverage %"
+  },
+  {
+   "fieldname": "insurance_amount",
+   "fieldtype": "Currency",
+   "label": "Insurance Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "patient_portion",
+   "fieldtype": "Currency",
+   "label": "Patient Portion",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_25",
+   "fieldtype": "Section Break",
+   "label": "Progress Tracking"
+  },
+  {
+   "fieldname": "plan_progress",
+   "fieldtype": "Percent",
+   "label": "Plan Progress %",
+   "read_only": 1
+  },
+  {
+   "fieldname": "completed_items",
+   "fieldtype": "Int",
+   "label": "Completed Items",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_items",
+   "fieldtype": "Int",
+   "label": "Total Items",
+   "read_only": 1
+  },
+  {
+   "fieldname": "column_break_29",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "start_date",
+   "fieldtype": "Date",
+   "label": "Treatment Start Date"
+  },
+  {
+   "fieldname": "target_completion_date",
+   "fieldtype": "Date",
+   "label": "Target Completion Date"
+  },
+  {
+   "fieldname": "actual_completion_date",
+   "fieldtype": "Date",
+   "label": "Actual Completion Date",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_33",
+   "fieldtype": "Section Break",
+   "label": "Approval & Tracking"
+  },
+  {
+   "default": "user",
+   "fieldname": "created_by",
+   "fieldtype": "Link",
+   "label": "Created By",
+   "options": "User",
+   "read_only": 1
+  },
+  {
+   "fieldname": "approved_by",
+   "fieldtype": "Link",
+   "label": "Approved By",
+   "options": "User"
+  },
+  {
+   "fieldname": "column_break_36",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "approval_date",
+   "fieldtype": "Date",
+   "label": "Approval Date"
+  },
+  {
+   "default": "now",
+   "fieldname": "last_updated",
+   "fieldtype": "Datetime",
+   "label": "Last Updated",
+   "read_only": 1
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2024-01-15 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Dentcharts",
+ "name": "Treatment Plan",
+ "naming_rule": "By \"Naming Series\" field",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Healthcare Administrator",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Physician",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "Patient"
+  }
+ ],
+ "search_fields": "patient_name,dentist_name,plan_status,priority_level",
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "title_field": "patient_name",
+ "track_changes": 1
+} 

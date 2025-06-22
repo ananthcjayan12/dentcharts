@@ -1,0 +1,206 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-15 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "treatment_sequence",
+  "procedure_code",
+  "procedure_name",
+  "tooth_number",
+  "tooth_name",
+  "surface",
+  "column_break_6",
+  "priority",
+  "item_status",
+  "urgency_flag",
+  "section_break_10",
+  "estimated_cost",
+  "actual_cost",
+  "estimated_duration",
+  "actual_duration",
+  "column_break_15",
+  "insurance_coverage_percentage",
+  "insurance_amount",
+  "patient_portion",
+  "section_break_19",
+  "prerequisites",
+  "notes",
+  "column_break_22",
+  "scheduled_appointment",
+  "completed_date",
+  "completed_by"
+ ],
+ "fields": [
+  {
+   "fieldname": "treatment_sequence",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Sequence",
+   "reqd": 1
+  },
+  {
+   "fieldname": "procedure_code",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Procedure",
+   "options": "Dental Procedure Master",
+   "reqd": 1
+  },
+  {
+   "fetch_from": "procedure_code.procedure_name",
+   "fieldname": "procedure_name",
+   "fieldtype": "Data",
+   "label": "Procedure Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tooth_number",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Tooth",
+   "options": "Tooth Master"
+  },
+  {
+   "fetch_from": "tooth_number.tooth_name",
+   "fieldname": "tooth_name",
+   "fieldtype": "Data",
+   "label": "Tooth Name",
+   "read_only": 1
+  },
+  {
+   "fieldname": "surface",
+   "fieldtype": "Select",
+   "label": "Surface",
+   "options": "Whole Tooth\nOcclusal\nMesial\nDistal\nBuccal\nLingual\nIncisal\nCervical"
+  },
+  {
+   "fieldname": "column_break_6",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "Medium",
+   "fieldname": "priority",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Priority",
+   "options": "Low\nMedium\nHigh\nUrgent",
+   "reqd": 1
+  },
+  {
+   "default": "Planned",
+   "fieldname": "item_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Status",
+   "options": "Planned\nScheduled\nIn Progress\nCompleted\nCancelled\nPostponed",
+   "reqd": 1
+  },
+  {
+   "default": 0,
+   "fieldname": "urgency_flag",
+   "fieldtype": "Check",
+   "label": "Urgent"
+  },
+  {
+   "fieldname": "section_break_10",
+   "fieldtype": "Section Break",
+   "label": "Cost & Duration"
+  },
+  {
+   "fetch_from": "procedure_code.standard_fee",
+   "fieldname": "estimated_cost",
+   "fieldtype": "Currency",
+   "label": "Estimated Cost"
+  },
+  {
+   "fieldname": "actual_cost",
+   "fieldtype": "Currency",
+   "label": "Actual Cost"
+  },
+  {
+   "fetch_from": "procedure_code.duration_minutes",
+   "fieldname": "estimated_duration",
+   "fieldtype": "Int",
+   "label": "Estimated Duration (Minutes)"
+  },
+  {
+   "fieldname": "actual_duration",
+   "fieldtype": "Int",
+   "label": "Actual Duration (Minutes)"
+  },
+  {
+   "fieldname": "column_break_15",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fetch_from": "procedure_code.insurance_coverage_percentage",
+   "fieldname": "insurance_coverage_percentage",
+   "fieldtype": "Percent",
+   "label": "Insurance Coverage %"
+  },
+  {
+   "fieldname": "insurance_amount",
+   "fieldtype": "Currency",
+   "label": "Insurance Amount",
+   "read_only": 1
+  },
+  {
+   "fieldname": "patient_portion",
+   "fieldtype": "Currency",
+   "label": "Patient Portion",
+   "read_only": 1
+  },
+  {
+   "fieldname": "section_break_19",
+   "fieldtype": "Section Break",
+   "label": "Additional Details"
+  },
+  {
+   "fieldname": "prerequisites",
+   "fieldtype": "Small Text",
+   "label": "Prerequisites"
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Treatment Notes"
+  },
+  {
+   "fieldname": "column_break_22",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "scheduled_appointment",
+   "fieldtype": "Link",
+   "label": "Scheduled Appointment",
+   "options": "Dental Appointment"
+  },
+  {
+   "fieldname": "completed_date",
+   "fieldtype": "Date",
+   "label": "Completed Date"
+  },
+  {
+   "fieldname": "completed_by",
+   "fieldtype": "Link",
+   "label": "Completed By",
+   "options": "Healthcare Practitioner"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2024-01-15 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Dentcharts",
+ "name": "Treatment Plan Item",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "treatment_sequence",
+ "sort_order": "ASC",
+ "states": [],
+ "track_changes": 1
+} 
