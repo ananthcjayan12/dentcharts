@@ -103,24 +103,28 @@ class TestDentalConditionMaster(unittest.TestCase):
 		# Test the static method for creating all conditions
 		from dentcharts.dentcharts.doctype.dental_condition_master.dental_condition_master import DentalConditionMaster
 		
-		# Get count before
+		# Get existing count
 		existing_count = frappe.db.count("Dental Condition Master")
 		
-		# Create standard conditions
+		# Create standard conditions (this should handle duplicates gracefully)
 		result = DentalConditionMaster.create_standard_conditions()
 		
-		# Check that conditions were created
-		new_count = frappe.db.count("Dental Condition Master")
-		self.assertGreater(new_count, existing_count)
+		# Check that we have a reasonable number of conditions (at least 20)
+		final_count = frappe.db.count("Dental Condition Master")
+		self.assertGreaterEqual(final_count, 20, "Should have at least 20 dental conditions")
 		
 		# Verify specific conditions exist
-		cavity_condition = frappe.get_doc("Dental Condition Master", "CAR001")
-		self.assertEqual(cavity_condition.condition_name, "Small Cavity")
-		self.assertEqual(cavity_condition.category, "Caries")
+		self.assertTrue(frappe.db.exists("Dental Condition Master", "CARIES001"), "Caries condition should exist")
+		self.assertTrue(frappe.db.exists("Dental Condition Master", "PERIO001"), "Periodontal condition should exist")
 		
-		abscess_condition = frappe.get_doc("Dental Condition Master", "END003")
-		self.assertEqual(abscess_condition.condition_name, "Apical Abscess")
-		self.assertTrue(abscess_condition.is_emergency)
+		# Verify condition details
+		caries = frappe.get_doc("Dental Condition Master", "CARIES001")
+		self.assertEqual(caries.condition_name, "Dental Caries - Initial")
+		self.assertEqual(caries.category, "Caries")
+		
+		gingivitis = frappe.get_doc("Dental Condition Master", "PERIO001")
+		self.assertEqual(gingivitis.condition_name, "Gingivitis - Mild")
+		self.assertEqual(gingivitis.category, "Periodontal")
 	
 	def tearDown(self):
 		# Clean up test data

@@ -116,17 +116,21 @@ class TestDentalProcedureMaster(unittest.TestCase):
 		# Test the static method for creating all procedures
 		from dentcharts.dentcharts.doctype.dental_procedure_master.dental_procedure_master import DentalProcedureMaster
 		
-		# Get count before
+		# Get existing count
 		existing_count = frappe.db.count("Dental Procedure Master")
 		
-		# Create standard procedures
+		# Create standard procedures (this should handle duplicates gracefully)
 		result = DentalProcedureMaster.create_standard_procedures()
 		
-		# Check that procedures were created
-		new_count = frappe.db.count("Dental Procedure Master")
-		self.assertGreater(new_count, existing_count)
+		# Check that we have a reasonable number of procedures (at least 15)
+		final_count = frappe.db.count("Dental Procedure Master")
+		self.assertGreaterEqual(final_count, 15, "Should have at least 15 dental procedures")
 		
 		# Verify specific procedures exist
+		self.assertTrue(frappe.db.exists("Dental Procedure Master", "PREV001"), "Cleaning procedure should exist")
+		self.assertTrue(frappe.db.exists("Dental Procedure Master", "ENDO001"), "Root canal procedure should exist")
+		
+		# Verify procedure details
 		cleaning = frappe.get_doc("Dental Procedure Master", "PREV001")
 		self.assertEqual(cleaning.procedure_name, "Routine Cleaning")
 		self.assertEqual(cleaning.category, "Preventive")

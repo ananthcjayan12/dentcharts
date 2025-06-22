@@ -3,45 +3,70 @@
 
 import frappe
 import unittest
+import time
 
 
 class TestDentalPatient(unittest.TestCase):
 	def setUp(self):
+		# Use timestamp to ensure unique test data
+		self.timestamp = str(int(time.time()))
+		self.patient_id = f"PAT-TEST-{self.timestamp}"
+		self.dental_patient_id = f"DP-TEST-{self.timestamp}"
+		
+		# Clean up any existing test data first
+		self.cleanup_test_data()
+		
 		# Create a test healthcare patient first
-		if not frappe.db.exists("Patient", "PAT-TEST-001"):
-			patient = frappe.get_doc({
-				"doctype": "Patient",
-				"patient_name": "Test Patient",
-				"first_name": "Test",
-				"last_name": "Patient",
-				"name": "PAT-TEST-001",
-				"sex": "Male"
-			})
-			patient.insert()
+		patient = frappe.get_doc({
+			"doctype": "Patient",
+			"patient_name": f"Test Patient {self.timestamp}",
+			"first_name": "Test",
+			"last_name": f"Patient{self.timestamp}",
+			"name": self.patient_id,
+			"sex": "Male"
+		})
+		patient.insert()
 		
 		# Create a test dental patient
-		if not frappe.db.exists("Dental Patient", "PAT-TEST-001"):
-			dental_patient = frappe.get_doc({
-				"doctype": "Dental Patient",
-				"healthcare_patient": "PAT-TEST-001",
-				"dental_history": "No previous dental issues",
-				"emergency_contact": "John Doe",
-				"emergency_phone": "1234567890"
-			})
-			dental_patient.insert()
+		dental_patient = frappe.get_doc({
+			"doctype": "Dental Patient",
+			"name": self.dental_patient_id,
+			"healthcare_patient": self.patient_id,
+			"dental_history": "No previous dental issues",
+			"emergency_contact": "John Doe",
+			"emergency_phone": "1234567890"
+		})
+		dental_patient.insert()
 	
 	def test_dental_patient_creation(self):
-		dental_patient = frappe.get_doc("Dental Patient", "PAT-TEST-001")
-		self.assertEqual(dental_patient.healthcare_patient, "PAT-TEST-001")
+		dental_patient = frappe.get_doc("Dental Patient", self.dental_patient_id)
+		self.assertEqual(dental_patient.healthcare_patient, self.patient_id)
 		self.assertEqual(dental_patient.emergency_contact, "John Doe")
 	
 	def test_patient_name_fetch(self):
-		dental_patient = frappe.get_doc("Dental Patient", "PAT-TEST-001")
-		self.assertEqual(dental_patient.patient_name, "Test Patient")
+		dental_patient = frappe.get_doc("Dental Patient", self.dental_patient_id)
+		self.assertEqual(dental_patient.patient_name, f"Test Patient {self.timestamp}")
+	
+	def cleanup_test_data(self):
+		"""Clean up any existing test data"""
+		# Clean up dental patients
+		existing_dental_patients = frappe.get_all("Dental Patient", 
+			filters={"name": ["like", "DP-TEST-%"]}, pluck="name")
+		for dp_name in existing_dental_patients:
+			frappe.delete_doc("Dental Patient", dp_name, force=True)
+		
+		# Clean up patients
+		existing_patients = frappe.get_all("Patient", 
+			filters={"name": ["like", "PAT-TEST-%"]}, pluck="name")
+		for p_name in existing_patients:
+			frappe.delete_doc("Patient", p_name, force=True)
 	
 	def tearDown(self):
 		# Clean up test data
-		if frappe.db.exists("Dental Patient", "PAT-TEST-001"):
-			frappe.delete_doc("Dental Patient", "PAT-TEST-001")
-		if frappe.db.exists("Patient", "PAT-TEST-001"):
-			frappe.delete_doc("Patient", "PAT-TEST-001") 
+		try:
+			if frappe.db.exists("Dental Patient", self.dental_patient_id):
+				frappe.delete_doc("Dental Patient", self.dental_patient_id, force=True)
+			if frappe.db.exists("Patient", self.patient_id):
+				frappe.delete_doc("Patient", self.patient_id, force=True)
+		except Exception:
+			pass  # Ignore cleanup errors 

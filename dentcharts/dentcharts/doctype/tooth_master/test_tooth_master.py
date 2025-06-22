@@ -91,17 +91,23 @@ class TestToothMaster(unittest.TestCase):
 	
 	def test_create_standard_teeth(self):
 		# Test the static method for creating all teeth
-		# First, ensure no teeth exist
+		from dentcharts.dentcharts.doctype.tooth_master.tooth_master import ToothMaster
+		
+		# Get existing count
 		existing_count = frappe.db.count("Tooth Master", {"dentition_type": "Permanent"})
 		
-		# Create standard teeth
+		# Create standard teeth (this should handle duplicates gracefully)
 		result = ToothMaster.create_standard_teeth()
 		
-		# Check that teeth were created
-		new_count = frappe.db.count("Tooth Master", {"dentition_type": "Permanent"})
-		self.assertGreater(new_count, existing_count)
+		# Check that we have the expected number of permanent teeth (32)
+		final_count = frappe.db.count("Tooth Master", {"dentition_type": "Permanent"})
+		self.assertEqual(final_count, 32, "Should have exactly 32 permanent teeth")
 		
 		# Verify specific teeth exist with FDI numbering
+		self.assertTrue(frappe.db.exists("Tooth Master", "11"), "Tooth 11 should exist")
+		self.assertTrue(frappe.db.exists("Tooth Master", "48"), "Tooth 48 should exist")
+		
+		# Verify tooth details
 		tooth_11 = frappe.get_doc("Tooth Master", "11")
 		self.assertEqual(tooth_11.tooth_name, "Upper Right Central Incisor")
 		self.assertEqual(tooth_11.tooth_type, "Incisor")
