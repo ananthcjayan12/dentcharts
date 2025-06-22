@@ -12,6 +12,8 @@ class TestDentalPatient(unittest.TestCase):
 			patient = frappe.get_doc({
 				"doctype": "Patient",
 				"patient_name": "Test Patient",
+				"first_name": "Test",
+				"last_name": "Patient",
 				"name": "PAT-TEST-001",
 				"sex": "Male"
 			})

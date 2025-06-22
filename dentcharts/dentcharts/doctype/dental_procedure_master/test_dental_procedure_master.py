@@ -25,7 +25,9 @@ class TestDentalProcedureMaster(unittest.TestCase):
 		
 		# Check that it was created successfully
 		self.assertEqual(procedure.procedure_name, "Test Filling")
-		self.assertEqual(procedure.currency, "USD")  # Should default to USD
+		# Check that currency is set (should default to system default currency)
+		default_currency = frappe.db.get_single_value("Global Defaults", "default_currency")
+		self.assertEqual(procedure.currency, default_currency or "INR")
 		
 	def test_duration_validation(self):
 		# Test invalid duration (0 minutes)
@@ -102,8 +104,10 @@ class TestDentalProcedureMaster(unittest.TestCase):
 		})
 		procedure.insert()
 		
-		# Should default to USD or user's default currency
+		# Should default to system default currency
 		self.assertIsNotNone(procedure.currency)
+		default_currency = frappe.db.get_single_value("Global Defaults", "default_currency")
+		self.assertEqual(procedure.currency, default_currency or "INR")
 		
 		# Clean up
 		procedure.delete()

@@ -12,6 +12,8 @@ class TestDentalPractitioner(unittest.TestCase):
 			practitioner = frappe.get_doc({
 				"doctype": "Healthcare Practitioner",
 				"practitioner_name": "Dr. Test Dentist",
+				"first_name": "Test",
+				"last_name": "Dentist",
 				"name": "HP-TEST-001",
 				"mobile": "1234567890"
 			})
