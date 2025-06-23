@@ -246,6 +246,13 @@ workspaces = [
 # 	"filters": "dentcharts.utils.jinja_filters"
 # }
 
+# Fixtures
+# --------
+
+fixtures = [
+	"Workspace"
+]
+
 # Installation
 # ------------
 
