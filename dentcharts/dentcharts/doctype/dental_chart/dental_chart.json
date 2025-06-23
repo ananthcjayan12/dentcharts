@@ -18,6 +18,7 @@
   "column_break_6",
   "status",
   "chart_type",
+  "dentition_type",
   "clinic",
   "clinic_name",
   "chart_details_section",
@@ -115,6 +116,15 @@
    "fieldtype": "Select",
    "label": "Chart Type",
    "options": "Comprehensive\nLimited Exam\nEmergency\nFollow-up\nConsultation"
+  },
+  {
+   "default": "Permanent",
+   "fieldname": "dentition_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Dentition Type",
+   "options": "Permanent\nPrimary\nMixed",
+   "reqd": 1
   },
   {
    "fieldname": "clinic",

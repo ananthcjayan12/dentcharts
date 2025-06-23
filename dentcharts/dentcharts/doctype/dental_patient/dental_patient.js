@@ -83,30 +83,60 @@ frappe.ui.form.on('Dental Patient', {
 	},
 	
 	create_new_dental_chart: function(frm) {
-		// Get default dentist if available
-		frappe.call({
-			method: 'frappe.client.get_list',
-			args: {
-				doctype: 'Healthcare Practitioner',
-				filters: {
-					department: ['like', '%dent%']
+		// Show dialog to choose dentition type
+		let d = new frappe.ui.Dialog({
+			title: __('Create New Dental Chart'),
+			fields: [
+				{
+					fieldtype: 'Select',
+					fieldname: 'dentition_type',
+					label: __('Dentition Type'),
+					options: ['Permanent', 'Primary', 'Mixed'],
+					default: 'Permanent',
+					reqd: 1,
+					description: __('Select the type of teeth to chart:<br>• Permanent: Adult teeth (32 teeth)<br>• Primary: Baby teeth (20 teeth)<br>• Mixed: Both permanent and primary teeth')
 				},
-				fields: ['name', 'practitioner_name'],
-				limit: 1
-			},
-			callback: function(r) {
-				let default_dentist = r.message && r.message.length > 0 ? r.message[0].name : '';
-				
-				// Create new dental chart
-				frappe.new_doc('Dental Chart', {
-					patient: frm.doc.healthcare_patient,
-					patient_name: frm.doc.patient_name,
-					dentist: default_dentist,
-					chart_date: frappe.datetime.nowdate(),
-					status: 'Draft'
+				{
+					fieldtype: 'Select',
+					fieldname: 'chart_type',
+					label: __('Chart Type'),
+					options: ['Comprehensive', 'Limited Exam', 'Emergency', 'Follow-up', 'Consultation'],
+					default: 'Comprehensive',
+					reqd: 1
+				}
+			],
+			primary_action_label: __('Create Chart'),
+			primary_action: function(values) {
+				// Get default dentist if available
+				frappe.call({
+					method: 'frappe.client.get_list',
+					args: {
+						doctype: 'Healthcare Practitioner',
+						filters: {
+							department: ['like', '%dent%']
+						},
+						fields: ['name', 'practitioner_name'],
+						limit: 1
+					},
+					callback: function(r) {
+						let default_dentist = r.message && r.message.length > 0 ? r.message[0].name : '';
+						
+						// Create new dental chart with selected dentition type
+						frappe.new_doc('Dental Chart', {
+							patient: frm.doc.healthcare_patient,
+							patient_name: frm.doc.patient_name,
+							dentist: default_dentist,
+							chart_date: frappe.datetime.nowdate(),
+							status: 'Draft',
+							dentition_type: values.dentition_type,
+							chart_type: values.chart_type
+						});
+					}
 				});
+				d.hide();
 			}
 		});
+		d.show();
 	},
 	
 	healthcare_patient: function(frm) {

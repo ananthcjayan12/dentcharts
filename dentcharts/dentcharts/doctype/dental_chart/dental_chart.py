@@ -44,6 +44,9 @@ class DentalChart(Document):
 		if not self.chart_type:
 			self.chart_type = "Comprehensive"
 		
+		if not self.dentition_type:
+			self.dentition_type = "Permanent"
+		
 		# Set created by and created on for new documents
 		if self.is_new():
 			self.created_by = frappe.session.user
@@ -157,16 +160,41 @@ class DentalChart(Document):
 			"patient": self.patient_name,
 			"chart_date": self.chart_date,
 			"dentist": self.dentist_name,
+			"dentition_type": self.dentition_type or "Permanent",
 			"teeth": {}
 		}
 		
-		# Initialize all 32 teeth
-		for i in range(11, 49):  # FDI numbering
-			if i <= 18 or i >= 21 and i <= 28 or i >= 31 and i <= 38 or i >= 41 and i <= 48:
-				chart_data["teeth"][str(i)] = {
+		# Initialize teeth based on dentition type
+		if self.dentition_type in ["Permanent", "Mixed"]:
+			# Add permanent teeth (32 teeth - FDI numbering)
+			for i in range(11, 49):  # FDI numbering
+				if i <= 18 or i >= 21 and i <= 28 or i >= 31 and i <= 38 or i >= 41 and i <= 48:
+					chart_data["teeth"][str(i)] = {
+						"conditions": [],
+						"procedures": [],
+						"status": "healthy",
+						"type": "permanent"
+					}
+		
+		if self.dentition_type in ["Primary", "Mixed"]:
+			# Add primary teeth (20 teeth - Palmer notation)
+			primary_teeth_codes = [
+				# Upper Right (E, D, C, B, A)
+				"UR-E", "UR-D", "UR-C", "UR-B", "UR-A",
+				# Upper Left (A, B, C, D, E)
+				"UL-A", "UL-B", "UL-C", "UL-D", "UL-E",
+				# Lower Left (A, B, C, D, E)
+				"LL-A", "LL-B", "LL-C", "LL-D", "LL-E",
+				# Lower Right (E, D, C, B, A)
+				"LR-E", "LR-D", "LR-C", "LR-B", "LR-A"
+			]
+			
+			for tooth_code in primary_teeth_codes:
+				chart_data["teeth"][tooth_code] = {
 					"conditions": [],
 					"procedures": [],
-					"status": "healthy"
+					"status": "healthy",
+					"type": "primary"
 				}
 		
 		# Add conditions
@@ -241,16 +269,99 @@ class DentalChart(Document):
 			"total_procedures": len(planned_procedures)
 		}
 	
+	def get_available_teeth(self):
+		"""Get list of available teeth based on dentition type"""
+		available_teeth = []
+		
+		if self.dentition_type in ["Permanent", "Mixed"]:
+			# Add permanent teeth
+			for i in range(11, 49):
+				if i <= 18 or i >= 21 and i <= 28 or i >= 31 and i <= 38 or i >= 41 and i <= 48:
+					available_teeth.append(str(i))
+		
+		if self.dentition_type in ["Primary", "Mixed"]:
+			# Add primary teeth
+			primary_teeth = [
+				"UR-E", "UR-D", "UR-C", "UR-B", "UR-A",
+				"UL-A", "UL-B", "UL-C", "UL-D", "UL-E",
+				"LL-A", "LL-B", "LL-C", "LL-D", "LL-E",
+				"LR-E", "LR-D", "LR-C", "LR-B", "LR-A"
+			]
+			available_teeth.extend(primary_teeth)
+		
+		return available_teeth
+	
+	def get_tooth_display_name(self, tooth_number):
+		"""Get display name for a tooth"""
+		try:
+			tooth_master = frappe.get_cached_doc("Tooth Master", tooth_number)
+			return tooth_master.tooth_name
+		except:
+			# Fallback for tooth numbers not in master
+			if tooth_number.startswith(("UR-", "UL-", "LL-", "LR-")):
+				# Primary tooth
+				quadrant_map = {
+					"UR": "Upper Right",
+					"UL": "Upper Left", 
+					"LL": "Lower Left",
+					"LR": "Lower Right"
+				}
+				letter_map = {
+					"A": "Central Incisor",
+					"B": "Lateral Incisor", 
+					"C": "Canine",
+					"D": "First Molar",
+					"E": "Second Molar"
+				}
+				parts = tooth_number.split("-")
+				if len(parts) == 2:
+					quadrant = quadrant_map.get(parts[0], parts[0])
+					letter = letter_map.get(parts[1], parts[1])
+					return f"{quadrant} {letter} (Primary)"
+			return tooth_number
+
 	@staticmethod
-	def create_chart_for_patient(patient, dentist, chart_type="Comprehensive"):
+	def create_chart_for_patient(patient, dentist, chart_type="Comprehensive", dentition_type="Permanent"):
 		"""Create a new dental chart for a patient"""
 		chart = frappe.get_doc({
 			"doctype": "Dental Chart",
 			"patient": patient,
 			"dentist": dentist,
 			"chart_type": chart_type,
+			"dentition_type": dentition_type,
 			"chart_date": today(),
 			"status": "Draft"
 		})
 		chart.insert()
-		return chart 
+		return chart
+
+
+@frappe.whitelist()
+def get_available_teeth_for_chart(dentition_type):
+	"""Get list of available teeth based on dentition type"""
+	available_teeth = []
+	
+	if dentition_type in ["Permanent", "Mixed"]:
+		# Add permanent teeth
+		for i in range(11, 49):
+			if i <= 18 or i >= 21 and i <= 28 or i >= 31 and i <= 38 or i >= 41 and i <= 48:
+				available_teeth.append(str(i))
+	
+	if dentition_type in ["Primary", "Mixed"]:
+		# Add primary teeth
+		primary_teeth = [
+			"UR-E", "UR-D", "UR-C", "UR-B", "UR-A",
+			"UL-A", "UL-B", "UL-C", "UL-D", "UL-E",
+			"LL-A", "LL-B", "LL-C", "LL-D", "LL-E",
+			"LR-E", "LR-D", "LR-C", "LR-B", "LR-A"
+		]
+		available_teeth.extend(primary_teeth)
+	
+	return sorted(available_teeth)
+
+
+@frappe.whitelist()
+def get_chart_data(chart_name):
+	"""Get chart data for visualization"""
+	chart = frappe.get_doc("Dental Chart", chart_name)
+	return chart.get_tooth_chart_data() 
