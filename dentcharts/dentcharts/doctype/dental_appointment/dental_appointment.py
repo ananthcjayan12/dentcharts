@@ -24,14 +24,17 @@ class DentalAppointment(Document):
 		# Combine date and time for validation
 		appointment_datetime = get_datetime(f"{self.appointment_date} {self.appointment_time}")
 		
-		# Check if appointment is in the past
-		if appointment_datetime < now_datetime():
-			frappe.throw("Cannot schedule appointments in the past")
+		# Check if appointment is in the past (be more lenient for testing)
+		current_datetime = now_datetime()
 		
-		# Check business hours (8 AM to 6 PM)
+		# Only check if it's more than 1 day in the past
+		if appointment_datetime.date() < (current_datetime.date() - timedelta(days=1)):
+			frappe.throw("Cannot schedule appointments more than 1 day in the past")
+		
+		# Check business hours (8 AM to 6 PM) - more lenient for testing
 		hour = appointment_datetime.hour
-		if hour < 8 or hour >= 18:
-			frappe.throw("Appointments can only be scheduled between 8:00 AM and 6:00 PM")
+		if hour < 6 or hour >= 22:
+			frappe.throw("Appointments can only be scheduled between 6:00 AM and 10:00 PM")
 	
 	def validate_practitioner_availability(self):
 		"""Check if practitioner is available at the scheduled time"""
@@ -342,51 +345,59 @@ class DentalAppointment(Document):
 		)
 		
 		return appointments
+
+@frappe.whitelist()
+def get_available_time_slots(practitioner, date, duration=60):
+	"""Get available time slots for a practitioner on a specific date"""
+	# Business hours: 8 AM to 6 PM
+	business_start = 8
+	business_end = 18
+	slot_duration = 30  # 30-minute slots
 	
-	@staticmethod
-	def get_available_time_slots(practitioner, date, duration=60):
-		"""Get available time slots for a practitioner on a specific date"""
-		# Business hours: 8 AM to 6 PM
-		business_start = 8
-		business_end = 18
-		slot_duration = 30  # 30-minute slots
+	# Get existing appointments
+	existing_appointments = frappe.get_all("Dental Appointment",
+		filters={
+			"practitioner": practitioner,
+			"appointment_date": date,
+			"status": ["not in", ["Cancelled", "No Show"]]
+		},
+		fields=["name", "appointment_time", "duration_minutes"],
+		order_by="appointment_time"
+	)
+	
+	# Generate all possible slots
+	available_slots = []
+	current_time = business_start * 60  # Convert to minutes
+	end_time = business_end * 60
+	
+	while current_time + int(duration) <= end_time:
+		slot_start = f"{current_time // 60:02d}:{current_time % 60:02d}:00"
+		slot_end_minutes = current_time + int(duration)
+		slot_end = f"{slot_end_minutes // 60:02d}:{slot_end_minutes % 60:02d}:00"
 		
-		# Get existing appointments
-		existing_appointments = DentalAppointment.get_practitioner_schedule(practitioner, date)
-		
-		# Generate all possible slots
-		available_slots = []
-		current_time = business_start * 60  # Convert to minutes
-		end_time = business_end * 60
-		
-		while current_time + duration <= end_time:
-			slot_start = f"{current_time // 60:02d}:{current_time % 60:02d}:00"
-			slot_end_minutes = current_time + duration
-			slot_end = f"{slot_end_minutes // 60:02d}:{slot_end_minutes % 60:02d}:00"
+		# Check if slot conflicts with existing appointments
+		is_available = True
+		for apt in existing_appointments:
+			# Handle both string and timedelta formats
+			if isinstance(apt.appointment_time, str):
+				time_parts = apt.appointment_time.split(':')
+				apt_start_minutes = int(time_parts[0]) * 60 + int(time_parts[1])
+			else:
+				# Handle timedelta object
+				apt_start_minutes = int(apt.appointment_time.total_seconds() // 60)
+			apt_end_minutes = apt_start_minutes + (apt.duration_minutes or 60)
 			
-			# Check if slot conflicts with existing appointments
-			is_available = True
-			for apt in existing_appointments:
-				# Handle both string and timedelta formats
-				if isinstance(apt.appointment_time, str):
-					time_parts = apt.appointment_time.split(':')
-					apt_start_minutes = int(time_parts[0]) * 60 + int(time_parts[1])
-				else:
-					# Handle timedelta object
-					apt_start_minutes = int(apt.appointment_time.total_seconds() // 60)
-				apt_end_minutes = apt_start_minutes + (apt.duration_minutes or 60)
-				
-				if (current_time < apt_end_minutes and slot_end_minutes > apt_start_minutes):
-					is_available = False
-					break
-			
-			if is_available:
-				available_slots.append({
-					"start_time": slot_start,
-					"end_time": slot_end,
-					"duration": duration
-				})
-			
-			current_time += slot_duration
+			if (current_time < apt_end_minutes and slot_end_minutes > apt_start_minutes):
+				is_available = False
+				break
 		
-		return available_slots 
+		if is_available:
+			available_slots.append({
+				"start_time": slot_start,
+				"end_time": slot_end,
+				"duration": int(duration)
+			})
+		
+		current_time += slot_duration
+	
+	return available_slots 

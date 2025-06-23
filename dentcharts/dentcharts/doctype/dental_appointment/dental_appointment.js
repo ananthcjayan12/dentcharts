@@ -287,7 +287,7 @@ function get_practitioner_details(frm) {
 
 function check_practitioner_availability(frm) {
 	frappe.call({
-		method: 'dentcharts.dentcharts.doctype.dental_appointment.dental_appointment.DentalAppointment.get_available_time_slots',
+		method: 'dentcharts.dentcharts.doctype.dental_appointment.dental_appointment.get_available_time_slots',
 		args: {
 			practitioner: frm.doc.practitioner,
 			date: frm.doc.appointment_date,
