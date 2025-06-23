@@ -51,7 +51,7 @@ class TreatmentPlan(Document):
 					if not item.estimated_duration:
 						item.estimated_duration = procedure.duration_minutes
 					if not item.insurance_coverage_percentage:
-						item.insurance_coverage_percentage = procedure.insurance_coverage_percentage
+						item.insurance_coverage_percentage = procedure.insurance_coverage
 				except frappe.DoesNotExistError:
 					pass
 			

@@ -48,7 +48,7 @@ class TreatmentPlanItem(Document):
 				if not self.estimated_duration:
 					self.estimated_duration = procedure_master.duration_minutes
 				if not self.insurance_coverage_percentage:
-					self.insurance_coverage_percentage = procedure_master.insurance_coverage_percentage
+					self.insurance_coverage_percentage = procedure_master.insurance_coverage
 				
 				# Set urgency flag for emergency procedures
 				if procedure_master.category == "Emergency" and not self.urgency_flag:
