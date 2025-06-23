@@ -272,17 +272,17 @@ function show_tooth_action_dialog(frm, tooth_number) {
 				fieldtype: 'Section Break',
 				label: __('Actions')
 			}
-		]
+		],
+		primary_action_label: __('Add Condition'),
+		primary_action: function() {
+			d.hide();
+			add_tooth_condition_for_tooth(frm, tooth_number);
+		}
 	});
 
-	// Add condition button
-	d.set_primary_action(__('Add Condition'), function() {
-		d.hide();
-		add_tooth_condition_for_tooth(frm, tooth_number);
-	});
-
-	// Add procedure button
-	d.set_secondary_action(__('Add Procedure'), function() {
+	// Add procedure button using the correct method
+	d.set_secondary_action_label(__('Add Procedure'));
+	d.set_secondary_action(function() {
 		d.hide();
 		add_tooth_procedure_for_tooth(frm, tooth_number);
 	});
