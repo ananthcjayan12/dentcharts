@@ -730,7 +730,9 @@ def generate_sample_data_for_testing():
                     "sex": "Male" if i % 2 == 0 else "Female",
                     "dob": getdate() - timedelta(days=(25 + i*5)*365),
                     "mobile": f"+1-555-000{i+2}",
-                    "email": f"test.patient{i+1}@testdental.com"
+                    "email": f"test.patient.{i+1}@testdental.com",
+                    "customer_group": "Individual",
+                    "territory": "United States"
                 })
                 healthcare_patient.insert()
                 
@@ -738,9 +740,11 @@ def generate_sample_data_for_testing():
                     "doctype": "Dental Patient",
                     "patient_name": patient_name,
                     "healthcare_patient": healthcare_patient.name,
-                    "dental_history": "Test patient dental history",
+                    "dental_history": f"Patient has regular dental checkups. Age: {i+1}",
                     "emergency_contact": f"Emergency Contact {i+1}",
-                    "emergency_phone": f"+1-555-900{i+1}"
+                    "emergency_phone": f"+1-555-900{i+1}",
+                    "insurance_provider": random.choice(["Delta Dental", "Blue Cross", "Aetna", "MetLife", "None"]),
+                    "preferred_appointment_time": random.choice(["Morning", "Afternoon", "Evening"])
                 })
                 dental_patient.insert()
         
@@ -833,6 +837,18 @@ def generate_simple_test_data():
                         "email": f"testpatient{i+1}@simpledental.com"
                     })
                     patient.insert()
+                    
+                    # Create corresponding Dental Patient record
+                    dental_patient = frappe.get_doc({
+                        "doctype": "Dental Patient",
+                        "patient_name": patient_name,
+                        "healthcare_patient": patient.name,
+                        "dental_history": f"Test patient {i+1} dental history",
+                        "emergency_contact": f"Emergency Contact {i+1}",
+                        "emergency_phone": f"+1-555-{9000 + i:04d}"
+                    })
+                    dental_patient.insert()
+                    
                     test_patients.append(patient.name)
                 except Exception as e:
                     print(f"⚠️  Error creating patient {patient_name}: {str(e)}")
@@ -961,6 +977,12 @@ def generate_simple_test_data():
                 # Only insert if we have valid amounts
                 if invoice.total_amount > 0:
                     invoice.insert()
+                    # Submit the invoice so it can be found by reports (docstatus = 1)
+                    try:
+                        invoice.submit()
+                    except Exception:
+                        # If submission fails, just leave as draft
+                        pass
                     invoice_count += 1
         
         print(f"✅ Created {invoice_count} invoices")
