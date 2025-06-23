@@ -34,17 +34,25 @@ class DentalPatient(Document):
 		self.ensure_dental_chart_exists()
 	
 	def ensure_dental_chart_exists(self):
-		"""Ensure a dental chart exists for this patient"""
-		if not frappe.db.exists("Dental Chart", {"patient": self.healthcare_patient}):
+		"""Ensure a MASTER dental chart exists for this patient"""
+		# Check if a master chart already exists
+		existing_chart = frappe.db.exists("Dental Chart", {
+			"patient": self.healthcare_patient,
+			"chart_type": "Master Chart"
+		})
+		
+		if not existing_chart:
 			# Get a default practitioner - try multiple sources
 			default_dentist = self.get_default_practitioner()
 			
-			# Create a new dental chart for this patient
+			# Create a MASTER dental chart for this patient
 			chart_data = {
 				"doctype": "Dental Chart",
 				"patient": self.healthcare_patient,
-				"chart_type": "Comprehensive",
-				"status": "Draft"
+				"chart_type": "Master Chart",
+				"status": "Active",
+				"dentition_type": "Permanent",  # Default to permanent, can be changed
+				"notes": f"Master Dental Chart created for {self.patient_name}\nCreated on: {frappe.utils.now()}\n--- Patient Registration ---"
 			}
 			
 			# Only add dentist if we found one
@@ -53,6 +61,12 @@ class DentalPatient(Document):
 			
 			chart = frappe.get_doc(chart_data)
 			chart.insert(ignore_permissions=True)
+			
+			frappe.msgprint(
+				f"Master Dental Chart created successfully for {self.patient_name}",
+				title="Master Chart Created",
+				indicator="green"
+			)
 	
 	def get_default_practitioner(self):
 		"""Get a default practitioner for dental chart creation"""

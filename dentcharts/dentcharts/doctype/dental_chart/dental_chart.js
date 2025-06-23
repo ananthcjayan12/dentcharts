@@ -3,22 +3,35 @@
 
 frappe.ui.form.on('Dental Chart', {
 	refresh: function(frm) {
-		// Show interactive dental chart
+		// Show master chart header
 		if (!frm.is_new()) {
-			// Remove old chart if exists
+			// Add master chart indicator
 			frm.dashboard.clear_headline();
+			
+			if (frm.doc.chart_type === 'Master Chart') {
+				frm.dashboard.set_headline(`
+					<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+						<h4 style="margin: 0 0 5px 0;">🦷 Master Dental Chart - ${frm.doc.patient_name}</h4>
+						<p style="margin: 0; opacity: 0.9;">Lifetime dental record • Last updated: ${frappe.datetime.str_to_user(frm.doc.modified)}</p>
+					</div>
+				`);
+			}
 			
 			// Create interactive dental chart
 			create_interactive_dental_chart(frm);
 			
-			// Add traditional buttons as fallback
-			frm.add_custom_button(__('Add Condition (Manual)'), function() {
-				add_tooth_condition(frm);
-			});
+			// Add visit management buttons
+			frm.add_custom_button(__('Record Visit'), function() {
+				record_new_visit(frm);
+			}, __('Actions'));
 			
-			frm.add_custom_button(__('Add Procedure (Manual)'), function() {
-				add_tooth_procedure(frm);
-			});
+			frm.add_custom_button(__('View History'), function() {
+				show_dental_history(frm);
+			}, __('Actions'));
+			
+			frm.add_custom_button(__('Print Chart'), function() {
+				frm.print_doc();
+			}, __('Actions'));
 		}
 		
 		// Show dentition type info
@@ -242,28 +255,15 @@ function show_tooth_action_dialog(frm, tooth_number) {
 	frm.refresh_fields();
 	
 	// Get existing conditions and procedures for this tooth
-	// Debug: Log the data to console
-	console.log('Selected tooth:', tooth_number);
-	console.log('All conditions:', frm.doc.tooth_conditions);
-	console.log('All procedures:', frm.doc.tooth_procedures);
-	
 	let existing_conditions = (frm.doc.tooth_conditions || []).filter(c => {
-		console.log('Checking condition tooth:', c.tooth_number, 'against:', tooth_number);
-		// Handle both direct match and string conversion, also check if it's a link field
-		return c.tooth_number === tooth_number || 
-			   c.tooth_number === tooth_number.toString() ||
-			   (c.tooth_number && c.tooth_number.toString() === tooth_number.toString());
-	});
-	let existing_procedures = (frm.doc.tooth_procedures || []).filter(p => {
-		console.log('Checking procedure tooth:', p.tooth_number, 'against:', tooth_number);
-		// Handle both direct match and string conversion, also check if it's a link field
-		return p.tooth_number === tooth_number || 
-			   p.tooth_number === tooth_number.toString() ||
-			   (p.tooth_number && p.tooth_number.toString() === tooth_number.toString());
+		// Handle both direct match and string conversion
+		return String(c.tooth_number) === String(tooth_number);
 	});
 	
-	console.log('Filtered conditions:', existing_conditions);
-	console.log('Filtered procedures:', existing_procedures);
+	let existing_procedures = (frm.doc.tooth_procedures || []).filter(p => {
+		// Handle both direct match and string conversion
+		return String(p.tooth_number) === String(tooth_number);
+	});
 	
 	let tooth_info_html = `
 		<div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
@@ -717,4 +717,181 @@ function get_tooth_status_color(status) {
 		'treated': '#d4edda'
 	};
 	return colors[status] || '#f8f9fa';
+}
+
+function record_new_visit(frm) {
+	let d = new frappe.ui.Dialog({
+		title: __('Record New Visit'),
+		fields: [
+			{
+				fieldtype: 'HTML',
+				options: `<div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+					<h5 style="margin: 0 0 10px 0;">📅 New Visit Entry</h5>
+					<p style="margin: 0;">Record today's visit details. This will be added to the patient's master dental chart.</p>
+				</div>`
+			},
+			{
+				fieldtype: 'Date',
+				fieldname: 'visit_date',
+				label: __('Visit Date'),
+				default: frappe.datetime.nowdate(),
+				reqd: 1
+			},
+			{
+				fieldtype: 'Link',
+				fieldname: 'dentist',
+				label: __('Examining Dentist'),
+				options: 'Healthcare Practitioner',
+				default: frm.doc.dentist,
+				reqd: 1
+			},
+			{
+				fieldtype: 'Select',
+				fieldname: 'visit_type',
+				label: __('Visit Type'),
+				options: 'Regular Checkup\nEmergency\nFollow-up\nConsultation\nTreatment\nCleaning',
+				default: 'Regular Checkup',
+				reqd: 1
+			},
+			{
+				fieldtype: 'Small Text',
+				fieldname: 'chief_complaint',
+				label: __('Chief Complaint')
+			},
+			{
+				fieldtype: 'Text',
+				fieldname: 'visit_notes',
+				label: __('Visit Notes')
+			}
+		],
+		primary_action_label: __('Start Recording'),
+		primary_action: function(values) {
+			// Update chart with visit information
+			frm.set_value('chart_date', values.visit_date);
+			frm.set_value('dentist', values.dentist);
+			
+			// Add visit notes to existing notes
+			let current_notes = frm.doc.notes || '';
+			let visit_entry = `\n\n--- VISIT: ${values.visit_date} (${values.visit_type}) ---\n`;
+			visit_entry += `Dentist: ${values.dentist}\n`;
+			if (values.chief_complaint) {
+				visit_entry += `Chief Complaint: ${values.chief_complaint}\n`;
+			}
+			if (values.visit_notes) {
+				visit_entry += `Notes: ${values.visit_notes}\n`;
+			}
+			visit_entry += `--- End of Visit ---\n`;
+			
+			frm.set_value('notes', current_notes + visit_entry);
+			frm.save();
+			
+			d.hide();
+			frappe.show_alert({
+				message: __('Visit recorded successfully. Now click on teeth to add conditions/procedures.'),
+				indicator: 'green'
+			});
+		}
+	});
+	d.show();
+}
+
+function show_dental_history(frm) {
+	// Create a comprehensive history view
+	let conditions_by_date = {};
+	let procedures_by_date = {};
+	
+	// Group conditions by date
+	(frm.doc.tooth_conditions || []).forEach(condition => {
+		let date = condition.date_identified || 'Unknown Date';
+		if (!conditions_by_date[date]) conditions_by_date[date] = [];
+		conditions_by_date[date].push(condition);
+	});
+	
+	// Group procedures by date
+	(frm.doc.tooth_procedures || []).forEach(procedure => {
+		let date = procedure.planned_date || 'Unknown Date';
+		if (!procedures_by_date[date]) procedures_by_date[date] = [];
+		procedures_by_date[date].push(procedure);
+	});
+	
+	// Get all unique dates and sort them
+	let all_dates = [...new Set([...Object.keys(conditions_by_date), ...Object.keys(procedures_by_date)])];
+	all_dates.sort((a, b) => new Date(b) - new Date(a)); // Most recent first
+	
+	let history_html = `
+		<div style="padding: 20px;">
+			<h3>🦷 Complete Dental History - ${frm.doc.patient_name}</h3>
+			<p style="color: #6c757d; margin-bottom: 20px;">Master Chart Created: ${frappe.datetime.str_to_user(frm.doc.creation)}</p>
+	`;
+	
+	if (all_dates.length === 0) {
+		history_html += '<p style="text-align: center; color: #6c757d; font-style: italic;">No dental procedures or conditions recorded yet.</p>';
+	} else {
+		all_dates.forEach(date => {
+			if (date !== 'Unknown Date') {
+				history_html += `
+					<div style="border-left: 4px solid #007bff; padding-left: 15px; margin-bottom: 20px;">
+						<h5 style="color: #495057; margin-bottom: 10px;">📅 ${frappe.datetime.str_to_user(date)}</h5>
+				`;
+				
+				// Show conditions for this date
+				if (conditions_by_date[date]) {
+					history_html += '<div style="margin-bottom: 10px;"><strong>🦷 Conditions Identified:</strong><ul style="margin: 5px 0 0 20px;">';
+					conditions_by_date[date].forEach(condition => {
+						history_html += `
+							<li style="margin: 2px 0;">
+								<strong>Tooth ${condition.tooth_number}:</strong> ${condition.condition_code} (${condition.surface})
+								${condition.severity ? ` - ${condition.severity}` : ''}
+								${condition.notes ? `<br><small style="color: #6c757d;">${condition.notes}</small>` : ''}
+							</li>
+						`;
+					});
+					history_html += '</ul></div>';
+				}
+				
+				// Show procedures for this date
+				if (procedures_by_date[date]) {
+					history_html += '<div style="margin-bottom: 10px;"><strong>🔧 Procedures:</strong><ul style="margin: 5px 0 0 20px;">';
+					procedures_by_date[date].forEach(procedure => {
+						let status_color = procedure.status === 'Completed' ? '#28a745' : 
+										  procedure.status === 'In Progress' ? '#007bff' : '#6c757d';
+						history_html += `
+							<li style="margin: 2px 0;">
+								<strong>Tooth ${procedure.tooth_number}:</strong> ${procedure.procedure_code} (${procedure.surface})
+								<span style="color: ${status_color}; font-weight: bold;"> - ${procedure.status}</span>
+								${procedure.notes ? `<br><small style="color: #6c757d;">${procedure.notes}</small>` : ''}
+							</li>
+						`;
+					});
+					history_html += '</ul></div>';
+				}
+				
+				history_html += '</div>';
+			}
+		});
+	}
+	
+	// Add summary statistics
+	let total_conditions = (frm.doc.tooth_conditions || []).length;
+	let total_procedures = (frm.doc.tooth_procedures || []).length;
+	let completed_procedures = (frm.doc.tooth_procedures || []).filter(p => p.status === 'Completed').length;
+	let pending_procedures = total_procedures - completed_procedures;
+	
+	history_html += `
+		<div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-top: 20px;">
+			<h5>📊 Summary Statistics</h5>
+			<div style="display: flex; gap: 20px; flex-wrap: wrap;">
+				<div><strong>Total Conditions:</strong> ${total_conditions}</div>
+				<div><strong>Total Procedures:</strong> ${total_procedures}</div>
+				<div><strong>Completed:</strong> ${completed_procedures}</div>
+				<div><strong>Pending:</strong> ${pending_procedures}</div>
+			</div>
+		</div>
+	</div>`;
+	
+	frappe.msgprint({
+		title: __('Dental History'),
+		message: history_html,
+		wide: true
+	});
 } 

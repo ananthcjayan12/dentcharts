@@ -16,9 +16,9 @@ frappe.ui.form.on('Dental Patient', {
 				});
 			});
 			
-			// Add dental chart button with actual functionality
+			// Add dental chart button with master chart functionality
 			frm.add_custom_button(__('Dental Chart'), function() {
-				// Check if patient has existing dental charts
+				// Check if patient has existing master dental chart
 				frappe.call({
 					method: 'frappe.client.get_list',
 					args: {
@@ -26,55 +26,17 @@ frappe.ui.form.on('Dental Patient', {
 						filters: {
 							patient: frm.doc.healthcare_patient
 						},
-						fields: ['name', 'chart_date', 'status', 'dentist_name'],
-						order_by: 'chart_date desc',
+						fields: ['name', 'chart_date', 'status', 'dentist_name', 'creation'],
+						order_by: 'creation asc',
 						limit: 1
 					},
 					callback: function(r) {
 						if (r.message && r.message.length > 0) {
-							// Patient has existing charts, show options
-							let d = new frappe.ui.Dialog({
-								title: __('Dental Chart Options'),
-								fields: [
-									{
-										fieldtype: 'HTML',
-										options: `<p><strong>Latest Chart:</strong> ${r.message[0].name} (${frappe.datetime.str_to_user(r.message[0].chart_date)})</p>
-												 <p><strong>Status:</strong> ${r.message[0].status}</p>
-												 <p><strong>Dentist:</strong> ${r.message[0].dentist_name || 'Not specified'}</p>`
-									}
-								],
-								primary_action_label: __('View Latest Chart'),
-								primary_action: function() {
-									frappe.set_route('Form', 'Dental Chart', r.message[0].name);
-									d.hide();
-								}
-							});
-							
-							// Add custom buttons for other actions
-							d.set_secondary_action_label(__('Create New Chart'));
-							d.set_secondary_action(function() {
-								frm.create_new_dental_chart();
-								d.hide();
-							});
-							
-							// Add third button manually
-							d.$wrapper.find('.modal-footer').prepend(`
-								<button class="btn btn-default btn-sm" id="view-all-charts-btn">
-									${__('View All Charts')}
-								</button>
-							`);
-							
-							d.$wrapper.find('#view-all-charts-btn').click(function() {
-								frappe.set_route('List', 'Dental Chart', {
-									patient: frm.doc.healthcare_patient
-								});
-								d.hide();
-							});
-							
-							d.show();
+							// Patient has master chart, open it directly
+							frappe.set_route('Form', 'Dental Chart', r.message[0].name);
 						} else {
-							// No existing charts, create new one
-							frm.create_new_dental_chart();
+							// No existing chart, create master chart
+							frm.create_master_dental_chart();
 						}
 					}
 				});
@@ -82,30 +44,30 @@ frappe.ui.form.on('Dental Patient', {
 		}
 	},
 	
-	create_new_dental_chart: function(frm) {
-		// Show dialog to choose dentition type
+	create_master_dental_chart: function(frm) {
+		// Show dialog to choose dentition type for master chart
 		let d = new frappe.ui.Dialog({
-			title: __('Create New Dental Chart'),
+			title: __('Create Master Dental Chart'),
 			fields: [
 				{
-					fieldtype: 'Select',
-					fieldname: 'dentition_type',
-					label: __('Dentition Type'),
-					options: ['Permanent', 'Primary', 'Mixed'],
-					default: 'Permanent',
-					reqd: 1,
-					description: __('Select the type of teeth to chart:<br>• Permanent: Adult teeth (32 teeth)<br>• Primary: Baby teeth (20 teeth)<br>• Mixed: Both permanent and primary teeth')
+					fieldtype: 'HTML',
+					options: `<div style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
+						<h5 style="margin: 0 0 10px 0; color: #1565c0;">📋 Master Dental Chart</h5>
+						<p style="margin: 0; color: #424242;">This will create a permanent dental chart for ${frm.doc.patient_name}. 
+						All future visits and treatments will be recorded in this single chart.</p>
+					</div>`
 				},
 				{
 					fieldtype: 'Select',
-					fieldname: 'chart_type',
-					label: __('Chart Type'),
-					options: ['Comprehensive', 'Limited Exam', 'Emergency', 'Follow-up', 'Consultation'],
-					default: 'Comprehensive',
-					reqd: 1
+					fieldname: 'dentition_type',
+					label: __('Patient\'s Dentition Type'),
+					options: ['Permanent', 'Primary', 'Mixed'],
+					default: 'Permanent',
+					reqd: 1,
+					description: __('• Permanent: Adult teeth (32 teeth)<br>• Primary: Children with baby teeth (20 teeth)<br>• Mixed: Children with both baby and adult teeth')
 				}
 			],
-			primary_action_label: __('Create Chart'),
+			primary_action_label: __('Create Master Chart'),
 			primary_action: function(values) {
 				// Get default dentist if available
 				frappe.call({
@@ -121,15 +83,15 @@ frappe.ui.form.on('Dental Patient', {
 					callback: function(r) {
 						let default_dentist = r.message && r.message.length > 0 ? r.message[0].name : '';
 						
-						// Create new dental chart with selected dentition type
+						// Create master dental chart
 						frappe.new_doc('Dental Chart', {
 							patient: frm.doc.healthcare_patient,
 							patient_name: frm.doc.patient_name,
 							dentist: default_dentist,
 							chart_date: frappe.datetime.nowdate(),
-							status: 'Draft',
+							status: 'Active',
 							dentition_type: values.dentition_type,
-							chart_type: values.chart_type
+							chart_type: 'Master Chart'
 						});
 					}
 				});

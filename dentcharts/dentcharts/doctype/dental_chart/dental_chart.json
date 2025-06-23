@@ -111,11 +111,11 @@
    "reqd": 1
   },
   {
-   "default": "Comprehensive",
+   "default": "Master Chart",
    "fieldname": "chart_type",
    "fieldtype": "Select",
    "label": "Chart Type",
-   "options": "Comprehensive\nLimited Exam\nEmergency\nFollow-up\nConsultation"
+   "options": "Master Chart\nComprehensive\nLimited Exam\nEmergency\nFollow-up\nConsultation"
   },
   {
    "default": "Permanent",
