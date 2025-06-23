@@ -939,24 +939,31 @@ def generate_simple_test_data():
             if procedure:
                 procedure_master = frappe.get_doc("Dental Procedure Master", procedure)
                 
+                # Ensure we have a valid price
+                unit_price = procedure_master.standard_fee or 100  # Default to $100 if no price
+                if unit_price <= 0:
+                    unit_price = 100
+                
                 invoice.append("invoice_items", {
                     "item_description": procedure_master.procedure_name,
                     "procedure_code": procedure_master.procedure_code,
                     "quantity": 1,
-                    "unit_price": procedure_master.standard_fee,
-                    "total_price": procedure_master.standard_fee
+                    "unit_price": unit_price,
+                    "total_price": unit_price
                 })
                 
                 # Calculate totals
-                subtotal = procedure_master.standard_fee
+                subtotal = unit_price
                 tax_amount = subtotal * 0.08
                 invoice.subtotal = subtotal
                 invoice.tax_amount = tax_amount
                 invoice.total_amount = subtotal + tax_amount
                 invoice.outstanding_amount = subtotal + tax_amount
                 
-                invoice.insert()
-                invoice_count += 1
+                # Only insert if we have valid amounts
+                if invoice.total_amount > 0:
+                    invoice.insert()
+                    invoice_count += 1
         
         print(f"✅ Created {invoice_count} invoices")
         
