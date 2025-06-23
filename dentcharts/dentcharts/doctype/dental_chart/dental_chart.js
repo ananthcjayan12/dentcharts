@@ -238,24 +238,64 @@ function attach_tooth_click_handlers(frm) {
 }
 
 function show_tooth_action_dialog(frm, tooth_number) {
+	// Refresh form to ensure we have latest data
+	frm.refresh_fields();
+	
 	// Get existing conditions and procedures for this tooth
-	let existing_conditions = (frm.doc.tooth_conditions || []).filter(c => c.tooth_number === tooth_number);
-	let existing_procedures = (frm.doc.tooth_procedures || []).filter(p => p.tooth_number === tooth_number);
+	// Debug: Log the data to console
+	console.log('Selected tooth:', tooth_number);
+	console.log('All conditions:', frm.doc.tooth_conditions);
+	console.log('All procedures:', frm.doc.tooth_procedures);
+	
+	let existing_conditions = (frm.doc.tooth_conditions || []).filter(c => {
+		console.log('Checking condition tooth:', c.tooth_number, 'against:', tooth_number);
+		// Handle both direct match and string conversion, also check if it's a link field
+		return c.tooth_number === tooth_number || 
+			   c.tooth_number === tooth_number.toString() ||
+			   (c.tooth_number && c.tooth_number.toString() === tooth_number.toString());
+	});
+	let existing_procedures = (frm.doc.tooth_procedures || []).filter(p => {
+		console.log('Checking procedure tooth:', p.tooth_number, 'against:', tooth_number);
+		// Handle both direct match and string conversion, also check if it's a link field
+		return p.tooth_number === tooth_number || 
+			   p.tooth_number === tooth_number.toString() ||
+			   (p.tooth_number && p.tooth_number.toString() === tooth_number.toString());
+	});
+	
+	console.log('Filtered conditions:', existing_conditions);
+	console.log('Filtered procedures:', existing_procedures);
 	
 	let tooth_info_html = `
 		<div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
 			<h5 style="margin: 0 0 10px 0; color: #495057;">Tooth ${tooth_number}</h5>
 			${existing_conditions.length > 0 ? `
-				<p style="margin: 5px 0;"><strong>Existing Conditions:</strong></p>
+				<p style="margin: 5px 0;"><strong>🦷 Existing Conditions (${existing_conditions.length}):</strong></p>
 				<ul style="margin: 5px 0 10px 20px; padding: 0;">
-					${existing_conditions.map(c => `<li>${c.condition_code} (${c.surface})</li>`).join('')}
+					${existing_conditions.map(c => `
+						<li style="margin: 5px 0; padding: 5px; background: #fff3cd; border-radius: 3px;">
+							<strong>${c.condition_code || 'Unknown'}</strong> 
+							${c.condition_name ? `(${c.condition_name})` : ''} - ${c.surface || 'Unknown Surface'}
+							${c.severity ? `<br><small>Severity: ${c.severity}</small>` : ''}
+							${c.date_identified ? `<br><small>Date: ${c.date_identified}</small>` : ''}
+						</li>
+					`).join('')}
 				</ul>
 			` : '<p style="margin: 5px 0; color: #6c757d;">No existing conditions</p>'}
 			
 			${existing_procedures.length > 0 ? `
-				<p style="margin: 5px 0;"><strong>Existing Procedures:</strong></p>
+				<p style="margin: 5px 0;"><strong>🔧 Existing Procedures (${existing_procedures.length}):</strong></p>
 				<ul style="margin: 5px 0 10px 20px; padding: 0;">
-					${existing_procedures.map(p => `<li>${p.procedure_code} (${p.status})</li>`).join('')}
+					${existing_procedures.map(p => `
+						<li style="margin: 5px 0; padding: 5px; background: #d1ecf1; border-radius: 3px;">
+							<strong>${p.procedure_code || 'Unknown'}</strong> 
+							${p.procedure_name ? `(${p.procedure_name})` : ''} - ${p.surface || 'Unknown Surface'}
+							<span style="float: right; font-weight: bold; color: ${p.status === 'Completed' ? '#28a745' : p.status === 'In Progress' ? '#007bff' : '#6c757d'};">
+								${p.status || 'Unknown'}
+							</span>
+							${p.planned_date ? `<br><small>Planned: ${p.planned_date}</small>` : ''}
+							${p.completed_date ? `<br><small>Completed: ${p.completed_date}</small>` : ''}
+						</li>
+					`).join('')}
 				</ul>
 			` : '<p style="margin: 5px 0; color: #6c757d;">No existing procedures</p>'}
 		</div>
