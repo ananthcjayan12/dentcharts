@@ -27,6 +27,9 @@ def generate_all_test_data():
         # Generate appointments and procedures
         generate_appointments()
         
+        # Generate tooth procedures for treatment success metrics
+        generate_tooth_procedures()
+        
         # Generate treatment plans
         generate_treatment_plans()
         
@@ -394,6 +397,85 @@ def generate_appointments():
         
         current_date += timedelta(days=1)
 
+def generate_tooth_procedures():
+    """Generate Tooth Procedure records for treatment success metrics"""
+    try:
+        patients = frappe.get_all("Dental Patient", pluck="name")
+        practitioners = frappe.get_all("Healthcare Practitioner", pluck="name")
+        procedures = frappe.get_all("Dental Procedure Master", pluck="name")
+        teeth = frappe.get_all("Tooth Master", pluck="name")
+        
+        if not (patients and practitioners and procedures and teeth):
+            print("⚠️  Tooth Procedures: Missing required master data")
+            return
+        
+        # Generate procedures for the last 6 months
+        start_date = getdate() - timedelta(days=180)
+        end_date = getdate()
+        
+        procedure_count = 0
+        for _ in range(300):  # Generate 300 tooth procedures
+            procedure_master = frappe.get_doc("Dental Procedure Master", random.choice(procedures))
+            
+            # Random dates for procedures
+            procedure_date = start_date + timedelta(days=random.randint(0, 180))
+            
+            # Determine status based on date
+            if procedure_date < getdate() - timedelta(days=30):
+                status = random.choice(["Completed", "Completed", "Completed", "Cancelled"])
+            elif procedure_date < getdate():
+                status = random.choice(["Completed", "In Progress"])
+            else:
+                status = "Planned"
+            
+            # Calculate dates
+            planned_date = procedure_date
+            completed_date = None
+            if status == "Completed":
+                # Completed 0-7 days after planned date
+                completed_date = planned_date + timedelta(days=random.randint(0, 7))
+            
+            # Calculate fees
+            standard_fee = procedure_master.standard_fee
+            actual_fee = standard_fee * random.uniform(0.8, 1.2) if status == "Completed" else None
+            
+            # Add some complications (10% chance)
+            notes = f"Procedure performed on {procedure_date.strftime('%Y-%m-%d')}"
+            if random.random() < 0.1:
+                notes += ". Minor complication noted during procedure."
+            elif random.random() < 0.05:
+                notes += ". Problem with healing, follow-up required."
+            
+            tooth_procedure = frappe.get_doc({
+                "doctype": "Tooth Procedure",
+                "tooth_number": random.choice(teeth),
+                "procedure_code": procedure_master.name,
+                "surface": random.choice(["Whole Tooth", "Occlusal", "Mesial", "Distal", "Buccal", "Lingual"]),
+                "status": status,
+                "planned_date": planned_date,
+                "completed_date": completed_date,
+                "planned_by": "Administrator",
+                "performed_by": random.choice(practitioners) if status in ["Completed", "In Progress"] else None,
+                "duration_minutes": procedure_master.duration_minutes,
+                "standard_fee": standard_fee,
+                "actual_fee": actual_fee,
+                "insurance_covered": actual_fee * random.uniform(0.0, 0.8) if actual_fee else 0,
+                "notes": notes,
+                "follow_up_required": random.choice([0, 0, 0, 1])  # 25% need follow-up
+            })
+            
+            # Set follow-up date if required
+            if tooth_procedure.follow_up_required and completed_date:
+                tooth_procedure.follow_up_date = completed_date + timedelta(days=random.randint(7, 30))
+            
+            tooth_procedure.insert()
+            procedure_count += 1
+        
+        print(f"✅ Tooth Procedures: Created {procedure_count} procedures")
+        
+    except Exception as e:
+        print(f"⚠️  Tooth Procedures creation failed: {str(e)}")
+
 def generate_treatment_plans():
     """Generate treatment plans"""
     patients = frappe.get_all("Dental Patient", pluck="name")
@@ -419,7 +501,7 @@ def generate_treatment_plans():
         
         for sequence in range(1, num_items + 1):
             procedure_master = frappe.get_doc("Dental Procedure Master", random.choice(procedures))
-            estimated_cost = procedure_master.estimated_cost * random.uniform(0.8, 1.2)  # Vary cost slightly
+            estimated_cost = procedure_master.standard_fee * random.uniform(0.8, 1.2)  # Vary cost slightly
             
             plan_item = frappe.get_doc({
                 "doctype": "Treatment Plan Item",
@@ -427,7 +509,7 @@ def generate_treatment_plans():
                 "procedure": procedure_master.name,
                 "sequence": sequence,
                 "estimated_cost": estimated_cost,
-                "estimated_duration": procedure_master.estimated_duration,
+                "estimated_duration": procedure_master.duration_minutes,
                 "status": random.choice(["Planned", "Scheduled", "Completed"]),
                 "notes": f"Treatment item {sequence} for plan"
             })
@@ -449,16 +531,16 @@ def generate_invoices_and_payments():
     for appointment_name in completed_appointments[:100]:  # Generate invoices for first 100 completed appointments
         appointment = frappe.get_doc("Dental Appointment", appointment_name)
         
-        # Create Invoice
+        # Create Invoice with correct field names
         invoice = frappe.get_doc({
             "doctype": "Invoice",
             "patient": appointment.patient,
             "practitioner": appointment.practitioner,
-            "posting_date": appointment.appointment_date,
-            "due_date": appointment.appointment_date + timedelta(days=30),
-            "appointment": appointment.name,
-            "status": "Submitted",
-            "currency": "USD"
+            "invoice_date": appointment.appointment_date,  # Changed from posting_date
+            "due_date": add_days(appointment.appointment_date, 30),  # Use add_days function
+            "appointment_reference": appointment.name,  # Changed from appointment
+            "invoice_status": "Sent",  # Changed from status
+            "priority": "Normal"
         })
         
         # Add invoice items from appointment procedures
@@ -468,52 +550,54 @@ def generate_invoices_and_payments():
             fields=["procedure", "estimated_cost"]
         )
         
-        total = 0
+        subtotal = 0
         for proc in appointment_procedures:
             procedure_master = frappe.get_doc("Dental Procedure Master", proc.procedure)
             
-            invoice_item = frappe.get_doc({
-                "doctype": "Invoice Item",
-                "parent": invoice.name,
-                "parenttype": "Invoice",
-                "parentfield": "items",
-                "item_name": procedure_master.procedure_name,
-                "description": f"{procedure_master.procedure_name} - {procedure_master.description}",
+            # Create invoice item as child table entry
+            invoice.append("invoice_items", {
+                "item_description": procedure_master.procedure_name,
+                "procedure_code": procedure_master.procedure_code,
                 "quantity": 1,
-                "rate": proc.estimated_cost,
-                "amount": proc.estimated_cost
+                "unit_price": proc.estimated_cost,
+                "total_price": proc.estimated_cost
             })
-            invoice.append("items", invoice_item)
-            total += proc.estimated_cost
+            subtotal += proc.estimated_cost
         
-        invoice.total = total
-        invoice.grand_total = total
-        invoice.outstanding_amount = total
+        # Calculate totals with correct field names
+        tax_amount = subtotal * 0.08  # 8% tax
+        invoice.subtotal = subtotal
+        invoice.tax_amount = tax_amount
+        invoice.total_amount = subtotal + tax_amount  # Changed from grand_total
+        invoice.outstanding_amount = subtotal + tax_amount
+        invoice.patient_portion = subtotal + tax_amount
+        
         invoice.insert()
         
         # Create payment (80% of invoices get paid)
         if random.random() < 0.8:
-            payment_amount = total
+            payment_amount = invoice.total_amount
             if random.random() < 0.2:  # 20% partial payments
-                payment_amount = total * random.uniform(0.3, 0.8)
+                payment_amount = invoice.total_amount * random.uniform(0.3, 0.8)
             
             payment = frappe.get_doc({
                 "doctype": "Payment Entry",
                 "payment_type": "Receive",
                 "party_type": "Customer",
                 "party": appointment.patient,
-                "posting_date": appointment.appointment_date + timedelta(days=random.randint(0, 15)),
+                "posting_date": add_days(appointment.appointment_date, random.randint(0, 15)),
                 "paid_amount": payment_amount,
                 "received_amount": payment_amount,
                 "mode_of_payment": random.choice(["Cash", "Credit Card", "Check", "Insurance", "Bank Transfer"]),
                 "reference_no": f"PAY-{random.randint(10000, 99999)}",
-                "reference_date": appointment.appointment_date,
-                "invoice": invoice.name
+                "reference_date": appointment.appointment_date
             })
             payment.insert()
             
             # Update invoice outstanding
-            invoice.outstanding_amount = total - payment_amount
+            invoice.outstanding_amount = invoice.total_amount - payment_amount
+            invoice.payment_status = "Paid" if payment_amount >= invoice.total_amount else "Partially Paid"
+            invoice.paid_amount = payment_amount
             invoice.save()
 
 def get_test_data_summary():
@@ -522,7 +606,7 @@ def get_test_data_summary():
     
     doctypes = [
         "Dental Clinic", "Dental Practitioner", "Dental Patient",
-        "Dental Chart", "Tooth Condition", "Dental Appointment",
+        "Dental Chart", "Tooth Condition", "Tooth Procedure", "Dental Appointment",
         "Appointment Procedure", "Treatment Plan", "Treatment Plan Item",
         "Invoice", "Invoice Item", "Payment Entry"
     ]
