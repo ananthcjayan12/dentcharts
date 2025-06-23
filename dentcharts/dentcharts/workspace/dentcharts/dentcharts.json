@@ -1,0 +1,313 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"f1f8e3812a\", \"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total Patients\",\"col\":3}},{\"id\":\"326087361e\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total Appointments\",\"col\":3}},{\"id\":\"264b39da0e\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Today's Appointments\",\"col\":3}},{\"id\":\"e507c90d85\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Outstanding Invoices\",\"col\":3}},{\"id\":\"fKaNGh_f3X\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"LCsKfCbHFS\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Your Shortcuts</span>\",\"col\":12}},{\"id\":\"gtytowgpr9\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dental Patient\",\"col\":4}},{\"id\":\"cgh4dqonE3\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dental Appointment\",\"col\":4}},{\"id\":\"pw8ECGStt-\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Dental Chart\",\"col\":4}},{\"id\":\"irCA7TCgAO\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Treatment Plan\",\"col\":4}},{\"id\":\"wdgJqmB4mx\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Invoice\",\"col\":4}},{\"id\":\"oN5Gi4f4LN\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Payment Entry\",\"col\":4}},{\"id\":\"QAyRuJGfxG\",\"type\":\"spacer\",\"data\":{\"col\":12}},{\"id\":\"-K7NMpJiTM\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Reports &amp; Masters</span>\",\"col\":12}},{\"id\":\"M1PT6PedBj\",\"type\":\"card\",\"data\":{\"card_name\":\"Patient Management\",\"col\":4}},{\"id\":\"51eVEiCjvf\",\"type\":\"card\",\"data\":{\"card_name\":\"Appointments\",\"col\":4}},{\"id\":\"Mk_jHVQUPc\",\"type\":\"card\",\"data\":{\"card_name\":\"Clinical\",\"col\":4}},{\"id\":\"PwTxarr1_m\",\"type\":\"card\",\"data\":{\"card_name\":\"Masters\",\"col\":4}},{\"id\":\"W-3YAoPKn-\",\"type\":\"card\",\"data\":{\"card_name\":\"Billing\",\"col\":4}},{\"id\":\"6cc3885df2\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
+ "creation": "2024-01-01 00:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "fa fa-tooth",
+ "idx": 0,
+ "is_hidden": 0,
+ "label": "Dentcharts",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Patient Management",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Dental Patient",
+   "link_count": 0,
+   "link_to": "Dental Patient",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Dental Chart",
+   "link_count": 0,
+   "link_to": "Dental Chart",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Appointments",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Dental Appointment",
+   "link_count": 0,
+   "link_to": "Dental Appointment",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Treatment Plan",
+   "link_count": 0,
+   "link_to": "Treatment Plan",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Clinical",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Tooth Condition",
+   "link_count": 0,
+   "link_to": "Tooth Condition",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Tooth Procedure",
+   "link_count": 0,
+   "link_to": "Tooth Procedure",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Masters",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Dental Clinic",
+   "link_count": 0,
+   "link_to": "Dental Clinic",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Dental Practitioner",
+   "link_count": 0,
+   "link_to": "Dental Practitioner",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Dental Procedure Master",
+   "link_count": 0,
+   "link_to": "Dental Procedure Master",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Dental Condition Master",
+   "link_count": 0,
+   "link_to": "Dental Condition Master",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Tooth Master",
+   "link_count": 0,
+   "link_to": "Tooth Master",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Billing",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Invoice",
+   "link_count": 0,
+   "link_to": "Invoice",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Payment Entry",
+   "link_count": 0,
+   "link_to": "Payment Entry",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Insurance Claim",
+   "link_count": 0,
+   "link_to": "Insurance Claim",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Reports",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Patient Demographics",
+   "link_count": 0,
+   "link_to": "Patient Demographics",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Revenue Analysis",
+   "link_count": 0,
+   "link_to": "Revenue Analysis",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "dependencies": "",
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Treatment Success Metrics",
+   "link_count": 0,
+   "link_to": "Treatment Success Metrics",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2024-01-01 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Dentcharts",
+ "name": "Dentcharts",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 2.0,
+ "shortcuts": [
+  {
+   "color": "#ff6b6b",
+   "doc_view": "List",
+   "icon": "fa fa-user",
+   "label": "Dental Patient",
+   "link_to": "Dental Patient",
+   "type": "DocType"
+  },
+  {
+   "color": "#4ecdc4",
+   "doc_view": "List",
+   "icon": "fa fa-calendar",
+   "label": "Dental Appointment",
+   "link_to": "Dental Appointment",
+   "type": "DocType"
+  },
+  {
+   "color": "#feca57",
+   "doc_view": "List",
+   "icon": "fa fa-tooth",
+   "label": "Dental Chart",
+   "link_to": "Dental Chart",
+   "type": "DocType"
+  },
+  {
+   "color": "#ff9ff3",
+   "doc_view": "List",
+   "icon": "fa fa-list-alt",
+   "label": "Treatment Plan",
+   "link_to": "Treatment Plan",
+   "type": "DocType"
+  },
+  {
+   "color": "#45b7d1",
+   "doc_view": "List",
+   "icon": "fa fa-file-invoice",
+   "label": "Invoice",
+   "link_to": "Invoice",
+   "type": "DocType"
+  },
+  {
+   "color": "#96ceb4",
+   "doc_view": "List",
+   "icon": "fa fa-credit-card",
+   "label": "Payment Entry",
+   "link_to": "Payment Entry",
+   "type": "DocType"
+  }
+ ],
+ "title": "Dentcharts"
+} 
