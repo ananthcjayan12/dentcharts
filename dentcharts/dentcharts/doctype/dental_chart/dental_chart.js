@@ -130,9 +130,9 @@ function build_interactive_chart_html(frm, chart_data) {
 						<span style="color: #1565c0; font-weight: bold;">No teeth selected</span>
 					</div>
 					<div id="multi-actions" style="display: none; margin: 10px 0;">
-						<button class="btn btn-sm btn-primary" onclick="add_condition_to_selected()" style="margin: 2px;">Add Condition to Selected</button>
-						<button class="btn btn-sm btn-success" onclick="add_procedure_to_selected()" style="margin: 2px;">Add Procedure to Selected</button>
-						<button class="btn btn-sm btn-secondary" onclick="clear_selection()" style="margin: 2px;">Clear Selection</button>
+						<button class="btn btn-sm btn-primary" onclick="window.add_condition_to_selected()" style="margin: 2px;">Add Condition to Selected</button>
+						<button class="btn btn-sm btn-success" onclick="window.add_procedure_to_selected()" style="margin: 2px;">Add Procedure to Selected</button>
+						<button class="btn btn-sm btn-secondary" onclick="window.clear_selection()" style="margin: 2px;">Clear Selection</button>
 					</div>
 				</div>
 			</div>
@@ -334,7 +334,7 @@ function update_selection_info() {
 	}
 }
 
-function clear_selection() {
+window.clear_selection = function() {
 	window.selected_teeth = [];
 	$('.tooth-element').css({
 		'box-shadow': 'none',
@@ -416,7 +416,7 @@ function show_enhanced_tooth_dialog(frm, tooth_number) {
 			});
 			dialog_fields.push({
 				fieldtype: 'HTML',
-				options: `<button class="btn btn-sm btn-danger" onclick="remove_condition('${condition.name}')">Remove Condition</button>`
+				options: `<button class="btn btn-sm btn-danger" onclick="window.remove_condition('${condition.name}')">Remove Condition</button>`
 			});
 		});
 	}
@@ -469,7 +469,7 @@ function show_enhanced_tooth_dialog(frm, tooth_number) {
 			});
 			dialog_fields.push({
 				fieldtype: 'HTML',
-				options: `<button class="btn btn-sm btn-danger" onclick="remove_procedure('${procedure.name}')">Remove Procedure</button>`
+				options: `<button class="btn btn-sm btn-danger" onclick="window.remove_procedure('${procedure.name}')">Remove Procedure</button>`
 			});
 		});
 	}
@@ -484,8 +484,8 @@ function show_enhanced_tooth_dialog(frm, tooth_number) {
 		fieldtype: 'HTML',
 		options: `
 			<div style="display: flex; gap: 10px; justify-content: center; margin: 15px 0;">
-				<button class="btn btn-primary" onclick="add_new_condition_inline()">Add New Condition</button>
-				<button class="btn btn-success" onclick="add_new_procedure_inline()">Add New Procedure</button>
+				<button class="btn btn-primary" onclick="window.add_new_condition_inline()">Add New Condition</button>
+				<button class="btn btn-success" onclick="window.add_new_procedure_inline()">Add New Procedure</button>
 			</div>
 		`
 	});
@@ -611,8 +611,8 @@ function add_tooth_procedure_for_tooth(frm, selected_tooth) {
 	d.show();
 }
 
-// Multi-selection functions
-function add_condition_to_selected() {
+// Multi-selection functions - Attach to window for global access
+window.add_condition_to_selected = function() {
 	if (window.selected_teeth.length === 0) {
 		frappe.msgprint('Please select teeth first');
 		return;
@@ -685,7 +685,7 @@ function add_condition_to_selected() {
 	d.show();
 }
 
-function add_procedure_to_selected() {
+window.add_procedure_to_selected = function() {
 	if (window.selected_teeth.length === 0) {
 		frappe.msgprint('Please select teeth first');
 		return;
@@ -802,15 +802,70 @@ function save_tooth_changes(frm, tooth_number, existing_conditions, existing_pro
 	});
 }
 
-// Inline add functions (simplified for better UX)
-function add_new_condition_inline() {
+// Inline add functions (simplified for better UX) - Attach to window for global access
+window.add_new_condition_inline = function() {
 	add_tooth_condition_for_tooth(window.current_frm, window.current_tooth);
 	window.current_tooth_dialog.hide();
 }
 
-function add_new_procedure_inline() {
+window.add_new_procedure_inline = function() {
 	add_tooth_procedure_for_tooth(window.current_frm, window.current_tooth);
 	window.current_tooth_dialog.hide();
+}
+
+// Remove functions for inline editing
+window.remove_condition = function(condition_name) {
+	frappe.confirm(
+		'Are you sure you want to remove this condition?',
+		function() {
+			// Find and remove the condition
+			let frm = window.current_frm;
+			let condition_index = frm.doc.tooth_conditions.findIndex(c => c.name === condition_name);
+			if (condition_index > -1) {
+				frm.doc.tooth_conditions.splice(condition_index, 1);
+				frm.refresh_field('tooth_conditions');
+				frm.save();
+				
+				// Close dialog and refresh chart
+				window.current_tooth_dialog.hide();
+				setTimeout(() => {
+					create_interactive_dental_chart(frm);
+				}, 500);
+				
+				frappe.show_alert({
+					message: __('Condition removed successfully'),
+					indicator: 'green'
+				});
+			}
+		}
+	);
+}
+
+window.remove_procedure = function(procedure_name) {
+	frappe.confirm(
+		'Are you sure you want to remove this procedure?',
+		function() {
+			// Find and remove the procedure
+			let frm = window.current_frm;
+			let procedure_index = frm.doc.tooth_procedures.findIndex(p => p.name === procedure_name);
+			if (procedure_index > -1) {
+				frm.doc.tooth_procedures.splice(procedure_index, 1);
+				frm.refresh_field('tooth_procedures');
+				frm.save();
+				
+				// Close dialog and refresh chart
+				window.current_tooth_dialog.hide();
+				setTimeout(() => {
+					create_interactive_dental_chart(frm);
+				}, 500);
+				
+				frappe.show_alert({
+					message: __('Procedure removed successfully'),
+					indicator: 'green'
+				});
+			}
+		}
+	);
 }
 
 function show_tooth_details(frm, tooth_number, conditions, procedures) {
