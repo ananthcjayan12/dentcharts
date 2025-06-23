@@ -1116,16 +1116,18 @@ def debug_data():
         try:
             revenue_sql = """
             SELECT 
-                DATE_FORMAT(invoice_date, '%%Y-%%m') as period,
+                DATE_FORMAT(invoice_date, %s) as period,
                 COUNT(*) as invoice_count,
                 SUM(total_amount) as total_revenue
             FROM `tabInvoice` 
             WHERE invoice_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
-            GROUP BY DATE_FORMAT(invoice_date, '%%Y-%%m')
+            GROUP BY DATE_FORMAT(invoice_date, %s)
             ORDER BY period DESC
             LIMIT 5
             """
-            revenue_results = frappe.db.sql(revenue_sql, as_dict=True)
+            revenue_results = frappe.db.sql(revenue_sql, [
+                "%Y-%m", "%Y-%m"
+            ], as_dict=True)
             print(f"💰 Revenue Analysis Query Results ({len(revenue_results)}):")
             for result in revenue_results:
                 print(f"  - {result.period}: {result.invoice_count} invoices, ${result.total_revenue} revenue")
@@ -1163,4 +1165,146 @@ def debug_data():
         return {
             "success": False,
             "error": str(e)
-        } 
+        }
+
+@frappe.whitelist()
+def debug_report_queries():
+    """Debug the exact queries used by reports"""
+    try:
+        print("🔍 Testing exact report queries...")
+        
+        # Test Patient Demographics exact query
+        print("\n👥 Testing Patient Demographics Query:")
+        try:
+            demo_query = """
+            SELECT 
+                CASE 
+                    WHEN DATEDIFF(CURDATE(), p.dob) / 365.25 < 18 THEN 'Under 18'
+                    WHEN DATEDIFF(CURDATE(), p.dob) / 365.25 BETWEEN 18 AND 35 THEN '18-35'
+                    WHEN DATEDIFF(CURDATE(), p.dob) / 365.25 BETWEEN 36 AND 55 THEN '36-55'
+                    WHEN DATEDIFF(CURDATE(), p.dob) / 365.25 BETWEEN 56 AND 70 THEN '56-70'
+                    ELSE 'Over 70'
+                END as age_group,
+                COALESCE(p.sex, 'Unknown') as gender,
+                COUNT(*) as patient_count,
+                AVG(DATEDIFF(CURDATE(), p.dob) / 365.25) as avg_age
+            FROM `tabPatient` p
+            INNER JOIN `tabDental Patient` dp ON p.name = dp.healthcare_patient
+            WHERE 1=1
+            GROUP BY age_group, gender
+            ORDER BY 
+                CASE age_group
+                    WHEN 'Under 18' THEN 1
+                    WHEN '18-35' THEN 2  
+                    WHEN '36-55' THEN 3
+                    WHEN '56-70' THEN 4
+                    ELSE 5
+                END,
+                gender
+            """
+            demo_results = frappe.db.sql(demo_query, as_dict=True)
+            print(f"Results: {len(demo_results)} rows")
+            for row in demo_results[:3]:
+                print(f"  - {row.age_group}, {row.gender}: {row.patient_count} patients")
+        except Exception as e:
+            print(f"❌ Patient Demographics error: {str(e)}")
+        
+        # Test Revenue Analysis exact query  
+        print("\n💰 Testing Revenue Analysis Query:")
+        try:
+            from frappe.utils import add_months, getdate
+            from_date = add_months(getdate(), -12)
+            to_date = getdate()
+            
+            revenue_query = """
+            SELECT 
+                DATE_FORMAT(i.invoice_date, %s) as period,
+                SUM(i.total_amount) as total_revenue,
+                COUNT(i.name) as invoice_count,
+                AVG(i.total_amount) as avg_invoice_value,
+                SUM(i.outstanding_amount) as outstanding_amount
+            FROM `tabInvoice` i
+            WHERE i.docstatus = 1 
+            AND i.invoice_date BETWEEN %s AND %s
+            GROUP BY DATE_FORMAT(i.invoice_date, %s)
+            ORDER BY period
+            """
+            
+            revenue_results = frappe.db.sql(revenue_query, [
+                "%Y-%m", from_date, to_date, "%Y-%m"
+            ], as_dict=True)
+            print(f"Results: {len(revenue_results)} rows")
+            for row in revenue_results[:3]:
+                print(f"  - {row.period}: {row.invoice_count} invoices, ${row.total_revenue}")
+                
+            # Also test without docstatus filter
+            print("Testing without docstatus filter:")
+            revenue_query_no_status = """
+            SELECT 
+                DATE_FORMAT(i.invoice_date, '%%Y-%%m') as period,
+                SUM(i.total_amount) as total_revenue,
+                COUNT(i.name) as invoice_count,
+                i.docstatus
+            FROM `tabInvoice` i
+            WHERE i.invoice_date BETWEEN %s AND %s
+            GROUP BY DATE_FORMAT(i.invoice_date, '%%Y-%%m'), i.docstatus
+            ORDER BY period
+            """
+            no_status_results = frappe.db.sql(revenue_query_no_status, [from_date, to_date], as_dict=True)
+            print(f"Without docstatus filter: {len(no_status_results)} rows")
+            for row in no_status_results[:5]:
+                print(f"  - {row.period}: {row.invoice_count} invoices, ${row.total_revenue}, docstatus: {row.docstatus}")
+                
+        except Exception as e:
+            print(f"❌ Revenue Analysis error: {str(e)}")
+        
+        # Test Treatment Success exact query
+        print("\n🦷 Testing Treatment Success Query:")
+        try:
+            from frappe.utils import add_months, getdate
+            six_months_ago = add_months(getdate(), -6)
+            
+            treatment_query = """
+            SELECT 
+                tp.name as plan_name,
+                tpi.item_status,
+                tpi.completed_date,
+                tpi.actual_cost,
+                COUNT(*) as procedure_count
+            FROM `tabTreatment Plan` tp
+            INNER JOIN `tabTreatment Plan Item` tpi ON tp.name = tpi.parent
+            WHERE tpi.completed_date >= %s
+            GROUP BY tp.name, tpi.item_status
+            ORDER BY tp.name
+            LIMIT 10
+            """
+            
+            treatment_results = frappe.db.sql(treatment_query, [six_months_ago], as_dict=True)
+            print(f"Results: {len(treatment_results)} rows")
+            for row in treatment_results[:5]:
+                print(f"  - Plan {row.plan_name}: Status {row.item_status}, {row.procedure_count} procedures")
+                
+            # Test without date filter
+            print("Testing without date filter:")
+            treatment_query_no_date = """
+            SELECT 
+                tpi.item_status,
+                COUNT(*) as procedure_count,
+                AVG(tpi.actual_cost) as avg_cost
+            FROM `tabTreatment Plan Item` tpi
+            WHERE tpi.actual_cost IS NOT NULL AND tpi.actual_cost > 0
+            GROUP BY tpi.item_status
+            """
+            no_date_results = frappe.db.sql(treatment_query_no_date, as_dict=True)
+            print(f"Without date filter: {len(no_date_results)} rows")
+            for row in no_date_results:
+                print(f"  - Status {row.item_status}: {row.procedure_count} procedures, Avg: ${row.avg_cost}")
+                
+        except Exception as e:
+            print(f"❌ Treatment Success error: {str(e)}")
+        
+        return {"success": True}
+        
+    except Exception as e:
+        print(f"❌ Debug failed: {str(e)}")
+        return {"success": False, "error": str(e)} 
