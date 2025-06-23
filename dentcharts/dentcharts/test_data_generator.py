@@ -729,7 +729,7 @@ def generate_sample_data_for_testing():
                     "sex": "Male" if i % 2 == 0 else "Female",
                     "dob": getdate() - timedelta(days=(25 + i*5)*365),
                     "mobile": f"+1-555-000{i+2}",
-                    "email": f"test.patient{i+1}@test.com"
+                    "email": f"test.patient{i+1}@testdental.com"
                 })
                 healthcare_patient.insert()
                 
@@ -816,63 +816,116 @@ def generate_simple_test_data():
             dental_prac.insert()
             print("✅ Created test practitioner")
         
-        # 4. Generate some tooth procedures directly (for reports)
+        # 4. Create some simple patients for treatment plans
+        test_patients = []
+        for i in range(5):
+            patient_name = f"TEST-Simple-Patient-{i+1}"
+            if not frappe.db.exists("Patient", {"patient_name": patient_name}):
+                try:
+                    patient = frappe.get_doc({
+                        "doctype": "Patient",
+                        "first_name": f"TestPatient{i+1}",
+                        "patient_name": patient_name,
+                        "sex": "Male" if i % 2 == 0 else "Female",
+                        "dob": getdate() - timedelta(days=(30 + i*5)*365),
+                        "mobile": f"+1-555-{8000 + i:04d}",
+                        "email": f"testpatient{i+1}@simpledental.com"
+                    })
+                    patient.insert()
+                    test_patients.append(patient.name)
+                except Exception as e:
+                    print(f"⚠️  Error creating patient {patient_name}: {str(e)}")
+                    # Use a simple string reference instead
+                    test_patients.append(patient_name)
+            else:
+                test_patients.append(patient_name)
+        
+        print(f"✅ Created/referenced {len(test_patients)} test patients")
+        
+        # 5. Generate treatment plans with tooth procedures
         procedures = frappe.get_all("Dental Procedure Master", 
                                   filters=[["procedure_code", "like", "TEST-%"]], 
                                   pluck="name")
         teeth = frappe.get_all("Tooth Master", pluck="name")
         practitioners = frappe.get_all("Healthcare Practitioner", pluck="name")
         
-        if procedures and teeth and practitioners:
-            procedure_count = 0
-            for i in range(50):  # Generate 50 procedures
-                procedure_master = frappe.get_doc("Dental Procedure Master", random.choice(procedures))
-                
-                # Random dates for procedures (last 3 months)
-                procedure_date = getdate() - timedelta(days=random.randint(1, 90))
-                status = random.choice(["Completed", "Completed", "In Progress", "Planned"])
-                
-                completed_date = None
-                if status == "Completed":
-                    completed_date = procedure_date + timedelta(days=random.randint(0, 3))
-                
-                # Calculate fees
-                standard_fee = procedure_master.standard_fee
-                actual_fee = standard_fee * random.uniform(0.9, 1.1) if status == "Completed" else None
-                
-                # Add complications occasionally
-                notes = f"Test procedure performed on {procedure_date}"
-                if random.random() < 0.1:
-                    notes += ". Minor complication noted."
-                
-                tooth_procedure = frappe.get_doc({
-                    "doctype": "Tooth Procedure",
-                    "tooth_number": random.choice(teeth),
-                    "procedure_code": procedure_master.name,
-                    "surface": random.choice(["Whole Tooth", "Occlusal", "Mesial"]),
-                    "status": status,
-                    "planned_date": procedure_date,
-                    "completed_date": completed_date,
-                    "planned_by": "Administrator",
-                    "performed_by": random.choice(practitioners) if status in ["Completed", "In Progress"] else None,
-                    "duration_minutes": procedure_master.duration_minutes,
-                    "standard_fee": standard_fee,
-                    "actual_fee": actual_fee,
-                    "notes": notes
-                })
-                tooth_procedure.insert()
-                procedure_count += 1
+        if procedures and teeth and practitioners and test_patients:
+            treatment_plan_count = 0
+            total_tooth_procedures = 0
             
-            print(f"✅ Created {procedure_count} tooth procedures")
+            for i in range(10):  # Create 10 treatment plans
+                plan_date = getdate() - timedelta(days=random.randint(1, 90))
+                
+                treatment_plan = frappe.get_doc({
+                    "doctype": "Treatment Plan",
+                    "patient": random.choice(test_patients),
+                    "dentist": practitioners[0],
+                    "plan_date": plan_date,
+                    "plan_status": random.choice(["Active", "In Progress", "Completed"]),
+                    "priority_level": random.choice(["Routine", "Urgent"]),
+                    "total_estimated_cost": 0,
+                    "treatment_goals": f"Test treatment plan {i+1}",
+                    "chief_complaint": "Routine dental care"
+                })
+                
+                # Add treatment plan items as child records
+                total_cost = 0
+                num_procedures = random.randint(3, 8)  # 3-8 procedures per plan
+                
+                for j in range(num_procedures):
+                    procedure_master = frappe.get_doc("Dental Procedure Master", random.choice(procedures))
+                    
+                    # Calculate dates and status
+                    procedure_date = plan_date + timedelta(days=random.randint(0, 30))
+                    status = random.choice(["Completed", "Completed", "In Progress", "Planned"])
+                    
+                    completed_date = None
+                    if status == "Completed":
+                        completed_date = procedure_date + timedelta(days=random.randint(0, 3))
+                    
+                    # Calculate fees
+                    estimated_cost = procedure_master.standard_fee
+                    actual_cost = estimated_cost * random.uniform(0.9, 1.1) if status == "Completed" else None
+                    
+                    # Add complications occasionally
+                    notes = f"Test procedure {j+1} in plan {i+1}"
+                    if random.random() < 0.1:
+                        notes += ". Minor complication noted."
+                    
+                    # Add as child table record to plan_items
+                    treatment_plan.append("plan_items", {
+                        "treatment_sequence": j + 1,
+                        "procedure_code": procedure_master.name,
+                        "tooth_number": random.choice(teeth),
+                        "surface": random.choice(["Whole Tooth", "Occlusal", "Mesial", "Distal"]),
+                        "priority": random.choice(["Medium", "High"]),
+                        "item_status": status,
+                        "estimated_cost": estimated_cost,
+                        "actual_cost": actual_cost,
+                        "estimated_duration": procedure_master.duration_minutes,
+                        "actual_duration": procedure_master.duration_minutes if status == "Completed" else None,
+                        "completed_date": completed_date,
+                        "completed_by": practitioners[0] if status == "Completed" else None,
+                        "notes": notes
+                    })
+                    
+                    total_cost += actual_cost if actual_cost else estimated_cost
+                    total_tooth_procedures += 1
+                
+                treatment_plan.total_estimated_cost = total_cost
+                treatment_plan.insert()
+                treatment_plan_count += 1
+            
+            print(f"✅ Created {treatment_plan_count} treatment plans with {total_tooth_procedures} treatment plan items")
         
-        # 5. Generate some invoices
+        # 6. Generate some invoices
         invoice_count = 0
         for i in range(20):  # Generate 20 invoices
             invoice_date = getdate() - timedelta(days=random.randint(1, 90))
             
             invoice = frappe.get_doc({
                 "doctype": "Invoice",
-                "patient": f"TEST-Patient-{i+1}",  # Simple patient reference
+                "patient": random.choice(test_patients) if test_patients else f"TEST-Patient-{i+1}",
                 "practitioner": practitioners[0] if practitioners else "Dr. Test Dentist",
                 "invoice_date": invoice_date,
                 "due_date": add_days(invoice_date, 30),
