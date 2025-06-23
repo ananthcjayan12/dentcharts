@@ -47,16 +47,24 @@ frappe.ui.form.on('Dental Patient', {
 								primary_action: function() {
 									frappe.set_route('Form', 'Dental Chart', r.message[0].name);
 									d.hide();
-								},
-								secondary_action_label: __('Create New Chart'),
-								secondary_action: function() {
-									frm.create_new_dental_chart();
-									d.hide();
 								}
 							});
 							
-							// Add button to view all charts
-							d.set_secondary_action(__('View All Charts'), function() {
+							// Add custom buttons for other actions
+							d.set_secondary_action_label(__('Create New Chart'));
+							d.set_secondary_action(function() {
+								frm.create_new_dental_chart();
+								d.hide();
+							});
+							
+							// Add third button manually
+							d.$wrapper.find('.modal-footer').prepend(`
+								<button class="btn btn-default btn-sm" id="view-all-charts-btn">
+									${__('View All Charts')}
+								</button>
+							`);
+							
+							d.$wrapper.find('#view-all-charts-btn').click(function() {
 								frappe.set_route('List', 'Dental Chart', {
 									patient: frm.doc.healthcare_patient
 								});
