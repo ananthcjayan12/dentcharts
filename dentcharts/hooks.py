@@ -10,6 +10,173 @@ app_license = "mit"
 
 # required_apps = []
 
+# Workspaces
+# ----------
+
+workspaces = [
+	{
+		"name": "Dentcharts",
+		"title": "Dentcharts",
+		"icon": "fa fa-tooth",
+		"category": "Modules",
+		"is_standard": 1,
+		"module": "Dentcharts",
+		"color": "#0891b2",
+		"shortcuts": [
+			{
+				"type": "DocType",
+				"name": "Dental Patient",
+				"label": "Dental Patient",
+				"icon": "fa fa-user"
+			},
+			{
+				"type": "DocType", 
+				"name": "Dental Practitioner",
+				"label": "Dental Practitioner",
+				"icon": "fa fa-user-md"
+			},
+			{
+				"type": "DocType",
+				"name": "Dental Clinic", 
+				"label": "Dental Clinic",
+				"icon": "fa fa-hospital"
+			},
+			{
+				"type": "DocType",
+				"name": "Dental Appointment",
+				"label": "Dental Appointment", 
+				"icon": "fa fa-calendar"
+			},
+			{
+				"type": "DocType",
+				"name": "Dental Chart",
+				"label": "Dental Chart",
+				"icon": "fa fa-tooth"
+			},
+			{
+				"type": "DocType",
+				"name": "Treatment Plan",
+				"label": "Treatment Plan",
+				"icon": "fa fa-list-alt"
+			},
+			{
+				"type": "DocType",
+				"name": "Invoice",
+				"label": "Invoice",
+				"icon": "fa fa-file-invoice"
+			},
+			{
+				"type": "DocType",
+				"name": "Payment Entry",
+				"label": "Payment Entry", 
+				"icon": "fa fa-credit-card"
+			}
+		],
+		"cards": [
+			{
+				"name": "Patient Management",
+				"items": [
+					{
+						"type": "DocType",
+						"name": "Dental Patient",
+						"label": "Dental Patient"
+					},
+					{
+						"type": "DocType",
+						"name": "Dental Chart", 
+						"label": "Dental Chart"
+					}
+				]
+			},
+			{
+				"name": "Appointments",
+				"items": [
+					{
+						"type": "DocType",
+						"name": "Dental Appointment",
+						"label": "Dental Appointment"
+					},
+					{
+						"type": "DocType",
+						"name": "Treatment Plan",
+						"label": "Treatment Plan"  
+					}
+				]
+			},
+			{
+				"name": "Masters",
+				"items": [
+					{
+						"type": "DocType",
+						"name": "Dental Clinic",
+						"label": "Dental Clinic"
+					},
+					{
+						"type": "DocType", 
+						"name": "Dental Practitioner",
+						"label": "Dental Practitioner"
+					},
+					{
+						"type": "DocType",
+						"name": "Dental Procedure Master",
+						"label": "Dental Procedure Master"
+					},
+					{
+						"type": "DocType",
+						"name": "Dental Condition Master", 
+						"label": "Dental Condition Master"
+					},
+					{
+						"type": "DocType",
+						"name": "Tooth Master",
+						"label": "Tooth Master"
+					}
+				]
+			},
+			{
+				"name": "Billing",
+				"items": [
+					{
+						"type": "DocType",
+						"name": "Invoice",
+						"label": "Invoice"
+					},
+					{
+						"type": "DocType",
+						"name": "Payment Entry", 
+						"label": "Payment Entry"
+					},
+					{
+						"type": "DocType",
+						"name": "Insurance Claim",
+						"label": "Insurance Claim"
+					}
+				]
+			},
+			{
+				"name": "Reports",
+				"items": [
+					{
+						"type": "Report",
+						"name": "Patient Demographics",
+						"label": "Patient Demographics"
+					},
+					{
+						"type": "Report", 
+						"name": "Revenue Analysis",
+						"label": "Revenue Analysis"
+					},
+					{
+						"type": "Report",
+						"name": "Treatment Success Metrics",
+						"label": "Treatment Success Metrics"
+					}
+				]
+			}
+		]
+	}
+]
+
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
 # 	{
