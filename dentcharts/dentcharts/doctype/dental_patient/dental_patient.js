@@ -16,11 +16,89 @@ frappe.ui.form.on('Dental Patient', {
 				});
 			});
 			
-			// Add dental chart button (will be implemented in Phase 3)
+			// Add dental chart button with actual functionality
 			frm.add_custom_button(__('Dental Chart'), function() {
-				frappe.msgprint(__('Dental Chart functionality will be available in Phase 3'));
+				// Check if patient has existing dental charts
+				frappe.call({
+					method: 'frappe.client.get_list',
+					args: {
+						doctype: 'Dental Chart',
+						filters: {
+							patient: frm.doc.healthcare_patient
+						},
+						fields: ['name', 'chart_date', 'status', 'dentist_name'],
+						order_by: 'chart_date desc',
+						limit: 1
+					},
+					callback: function(r) {
+						if (r.message && r.message.length > 0) {
+							// Patient has existing charts, show options
+							let d = new frappe.ui.Dialog({
+								title: __('Dental Chart Options'),
+								fields: [
+									{
+										fieldtype: 'HTML',
+										options: `<p><strong>Latest Chart:</strong> ${r.message[0].name} (${frappe.datetime.str_to_user(r.message[0].chart_date)})</p>
+												 <p><strong>Status:</strong> ${r.message[0].status}</p>
+												 <p><strong>Dentist:</strong> ${r.message[0].dentist_name || 'Not specified'}</p>`
+									}
+								],
+								primary_action_label: __('View Latest Chart'),
+								primary_action: function() {
+									frappe.set_route('Form', 'Dental Chart', r.message[0].name);
+									d.hide();
+								},
+								secondary_action_label: __('Create New Chart'),
+								secondary_action: function() {
+									frm.create_new_dental_chart();
+									d.hide();
+								}
+							});
+							
+							// Add button to view all charts
+							d.set_secondary_action(__('View All Charts'), function() {
+								frappe.set_route('List', 'Dental Chart', {
+									patient: frm.doc.healthcare_patient
+								});
+								d.hide();
+							});
+							
+							d.show();
+						} else {
+							// No existing charts, create new one
+							frm.create_new_dental_chart();
+						}
+					}
+				});
 			});
 		}
+	},
+	
+	create_new_dental_chart: function(frm) {
+		// Get default dentist if available
+		frappe.call({
+			method: 'frappe.client.get_list',
+			args: {
+				doctype: 'Healthcare Practitioner',
+				filters: {
+					department: ['like', '%dent%']
+				},
+				fields: ['name', 'practitioner_name'],
+				limit: 1
+			},
+			callback: function(r) {
+				let default_dentist = r.message && r.message.length > 0 ? r.message[0].name : '';
+				
+				// Create new dental chart
+				frappe.new_doc('Dental Chart', {
+					patient: frm.doc.healthcare_patient,
+					patient_name: frm.doc.patient_name,
+					dentist: default_dentist,
+					chart_date: frappe.datetime.nowdate(),
+					status: 'Draft'
+				});
+			}
+		});
 	},
 	
 	healthcare_patient: function(frm) {

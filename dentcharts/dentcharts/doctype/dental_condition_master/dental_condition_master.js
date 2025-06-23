@@ -42,10 +42,17 @@ frappe.ui.form.on('Dental Condition Master', {
 				`;
 				frappe.msgprint({
 					title: __('Chart Preview'),
-					message: preview_html,
+					message: preview_html + `
+						<br><br>
+						<p><strong>Usage:</strong> This condition can be applied to teeth in dental charts.</p>
+						<p><strong>Category:</strong> ${frm.doc.category}</p>
+						<p><strong>Severity:</strong> ${frm.doc.severity}</p>
+						${frm.doc.is_emergency ? '<p><strong>⚠️ Emergency Condition</strong></p>' : ''}
+					`,
 					primary_action: {
+						label: __('View Dental Charts'),
 						action() {
-							frappe.msgprint(__('Full dental chart visualization will be available in Phase 3B'));
+							frappe.set_route('List', 'Dental Chart');
 						}
 					}
 				});

@@ -43,7 +43,28 @@ frappe.ui.form.on('Tooth Master', {
 		// Show tooth chart position info
 		if (!frm.doc.__islocal) {
 			frm.add_custom_button(__('View in Chart'), function() {
-				frappe.msgprint(__('Tooth chart visualization will be available in Phase 3B'));
+				let chart_info = `
+					<div style="text-align: center; padding: 20px;">
+						<h3>Tooth ${frm.doc.tooth_number || frm.doc.universal_number} - ${frm.doc.tooth_name}</h3>
+						<p><strong>Arch:</strong> ${frm.doc.arch}</p>
+						<p><strong>Quadrant:</strong> ${frm.doc.quadrant}</p>
+						<p><strong>Type:</strong> ${frm.doc.tooth_type}</p>
+						<p><strong>Dentition:</strong> ${frm.doc.dentition_type}</p>
+						<p><strong>Position in Quadrant:</strong> ${frm.doc.position_in_quadrant}</p>
+						${frm.doc.surfaces ? `<p><strong>Surfaces:</strong> ${JSON.parse(frm.doc.surfaces).join(', ')}</p>` : ''}
+					</div>
+				`;
+				
+				frappe.msgprint({
+					title: __('Tooth Chart Information'),
+					message: chart_info,
+					primary_action: {
+						label: __('View Dental Charts'),
+						action() {
+							frappe.set_route('List', 'Dental Chart');
+						}
+					}
+				});
 			});
 		}
 	},
