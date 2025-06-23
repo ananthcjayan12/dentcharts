@@ -163,16 +163,16 @@ def generate_master_data():
     try:
         if frappe.db.exists("DocType", "Dental Procedure Master"):
             procedures = [
-                {"procedure_code": "TEST-PRE001", "procedure_name": "Test Cleaning", "category": "Preventive", "complexity": "Simple", "standard_fee": 120, "duration_minutes": 30},
-                {"procedure_code": "TEST-RES001", "procedure_name": "Test Filling", "category": "Restorative", "complexity": "Simple", "standard_fee": 180, "duration_minutes": 45},
-                {"procedure_code": "TEST-RES002", "procedure_name": "Test Crown", "category": "Restorative", "complexity": "Complex", "standard_fee": 800, "duration_minutes": 90},
-                {"procedure_code": "TEST-END001", "procedure_name": "Test Root Canal", "category": "Endodontic", "complexity": "Advanced", "standard_fee": 1200, "duration_minutes": 120},
-                {"procedure_code": "TEST-SUR001", "procedure_name": "Test Extraction", "category": "Oral Surgery", "complexity": "Moderate", "standard_fee": 200, "duration_minutes": 30},
-                {"procedure_code": "TEST-PRO001", "procedure_name": "Test Bridge", "category": "Prosthodontic", "complexity": "Advanced", "standard_fee": 2400, "duration_minutes": 180},
-                {"procedure_code": "TEST-SUR002", "procedure_name": "Test Implant", "category": "Oral Surgery", "complexity": "Advanced", "standard_fee": 3500, "duration_minutes": 120},
-                {"procedure_code": "TEST-COS001", "procedure_name": "Test Whitening", "category": "Cosmetic", "complexity": "Simple", "standard_fee": 400, "duration_minutes": 60},
-                {"procedure_code": "TEST-PER001", "procedure_name": "Test Scaling", "category": "Periodontal", "complexity": "Simple", "standard_fee": 150, "duration_minutes": 45},
-                {"procedure_code": "TEST-PRE002", "procedure_name": "Test Fluoride Treatment", "category": "Preventive", "complexity": "Simple", "standard_fee": 50, "duration_minutes": 15}
+                {"procedure_code": "TEST-PRE001", "procedure_name": "Test Cleaning", "category": "Preventive", "complexity": "Simple", "standard_fee": 120, "duration_minutes": 30, "insurance_coverage": 80},
+                {"procedure_code": "TEST-RES001", "procedure_name": "Test Filling", "category": "Restorative", "complexity": "Simple", "standard_fee": 180, "duration_minutes": 45, "insurance_coverage": 70},
+                {"procedure_code": "TEST-RES002", "procedure_name": "Test Crown", "category": "Restorative", "complexity": "Complex", "standard_fee": 800, "duration_minutes": 90, "insurance_coverage": 50},
+                {"procedure_code": "TEST-END001", "procedure_name": "Test Root Canal", "category": "Endodontic", "complexity": "Advanced", "standard_fee": 1200, "duration_minutes": 120, "insurance_coverage": 60},
+                {"procedure_code": "TEST-SUR001", "procedure_name": "Test Extraction", "category": "Oral Surgery", "complexity": "Moderate", "standard_fee": 200, "duration_minutes": 30, "insurance_coverage": 75},
+                {"procedure_code": "TEST-PRO001", "procedure_name": "Test Bridge", "category": "Prosthodontic", "complexity": "Advanced", "standard_fee": 2400, "duration_minutes": 180, "insurance_coverage": 40},
+                {"procedure_code": "TEST-SUR002", "procedure_name": "Test Implant", "category": "Oral Surgery", "complexity": "Advanced", "standard_fee": 3500, "duration_minutes": 120, "insurance_coverage": 30},
+                {"procedure_code": "TEST-COS001", "procedure_name": "Test Whitening", "category": "Cosmetic", "complexity": "Simple", "standard_fee": 400, "duration_minutes": 60, "insurance_coverage": 0},
+                {"procedure_code": "TEST-PER001", "procedure_name": "Test Scaling", "category": "Periodontal", "complexity": "Simple", "standard_fee": 150, "duration_minutes": 45, "insurance_coverage": 85},
+                {"procedure_code": "TEST-PRE002", "procedure_name": "Test Fluoride Treatment", "category": "Preventive", "complexity": "Simple", "standard_fee": 50, "duration_minutes": 15, "insurance_coverage": 90}
             ]
             
             created_procedures = 0
@@ -187,6 +187,7 @@ def generate_master_data():
                             "complexity": procedure["complexity"],
                             "standard_fee": procedure["standard_fee"],
                             "duration_minutes": procedure["duration_minutes"],
+                            "insurance_coverage": procedure["insurance_coverage"],
                             "description": f"Standard {procedure['procedure_name'].lower()} procedure"
                         })
                         doc.insert()
