@@ -92,8 +92,8 @@ def get_data(filters):
     """Get treatment success metrics data"""
     conditions = get_conditions(filters)
     
-    # Main treatment success query
-    treatment_data = frappe.db.sql(f"""
+    # Main treatment success query - use parameterized query to avoid % conflicts
+    query = """
         SELECT 
             dpm.procedure_name,
             dpm.category,
@@ -107,18 +107,22 @@ def get_data(filters):
             END) as avg_duration_days,
             AVG(COALESCE(tp.actual_cost, tp.estimated_cost, dpm.standard_fee)) as avg_cost,
             SUM(COALESCE(tp.actual_cost, tp.estimated_cost, dpm.standard_fee)) as total_revenue,
-            COUNT(CASE WHEN tp.notes LIKE '%complication%' OR tp.notes LIKE '%problem%' THEN 1 END) as complications
+            COUNT(CASE WHEN tp.notes LIKE %s OR tp.notes LIKE %s THEN 1 END) as complications
         FROM `tabDental Procedure Master` dpm
         LEFT JOIN `tabTooth Procedure` tp ON dpm.name = tp.procedure
-            AND tp.creation BETWEEN %(from_date)s AND %(to_date)s
+            AND tp.creation BETWEEN %s AND %s
             {conditions}
         GROUP BY dpm.name, dpm.procedure_name, dpm.category
         HAVING total_procedures > 0
         ORDER BY total_procedures DESC
-    """, {
-        'from_date': filters.get('from_date'),
-        'to_date': filters.get('to_date')
-    }, as_dict=True)
+    """.format(conditions=conditions)
+    
+    treatment_data = frappe.db.sql(query, [
+        '%complication%',
+        '%problem%',
+        filters.get('from_date'),
+        filters.get('to_date')
+    ], as_dict=True)
     
     # Process data
     result = []
@@ -172,10 +176,10 @@ def get_conditions(filters):
     conditions = []
     
     if filters.get("practitioner"):
-        conditions.append(f"tp.practitioner = '{filters.get('practitioner')}'")
+        conditions.append("tp.practitioner = '{}'".format(filters.get('practitioner')))
     
     if filters.get("procedure_category"):
-        conditions.append(f"dpm.category = '{filters.get('procedure_category')}'")
+        conditions.append("dpm.category = '{}'".format(filters.get('procedure_category')))
     
     return " AND " + " AND ".join(conditions) if conditions else ""
 
@@ -235,7 +239,7 @@ def get_treatment_summary_data(filters=None):
     conditions = get_conditions(filters)
     
     try:
-        summary = frappe.db.sql(f"""
+        query = """
             SELECT 
                 COUNT(tp.name) as total_treatments,
                 SUM(CASE WHEN tp.status = 'Completed' THEN 1 ELSE 0 END) as completed_treatments,
@@ -247,14 +251,18 @@ def get_treatment_summary_data(filters=None):
                     ELSE NULL 
                 END) as avg_treatment_duration,
                 AVG(COALESCE(tp.actual_cost, tp.estimated_cost)) as avg_treatment_cost,
-                COUNT(CASE WHEN tp.notes LIKE '%complication%' OR tp.notes LIKE '%problem%' THEN 1 END) as complications
+                COUNT(CASE WHEN tp.notes LIKE %s OR tp.notes LIKE %s THEN 1 END) as complications
             FROM `tabTooth Procedure` tp
-            WHERE tp.creation BETWEEN %(from_date)s AND %(to_date)s
+            WHERE tp.creation BETWEEN %s AND %s
             {conditions}
-        """, {
-            'from_date': filters.get('from_date'),
-            'to_date': filters.get('to_date')
-        }, as_dict=True)
+        """.format(conditions=conditions)
+        
+        summary = frappe.db.sql(query, [
+            '%complication%',
+            '%problem%',
+            filters.get('from_date'),
+            filters.get('to_date')
+        ], as_dict=True)
         
         if summary and summary[0]:
             result = summary[0]
@@ -287,8 +295,8 @@ def get_treatment_summary_data(filters=None):
 
 def get_emergency_treatments_data(filters=None):
     """
-    Get emergency treatment statistics
-    Used by dashboards and emergency reports
+    Get emergency treatment data
+    Used by clinical dashboard
     """
     if not filters:
         filters = {}
@@ -296,57 +304,51 @@ def get_emergency_treatments_data(filters=None):
     try:
         emergency_data = frappe.db.sql("""
             SELECT 
-                COUNT(tp.name) as total_emergency_treatments,
-                SUM(CASE WHEN tp.status = 'Completed' THEN 1 ELSE 0 END) as completed_emergency,
-                AVG(DATEDIFF(tp.completion_date, tp.creation)) as avg_emergency_response_time,
-                SUM(COALESCE(tp.actual_cost, tp.estimated_cost)) as emergency_revenue
+                COUNT(*) as emergency_count,
+                AVG(DATEDIFF(tp.completion_date, tp.planned_date)) as avg_response_time
             FROM `tabTooth Procedure` tp
-            JOIN `tabDental Condition Master` dcm ON tp.condition = dcm.name
-            WHERE dcm.is_emergency = 1
-            AND tp.creation BETWEEN %(from_date)s AND %(to_date)s
-        """, {
-            'from_date': filters.get('from_date', add_months(getdate(), -1)),
-            'to_date': filters.get('to_date', getdate())
-        }, as_dict=True)
+            JOIN `tabDental Procedure Master` dpm ON tp.procedure = dpm.name
+            WHERE dpm.category = 'Emergency'
+            AND tp.creation BETWEEN %s AND %s
+            AND tp.status = 'Completed'
+        """, [
+            filters.get('from_date', add_months(getdate(), -1)),
+            filters.get('to_date', getdate())
+        ], as_dict=True)
         
-        return emergency_data[0] if emergency_data else {}
+        return emergency_data[0] if emergency_data else {'emergency_count': 0, 'avg_response_time': 0}
         
     except Exception:
-        return {}
+        return {'emergency_count': 0, 'avg_response_time': 0}
 
 
 def get_most_common_conditions(filters=None, limit=10):
     """
     Get most common dental conditions
-    Used by condition analysis reports
+    Used by various reports and dashboards
     """
     if not filters:
         filters = {}
     
     try:
-        conditions_data = frappe.db.sql("""
+        conditions = frappe.db.sql("""
             SELECT 
                 dcm.condition_name,
-                dcm.category,
                 COUNT(tc.name) as condition_count,
-                AVG(CASE WHEN dcm.severity = 'Low' THEN 1 
-                         WHEN dcm.severity = 'Medium' THEN 2
-                         WHEN dcm.severity = 'High' THEN 3
-                         WHEN dcm.severity = 'Critical' THEN 4
-                         ELSE 2 END) as avg_severity_score
+                dcm.severity_level
             FROM `tabTooth Condition` tc
             JOIN `tabDental Condition Master` dcm ON tc.condition = dcm.name
-            WHERE tc.creation BETWEEN %(from_date)s AND %(to_date)s
-            GROUP BY dcm.condition_name, dcm.category
+            WHERE tc.creation BETWEEN %s AND %s
+            GROUP BY dcm.condition_name, dcm.severity_level
             ORDER BY condition_count DESC
-            LIMIT %(limit)s
-        """, {
-            'from_date': filters.get('from_date', add_months(getdate(), -6)),
-            'to_date': filters.get('to_date', getdate()),
-            'limit': limit
-        }, as_dict=True)
+            LIMIT %s
+        """, [
+            filters.get('from_date', add_months(getdate(), -6)),
+            filters.get('to_date', getdate()),
+            limit
+        ], as_dict=True)
         
-        return conditions_data
+        return conditions
         
     except Exception:
         return [] 

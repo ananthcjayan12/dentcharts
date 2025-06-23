@@ -104,24 +104,28 @@ def get_data(filters):
         date_format = "%Y-%m-%d"
         period_label = "Date"
     
-    # Main revenue query
-    revenue_data = frappe.db.sql(f"""
+    # Main revenue query - use proper parameterized query
+    query = """
         SELECT 
-            DATE_FORMAT(i.posting_date, '{date_format}') as period,
+            DATE_FORMAT(i.posting_date, %s) as period,
             SUM(i.grand_total) as total_revenue,
             COUNT(i.name) as invoice_count,
             AVG(i.grand_total) as avg_invoice_value,
             SUM(i.outstanding_amount) as outstanding_amount
         FROM `tabInvoice` i
         WHERE i.docstatus = 1 
-        AND i.posting_date BETWEEN %(from_date)s AND %(to_date)s
+        AND i.posting_date BETWEEN %s AND %s
         {conditions}
-        GROUP BY DATE_FORMAT(i.posting_date, '{date_format}')
+        GROUP BY DATE_FORMAT(i.posting_date, %s)
         ORDER BY period
-    """, {
-        'from_date': filters.get('from_date'),
-        'to_date': filters.get('to_date')
-    }, as_dict=True)
+    """.format(conditions=conditions)
+    
+    revenue_data = frappe.db.sql(query, [
+        date_format,
+        filters.get('from_date'),
+        filters.get('to_date'),
+        date_format
+    ], as_dict=True)
     
     # Get payment method breakdown
     payment_data = get_payment_breakdown(filters, date_format)
@@ -180,9 +184,9 @@ def get_data(filters):
 def get_payment_breakdown(filters, date_format):
     """Get payment method breakdown by period"""
     try:
-        payment_data = frappe.db.sql(f"""
+        payment_data = frappe.db.sql("""
             SELECT 
-                DATE_FORMAT(pe.posting_date, '{date_format}') as period,
+                DATE_FORMAT(pe.posting_date, %s) as period,
                 CASE 
                     WHEN pe.mode_of_payment IN ('Cash', 'Check') THEN 'cash'
                     ELSE 'insurance'
@@ -190,13 +194,14 @@ def get_payment_breakdown(filters, date_format):
                 SUM(pe.paid_amount) as amount
             FROM `tabPayment Entry` pe
             WHERE pe.docstatus = 1
-            AND pe.posting_date BETWEEN %(from_date)s AND %(to_date)s
+            AND pe.posting_date BETWEEN %s AND %s
             AND pe.party_type = 'Customer'
             GROUP BY period, payment_type
-        """, {
-            'from_date': filters.get('from_date'),
-            'to_date': filters.get('to_date')
-        }, as_dict=True)
+        """, [
+            date_format,
+            filters.get('from_date'),
+            filters.get('to_date')
+        ], as_dict=True)
         
         # Organize by period
         result = {}
@@ -221,14 +226,14 @@ def get_conditions(filters):
         pass
     
     if filters.get("practitioner"):
-        conditions.append(f"""
+        conditions.append("""
             EXISTS (
                 SELECT 1 FROM `tabDental Appointment` da 
                 WHERE da.patient = i.patient 
-                AND da.practitioner = '{filters.get('practitioner')}'
-                AND da.appointment_date BETWEEN '{filters.get('from_date')}' AND '{filters.get('to_date')}'
+                AND da.practitioner = '{}'
+                AND da.appointment_date BETWEEN '{}' AND '{}'
             )
-        """)
+        """.format(filters.get('practitioner'), filters.get('from_date'), filters.get('to_date')))
     
     return " AND " + " AND ".join(conditions) if conditions else ""
 
@@ -299,7 +304,7 @@ def get_revenue_summary_data(filters=None):
     conditions = get_conditions(filters)
     
     try:
-        summary = frappe.db.sql(f"""
+        query = """
             SELECT 
                 SUM(i.grand_total) as total_revenue,
                 COUNT(i.name) as total_invoices,
@@ -308,12 +313,14 @@ def get_revenue_summary_data(filters=None):
                 SUM(CASE WHEN i.outstanding_amount = 0 THEN i.grand_total ELSE 0 END) as collected_amount
             FROM `tabInvoice` i
             WHERE i.docstatus = 1
-            AND i.posting_date BETWEEN %(from_date)s AND %(to_date)s
+            AND i.posting_date BETWEEN %s AND %s
             {conditions}
-        """, {
-            'from_date': filters.get('from_date'),
-            'to_date': filters.get('to_date')
-        }, as_dict=True)
+        """.format(conditions=conditions)
+        
+        summary = frappe.db.sql(query, [
+            filters.get('from_date'),
+            filters.get('to_date')
+        ], as_dict=True)
         
         if summary and summary[0]:
             result = summary[0]
@@ -356,15 +363,15 @@ def get_top_procedures_by_revenue(filters=None, limit=10):
             FROM `tabTooth Procedure` tp
             JOIN `tabDental Procedure Master` dpm ON tp.procedure = dpm.name
             WHERE tp.status = 'Completed'
-            AND tp.completion_date BETWEEN %(from_date)s AND %(to_date)s
+            AND tp.completion_date BETWEEN %s AND %s
             GROUP BY dpm.procedure_name
             ORDER BY total_revenue DESC
-            LIMIT %(limit)s
-        """, {
-            'from_date': filters.get('from_date', add_months(getdate(), -12)),
-            'to_date': filters.get('to_date', getdate()),
-            'limit': limit
-        }, as_dict=True)
+            LIMIT %s
+        """, [
+            filters.get('from_date', add_months(getdate(), -12)),
+            filters.get('to_date', getdate()),
+            limit
+        ], as_dict=True)
         
         return top_procedures
         
