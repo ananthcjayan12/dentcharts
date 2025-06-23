@@ -40,6 +40,20 @@ frappe.ui.form.on('Dental Chart', {
 		}
 	},
 	
+	// Handle dentition type change - refresh chart immediately
+	dentition_type: function(frm) {
+		if (!frm.is_new()) {
+			// Save the change and refresh chart
+			frm.save().then(() => {
+				create_interactive_dental_chart(frm);
+				frappe.show_alert({
+					message: __('Dental chart updated for ' + frm.doc.dentition_type + ' teeth'),
+					indicator: 'green'
+				});
+			});
+		}
+	},
+	
 	dentition_type: function(frm) {
 		// Update description when dentition type changes
 		frm.set_df_property('dentition_type', 'description', get_dentition_description(frm.doc.dentition_type));
@@ -81,6 +95,9 @@ function get_dentition_description(dentition_type) {
 }
 
 function create_interactive_dental_chart(frm) {
+	// Store form reference globally for multi-selection functions
+	window.current_frm = frm;
+	
 	// Get chart data first
 	frappe.call({
 		method: 'dentcharts.dentcharts.doctype.dental_chart.dental_chart.get_chart_data',
@@ -99,12 +116,25 @@ function create_interactive_dental_chart(frm) {
 	});
 }
 
+// Global variable to track selected teeth
+window.selected_teeth = [];
+
 function build_interactive_chart_html(frm, chart_data) {
 	let html = `
 		<div class="dental-chart-container" style="background: white; padding: 20px; border: 1px solid #d1d8dd; border-radius: 6px; margin: 10px 0;">
 			<div style="text-align: center; margin-bottom: 20px;">
 				<h4>${chart_data.patient} - ${chart_data.dentition_type} Dentition Chart</h4>
-				<p style="color: #6c757d; margin-bottom: 15px;">Click on any tooth to add conditions or procedures</p>
+				<div style="margin-bottom: 15px;">
+					<p style="color: #6c757d; margin: 5px 0;">🖱️ Click teeth to select • Hold Ctrl/Cmd for multiple selection</p>
+					<div id="selection-info" style="background: #e3f2fd; padding: 8px; border-radius: 4px; margin: 10px 0; min-height: 20px;">
+						<span style="color: #1565c0; font-weight: bold;">No teeth selected</span>
+					</div>
+					<div id="multi-actions" style="display: none; margin: 10px 0;">
+						<button class="btn btn-sm btn-primary" onclick="add_condition_to_selected()" style="margin: 2px;">Add Condition to Selected</button>
+						<button class="btn btn-sm btn-success" onclick="add_procedure_to_selected()" style="margin: 2px;">Add Procedure to Selected</button>
+						<button class="btn btn-sm btn-secondary" onclick="clear_selection()" style="margin: 2px;">Clear Selection</button>
+					</div>
+				</div>
 			</div>
 	`;
 
@@ -231,10 +261,10 @@ function create_tooth_element(tooth_number, tooth_data) {
 					background-color: ${status_color}; border: 2px solid #495057; 
 					border-radius: 4px; text-align: center; cursor: pointer; 
 					transition: all 0.2s ease; font-size: 11px; font-weight: bold;
-					position: relative;"
+					position: relative; user-select: none;"
 			 onmouseover="this.style.transform='scale(1.1)'; this.style.zIndex='10';"
 			 onmouseout="this.style.transform='scale(1)'; this.style.zIndex='1';"
-			 title="Click to add condition or procedure to tooth ${tooth_number}">
+			 title="Click to select tooth ${tooth_number} • Ctrl+Click for multiple selection">
 			<div>${tooth_number}</div>
 			${has_conditions ? '<div style="color: #dc3545; font-size: 10px;">🦷</div>' : ''}
 			${has_procedures ? '<div style="color: #007bff; font-size: 10px;">🔧</div>' : ''}
@@ -244,13 +274,76 @@ function create_tooth_element(tooth_number, tooth_data) {
 
 function attach_tooth_click_handlers(frm) {
 	$(document).off('click', '.tooth-element');
-	$(document).on('click', '.tooth-element', function() {
+	$(document).on('click', '.tooth-element', function(e) {
 		let tooth_number = $(this).data('tooth');
-		show_tooth_action_dialog(frm, tooth_number);
+		
+		// Handle multi-selection with Ctrl/Cmd key
+		if (e.ctrlKey || e.metaKey) {
+			toggle_tooth_selection(tooth_number, $(this));
+		} else {
+			// Single selection - if no teeth selected, show dialog
+			// If teeth are selected, clear selection and select this one
+			if (window.selected_teeth.length === 0) {
+				show_enhanced_tooth_dialog(frm, tooth_number);
+			} else {
+				clear_selection();
+				toggle_tooth_selection(tooth_number, $(this));
+			}
+		}
+		
+		e.preventDefault();
+		e.stopPropagation();
 	});
 }
 
-function show_tooth_action_dialog(frm, tooth_number) {
+function toggle_tooth_selection(tooth_number, element) {
+	let index = window.selected_teeth.indexOf(tooth_number);
+	
+	if (index > -1) {
+		// Deselect tooth
+		window.selected_teeth.splice(index, 1);
+		element.css({
+			'box-shadow': 'none',
+			'border-color': '#495057'
+		});
+	} else {
+		// Select tooth
+		window.selected_teeth.push(tooth_number);
+		element.css({
+			'box-shadow': '0 0 0 3px rgba(0, 123, 255, 0.5)',
+			'border-color': '#007bff'
+		});
+	}
+	
+	update_selection_info();
+}
+
+function update_selection_info() {
+	let info_div = $('#selection-info');
+	let actions_div = $('#multi-actions');
+	
+	if (window.selected_teeth.length === 0) {
+		info_div.html('<span style="color: #1565c0; font-weight: bold;">No teeth selected</span>');
+		actions_div.hide();
+	} else if (window.selected_teeth.length === 1) {
+		info_div.html(`<span style="color: #1565c0; font-weight: bold;">Selected: Tooth ${window.selected_teeth[0]}</span>`);
+		actions_div.show();
+	} else {
+		info_div.html(`<span style="color: #1565c0; font-weight: bold;">Selected: ${window.selected_teeth.length} teeth (${window.selected_teeth.join(', ')})</span>`);
+		actions_div.show();
+	}
+}
+
+function clear_selection() {
+	window.selected_teeth = [];
+	$('.tooth-element').css({
+		'box-shadow': 'none',
+		'border-color': '#495057'
+	});
+	update_selection_info();
+}
+
+function show_enhanced_tooth_dialog(frm, tooth_number) {
 	// Refresh form to ensure we have latest data
 	frm.refresh_fields();
 	
@@ -265,81 +358,153 @@ function show_tooth_action_dialog(frm, tooth_number) {
 		return String(p.tooth_number) === String(tooth_number);
 	});
 	
-	let tooth_info_html = `
-		<div style="background: #f8f9fa; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
-			<h5 style="margin: 0 0 10px 0; color: #495057;">Tooth ${tooth_number}</h5>
-			${existing_conditions.length > 0 ? `
-				<p style="margin: 5px 0;"><strong>🦷 Existing Conditions (${existing_conditions.length}):</strong></p>
-				<ul style="margin: 5px 0 10px 20px; padding: 0;">
-					${existing_conditions.map(c => `
-						<li style="margin: 5px 0; padding: 5px; background: #fff3cd; border-radius: 3px;">
-							<strong>${c.condition_code || 'Unknown'}</strong> 
-							${c.condition_name ? `(${c.condition_name})` : ''} - ${c.surface || 'Unknown Surface'}
-							${c.severity ? `<br><small>Severity: ${c.severity}</small>` : ''}
-							${c.date_identified ? `<br><small>Date: ${c.date_identified}</small>` : ''}
-						</li>
-					`).join('')}
-				</ul>
-			` : '<p style="margin: 5px 0; color: #6c757d;">No existing conditions</p>'}
-			
-			${existing_procedures.length > 0 ? `
-				<p style="margin: 5px 0;"><strong>🔧 Existing Procedures (${existing_procedures.length}):</strong></p>
-				<ul style="margin: 5px 0 10px 20px; padding: 0;">
-					${existing_procedures.map(p => `
-						<li style="margin: 5px 0; padding: 5px; background: #d1ecf1; border-radius: 3px;">
-							<strong>${p.procedure_code || 'Unknown'}</strong> 
-							${p.procedure_name ? `(${p.procedure_name})` : ''} - ${p.surface || 'Unknown Surface'}
-							<span style="float: right; font-weight: bold; color: ${p.status === 'Completed' ? '#28a745' : p.status === 'In Progress' ? '#007bff' : '#6c757d'};">
-								${p.status || 'Unknown'}
-							</span>
-							${p.planned_date ? `<br><small>Planned: ${p.planned_date}</small>` : ''}
-							${p.completed_date ? `<br><small>Completed: ${p.completed_date}</small>` : ''}
-						</li>
-					`).join('')}
-				</ul>
-			` : '<p style="margin: 5px 0; color: #6c757d;">No existing procedures</p>'}
-		</div>
-	`;
+	// Create enhanced dialog with inline editing
+	let dialog_fields = [
+		{
+			fieldtype: 'HTML',
+			options: `
+				<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+					<h4 style="margin: 0; text-align: center;">🦷 Tooth ${tooth_number} - Complete Management</h4>
+				</div>
+			`
+		}
+	];
+
+	// Add existing conditions section with inline editing
+	if (existing_conditions.length > 0) {
+		dialog_fields.push({
+			fieldtype: 'Section Break',
+			label: '🦷 Current Conditions'
+		});
+
+		existing_conditions.forEach((condition, index) => {
+			dialog_fields.push({
+				fieldtype: 'Column Break',
+				label: `Condition ${index + 1}`
+			});
+			dialog_fields.push({
+				fieldtype: 'Link',
+				fieldname: `condition_code_${index}`,
+				label: 'Condition',
+				options: 'Dental Condition Master',
+				default: condition.condition_code,
+				onchange: function() {
+					// Update the condition in the form
+					frm.doc.tooth_conditions[frm.doc.tooth_conditions.findIndex(c => c.name === condition.name)].condition_code = this.value;
+					frm.refresh_field('tooth_conditions');
+				}
+			});
+			dialog_fields.push({
+				fieldtype: 'Select',
+				fieldname: `condition_surface_${index}`,
+				label: 'Surface',
+				options: 'Whole Tooth\nOcclusal\nIncisal\nMesial\nDistal\nBuccal\nLingual\nFacial',
+				default: condition.surface
+			});
+			dialog_fields.push({
+				fieldtype: 'Select',
+				fieldname: `condition_severity_${index}`,
+				label: 'Severity',
+				options: '\nMild\nModerate\nSevere',
+				default: condition.severity
+			});
+			dialog_fields.push({
+				fieldtype: 'Small Text',
+				fieldname: `condition_notes_${index}`,
+				label: 'Notes',
+				default: condition.notes
+			});
+			dialog_fields.push({
+				fieldtype: 'HTML',
+				options: `<button class="btn btn-sm btn-danger" onclick="remove_condition('${condition.name}')">Remove Condition</button>`
+			});
+		});
+	}
+
+	// Add existing procedures section with inline editing
+	if (existing_procedures.length > 0) {
+		dialog_fields.push({
+			fieldtype: 'Section Break',
+			label: '🔧 Current Procedures'
+		});
+
+		existing_procedures.forEach((procedure, index) => {
+			dialog_fields.push({
+				fieldtype: 'Column Break',
+				label: `Procedure ${index + 1}`
+			});
+			dialog_fields.push({
+				fieldtype: 'Link',
+				fieldname: `procedure_code_${index}`,
+				label: 'Procedure',
+				options: 'Dental Procedure Master',
+				default: procedure.procedure_code
+			});
+			dialog_fields.push({
+				fieldtype: 'Select',
+				fieldname: `procedure_surface_${index}`,
+				label: 'Surface',
+				options: 'Whole Tooth\nOcclusal\nIncisal\nMesial\nDistal\nBuccal\nLingual\nFacial',
+				default: procedure.surface
+			});
+			dialog_fields.push({
+				fieldtype: 'Select',
+				fieldname: `procedure_status_${index}`,
+				label: 'Status',
+				options: 'Planned\nIn Progress\nCompleted\nCancelled',
+				default: procedure.status,
+				change: function() {
+					// Update status and dates based on selection
+					if (this.value === 'Completed' && !procedure.completed_date) {
+						// Auto-set completion date
+						frappe.db.set_value('Tooth Procedure', procedure.name, 'completed_date', frappe.datetime.nowdate());
+					}
+				}
+			});
+			dialog_fields.push({
+				fieldtype: 'Small Text',
+				fieldname: `procedure_notes_${index}`,
+				label: 'Notes',
+				default: procedure.notes
+			});
+			dialog_fields.push({
+				fieldtype: 'HTML',
+				options: `<button class="btn btn-sm btn-danger" onclick="remove_procedure('${procedure.name}')">Remove Procedure</button>`
+			});
+		});
+	}
+
+	// Add new condition/procedure sections
+	dialog_fields.push({
+		fieldtype: 'Section Break',
+		label: '➕ Add New'
+	});
+	
+	dialog_fields.push({
+		fieldtype: 'HTML',
+		options: `
+			<div style="display: flex; gap: 10px; justify-content: center; margin: 15px 0;">
+				<button class="btn btn-primary" onclick="add_new_condition_inline()">Add New Condition</button>
+				<button class="btn btn-success" onclick="add_new_procedure_inline()">Add New Procedure</button>
+			</div>
+		`
+	});
 
 	let d = new frappe.ui.Dialog({
-		title: __('Tooth Actions - ') + tooth_number,
-		fields: [
-			{
-				fieldtype: 'HTML',
-				options: tooth_info_html
-			},
-			{
-				fieldtype: 'Section Break',
-				label: __('Actions')
-			}
-		],
-		primary_action_label: __('Add Condition'),
-		primary_action: function() {
+		title: __('Tooth Management - ') + tooth_number,
+		fields: dialog_fields,
+		size: 'large',
+		primary_action_label: __('Save Changes'),
+		primary_action: function(values) {
+			save_tooth_changes(frm, tooth_number, existing_conditions, existing_procedures, values);
 			d.hide();
-			add_tooth_condition_for_tooth(frm, tooth_number);
 		}
 	});
 
-	// Add procedure button using the correct method
-	d.set_secondary_action_label(__('Add Procedure'));
-	d.set_secondary_action(function() {
-		d.hide();
-		add_tooth_procedure_for_tooth(frm, tooth_number);
-	});
-
-	// Add view details button if there are existing items
-	if (existing_conditions.length > 0 || existing_procedures.length > 0) {
-		d.$wrapper.find('.modal-footer').prepend(`
-			<button class="btn btn-default btn-sm" id="view-tooth-details-btn">
-				${__('View Details')}
-			</button>
-		`);
-		
-		d.$wrapper.find('#view-tooth-details-btn').click(function() {
-			d.hide();
-			show_tooth_details(frm, tooth_number, existing_conditions, existing_procedures);
-		});
-	}
+	// Store references for inline functions
+	window.current_tooth_dialog = d;
+	window.current_frm = frm;
+	window.current_tooth = tooth_number;
 
 	d.show();
 }
@@ -444,6 +609,208 @@ function add_tooth_procedure_for_tooth(frm, selected_tooth) {
 		}
 	});
 	d.show();
+}
+
+// Multi-selection functions
+function add_condition_to_selected() {
+	if (window.selected_teeth.length === 0) {
+		frappe.msgprint('Please select teeth first');
+		return;
+	}
+	
+	let d = new frappe.ui.Dialog({
+		title: __(`Add Condition to ${window.selected_teeth.length} Selected Teeth`),
+		fields: [
+			{
+				fieldtype: 'HTML',
+				options: `<p><strong>Selected Teeth:</strong> ${window.selected_teeth.join(', ')}</p>`
+			},
+			{
+				fieldtype: 'Link',
+				fieldname: 'condition_code',
+				label: __('Condition'),
+				options: 'Dental Condition Master',
+				reqd: 1
+			},
+			{
+				fieldtype: 'Select',
+				fieldname: 'surface',
+				label: __('Surface'),
+				options: 'Whole Tooth\nOcclusal\nIncisal\nMesial\nDistal\nBuccal\nLingual\nFacial',
+				default: 'Whole Tooth'
+			},
+			{
+				fieldtype: 'Select',
+				fieldname: 'severity',
+				label: __('Severity'),
+				options: '\nMild\nModerate\nSevere'
+			},
+			{
+				fieldtype: 'Small Text',
+				fieldname: 'notes',
+				label: __('Notes')
+			}
+		],
+		primary_action_label: __('Add to All Selected'),
+		primary_action: function(values) {
+			let frm = window.current_frm;
+			
+			window.selected_teeth.forEach(tooth_number => {
+				let condition_row = frm.add_child('tooth_conditions');
+				condition_row.tooth_number = tooth_number;
+				condition_row.condition_code = values.condition_code;
+				condition_row.surface = values.surface;
+				condition_row.severity = values.severity;
+				condition_row.notes = values.notes;
+				condition_row.date_identified = frappe.datetime.nowdate();
+				condition_row.identified_by = frappe.session.user;
+			});
+			
+			frm.refresh_field('tooth_conditions');
+			frm.save();
+			d.hide();
+			clear_selection();
+			
+			// Refresh the chart
+			setTimeout(() => {
+				create_interactive_dental_chart(frm);
+			}, 500);
+			
+			frappe.show_alert({
+				message: __(`Condition added to ${window.selected_teeth.length} teeth successfully`),
+				indicator: 'green'
+			});
+		}
+	});
+	d.show();
+}
+
+function add_procedure_to_selected() {
+	if (window.selected_teeth.length === 0) {
+		frappe.msgprint('Please select teeth first');
+		return;
+	}
+	
+	let d = new frappe.ui.Dialog({
+		title: __(`Add Procedure to ${window.selected_teeth.length} Selected Teeth`),
+		fields: [
+			{
+				fieldtype: 'HTML',
+				options: `<p><strong>Selected Teeth:</strong> ${window.selected_teeth.join(', ')}</p>`
+			},
+			{
+				fieldtype: 'Link',
+				fieldname: 'procedure_code',
+				label: __('Procedure'),
+				options: 'Dental Procedure Master',
+				reqd: 1
+			},
+			{
+				fieldtype: 'Select',
+				fieldname: 'surface',
+				label: __('Surface'),
+				options: 'Whole Tooth\nOcclusal\nIncisal\nMesial\nDistal\nBuccal\nLingual\nFacial',
+				default: 'Whole Tooth'
+			},
+			{
+				fieldtype: 'Select',
+				fieldname: 'status',
+				label: __('Status'),
+				options: 'Planned\nIn Progress\nCompleted\nCancelled',
+				default: 'Planned'
+			},
+			{
+				fieldtype: 'Small Text',
+				fieldname: 'notes',
+				label: __('Notes')
+			}
+		],
+		primary_action_label: __('Add to All Selected'),
+		primary_action: function(values) {
+			let frm = window.current_frm;
+			
+			window.selected_teeth.forEach(tooth_number => {
+				let procedure_row = frm.add_child('tooth_procedures');
+				procedure_row.tooth_number = tooth_number;
+				procedure_row.procedure_code = values.procedure_code;
+				procedure_row.surface = values.surface;
+				procedure_row.status = values.status;
+				procedure_row.notes = values.notes;
+				procedure_row.planned_date = frappe.datetime.nowdate();
+				procedure_row.planned_by = frappe.session.user;
+			});
+			
+			frm.refresh_field('tooth_procedures');
+			frm.save();
+			d.hide();
+			clear_selection();
+			
+			// Refresh the chart
+			setTimeout(() => {
+				create_interactive_dental_chart(frm);
+			}, 500);
+			
+			frappe.show_alert({
+				message: __(`Procedure added to ${window.selected_teeth.length} teeth successfully`),
+				indicator: 'green'
+			});
+		}
+	});
+	d.show();
+}
+
+function save_tooth_changes(frm, tooth_number, existing_conditions, existing_procedures, values) {
+	// Update existing conditions
+	existing_conditions.forEach((condition, index) => {
+		let condition_doc = frm.doc.tooth_conditions.find(c => c.name === condition.name);
+		if (condition_doc) {
+			condition_doc.condition_code = values[`condition_code_${index}`] || condition_doc.condition_code;
+			condition_doc.surface = values[`condition_surface_${index}`] || condition_doc.surface;
+			condition_doc.severity = values[`condition_severity_${index}`] || condition_doc.severity;
+			condition_doc.notes = values[`condition_notes_${index}`] || condition_doc.notes;
+		}
+	});
+	
+	// Update existing procedures
+	existing_procedures.forEach((procedure, index) => {
+		let procedure_doc = frm.doc.tooth_procedures.find(p => p.name === procedure.name);
+		if (procedure_doc) {
+			procedure_doc.procedure_code = values[`procedure_code_${index}`] || procedure_doc.procedure_code;
+			procedure_doc.surface = values[`procedure_surface_${index}`] || procedure_doc.surface;
+			procedure_doc.status = values[`procedure_status_${index}`] || procedure_doc.status;
+			procedure_doc.notes = values[`procedure_notes_${index}`] || procedure_doc.notes;
+			
+			// Auto-set completion date if status changed to completed
+			if (values[`procedure_status_${index}`] === 'Completed' && !procedure_doc.completed_date) {
+				procedure_doc.completed_date = frappe.datetime.nowdate();
+			}
+		}
+	});
+	
+	frm.refresh_field('tooth_conditions');
+	frm.refresh_field('tooth_procedures');
+	frm.save();
+	
+	// Refresh the chart
+	setTimeout(() => {
+		create_interactive_dental_chart(frm);
+	}, 500);
+	
+	frappe.show_alert({
+		message: __('Tooth changes saved successfully'),
+		indicator: 'green'
+	});
+}
+
+// Inline add functions (simplified for better UX)
+function add_new_condition_inline() {
+	add_tooth_condition_for_tooth(window.current_frm, window.current_tooth);
+	window.current_tooth_dialog.hide();
+}
+
+function add_new_procedure_inline() {
+	add_tooth_procedure_for_tooth(window.current_frm, window.current_tooth);
+	window.current_tooth_dialog.hide();
 }
 
 function show_tooth_details(frm, tooth_number, conditions, procedures) {
