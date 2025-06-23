@@ -65,15 +65,20 @@ def main():
     print("=" * 60)
     
     # Get site name from user
-    site_name = input("Enter your site name (e.g., dental.localhost): ").strip()
+    site_name = input("Enter your site name (e.g., dev.localhost): ").strip()
     if not site_name:
         print("❌ Site name is required!")
         sys.exit(1)
     
-    # Get site URL for API testing
-    site_url = f"http://{site_name}"
-    if not site_url.startswith('http'):
-        site_url = f"http://{site_url}"
+    # Get site URL for API testing with port
+    print("\n🌐 For Docker setups, your site might run on a different port.")
+    print("Common Docker ports: 8000, 8080, 3000, or check your docker-compose.yml")
+    site_port = input("Enter site port (press Enter for default 80): ").strip()
+    
+    if site_port and site_port.isdigit():
+        site_url = f"http://{site_name}:{site_port}"
+    else:
+        site_url = f"http://{site_name}"
     
     print(f"🎯 Testing site: {site_name}")
     print(f"🌐 API URL: {site_url}")
@@ -158,7 +163,28 @@ def main():
                     
         elif choice == "3":
             # Test dashboard APIs
-            test_dashboard_endpoints(site_url)
+            print("\n📊 Dashboard API Testing Options:")
+            print("1. HTTP API Testing (requires running web server)")
+            print("2. Direct Function Testing (via bench execute)")
+            
+            api_choice = input("\nChoose testing method (1 or 2): ").strip()
+            
+            if api_choice == "1":
+                test_dashboard_endpoints(site_url)
+            elif api_choice == "2":
+                # Test via bench execute
+                dashboard_functions = [
+                    ("dentcharts.dentcharts.dashboard_utils.get_executive_dashboard_data", "Executive Dashboard"),
+                    ("dentcharts.dentcharts.dashboard_utils.get_clinical_dashboard_data", "Clinical Dashboard"),
+                    ("dentcharts.dentcharts.dashboard_utils.get_financial_dashboard_data", "Financial Dashboard"),
+                    ("dentcharts.dentcharts.dashboard_utils.get_operational_dashboard_data", "Operational Dashboard")
+                ]
+                
+                for func, desc in dashboard_functions:
+                    cmd = f"bench --site {site_name} execute {func}"
+                    run_command(cmd, f"Test {desc} Data")
+            else:
+                print("❌ Invalid choice!")
             
         elif choice == "4":
             # Generate reports
