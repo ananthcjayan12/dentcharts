@@ -11,7 +11,6 @@ import frappe
 from frappe.utils import getdate, add_months, add_days, flt, cint, now_datetime
 from datetime import datetime, timedelta
 import json
-from frappe.desk.doctype.dashboard_chart.dashboard_chart import get_period_ending
 
 # ============================================================================
 # EXECUTIVE DASHBOARD DATA FUNCTIONS
