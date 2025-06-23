@@ -945,11 +945,9 @@ def generate_simple_test_data():
                     unit_price = 100
                 
                 invoice.append("invoice_items", {
-                    "item_description": procedure_master.procedure_name,
-                    "procedure_code": procedure_master.procedure_code,
+                    "procedure_code": procedure_master.name,
                     "quantity": 1,
-                    "unit_price": unit_price,
-                    "total_price": unit_price
+                    "amount": unit_price
                 })
                 
                 # Calculate totals
