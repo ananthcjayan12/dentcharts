@@ -40,40 +40,49 @@ class DentalPatient(Document):
 			default_dentist = self.get_default_practitioner()
 			
 			# Create a new dental chart for this patient
-			chart = frappe.get_doc({
+			chart_data = {
 				"doctype": "Dental Chart",
 				"patient": self.healthcare_patient,
-				"dentist": default_dentist,
 				"chart_type": "Comprehensive",
 				"status": "Draft"
-			})
+			}
+			
+			# Only add dentist if we found one
+			if default_dentist:
+				chart_data["dentist"] = default_dentist
+			
+			chart = frappe.get_doc(chart_data)
 			chart.insert(ignore_permissions=True)
 	
 	def get_default_practitioner(self):
 		"""Get a default practitioner for dental chart creation"""
-		# Try to get from Global Defaults if the field exists
-		try:
-			default_practitioner = frappe.db.get_single_value("Global Defaults", "default_practitioner")
-			if default_practitioner:
-				return default_practitioner
-		except:
-			pass
+		# First check if patient has a preferred dentist
+		if self.preferred_dentist:
+			return self.preferred_dentist
 		
-		# Try to get any available Healthcare Practitioner
+		# Try to get any available Dental Practitioner's healthcare practitioner
 		try:
-			practitioners = frappe.get_all("Healthcare Practitioner", limit=1, pluck="name")
-			if practitioners:
-				return practitioners[0]
-		except:
-			pass
-		
-		# Try to get any available Dental Practitioner
-		try:
-			dental_practitioners = frappe.get_all("Dental Practitioner", limit=1, pluck="healthcare_practitioner")
+			dental_practitioners = frappe.get_all("Dental Practitioner", 
+				limit=1, 
+				pluck="healthcare_practitioner",
+				filters={"status": "Active"}
+			)
 			if dental_practitioners:
 				return dental_practitioners[0]
 		except:
 			pass
 		
-		# Fallback to Administrator
-		return "Administrator" 
+		# Try to get any available Healthcare Practitioner
+		try:
+			practitioners = frappe.get_all("Healthcare Practitioner", 
+				limit=1, 
+				pluck="name",
+				filters={"status": "Active"}
+			)
+			if practitioners:
+				return practitioners[0]
+		except:
+			pass
+		
+		# Last resort - return None and let the chart creation handle it
+		return None 
