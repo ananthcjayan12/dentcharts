@@ -106,8 +106,14 @@ def main():
         elif choice == "1":
             # Generate test data
             commands = [
+                (f"bench --site {site_name} execute dentcharts.dentcharts.test_diagnostic.check_doctype_status", 
+                 "Check DocType Status (Diagnostic)"),
+                (f"bench --site {site_name} execute dentcharts.dentcharts.test_diagnostic.diagnose_import_issue", 
+                 "Diagnose Import Issues"),
+                (f"bench --site {site_name} execute dentcharts.dentcharts.test_diagnostic.test_simple_master_data", 
+                 "Test Simple Master Data Creation"),
                 (f"bench --site {site_name} execute dentcharts.dentcharts.test_data_generator.generate_sample_data_for_testing", 
-                 "Generate Sample Test Data"),
+                 "Generate Sample Test Data (Fixed)"),
                 (f"bench --site {site_name} execute dentcharts.dentcharts.test_data_generator.generate_all_test_data", 
                  "Generate Complete Test Data (Optional - takes longer)")
             ]

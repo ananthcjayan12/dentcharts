@@ -43,7 +43,13 @@ def generate_all_test_data():
         
     except Exception as e:
         frappe.db.rollback()
-        frappe.log_error(f"Test Data Generation Error: {str(e)}")
+        # Use shorter title for error logging to avoid length issues
+        try:
+            frappe.log_error(str(e), "Test Data Generation Failed")
+        except:
+            # If logging fails, just print the error
+            print(f"❌ Test Data Generation Error: {str(e)}")
+        
         return {
             "success": False,
             "error": str(e)
@@ -69,61 +75,90 @@ def generate_master_data():
     """Generate master data if not exists"""
     
     # Generate Tooth Masters (if not exists)
-    if not frappe.db.exists("Tooth Master", {"tooth_number": 1}):
-        from dentcharts.dentcharts.doctype.tooth_master.tooth_master import create_standard_teeth
-        create_standard_teeth()
+    try:
+        if frappe.db.exists("DocType", "Tooth Master") and not frappe.db.exists("Tooth Master", {"universal_number": 11}):
+            # Import the class and call the static method
+            from dentcharts.dentcharts.doctype.tooth_master.tooth_master import ToothMaster
+            result = ToothMaster.create_standard_teeth()
+            print(f"✅ Tooth Master: {result}")
+        else:
+            print("⚠️  Tooth Master: DocType not found or teeth already exist")
+    except ImportError as e:
+        print(f"⚠️  Tooth Master creation skipped - Import error: {str(e)}")
+    except Exception as e:
+        print(f"⚠️  Tooth Master creation skipped - Error: {str(e)}")
     
     # Generate Dental Condition Masters
-    conditions = [
-        {"condition_name": "Caries", "category": "Caries", "severity": "Medium", "color": "#FF6B6B", "is_emergency": 0},
-        {"condition_name": "Pulpitis", "category": "Endodontic", "severity": "High", "color": "#FF4757", "is_emergency": 1},
-        {"condition_name": "Gingivitis", "category": "Periodontal", "severity": "Low", "color": "#FFA726", "is_emergency": 0},
-        {"condition_name": "Periodontitis", "category": "Periodontal", "severity": "High", "color": "#FF5722", "is_emergency": 0},
-        {"condition_name": "Abscess", "category": "Endodontic", "severity": "Critical", "color": "#D32F2F", "is_emergency": 1},
-        {"condition_name": "Fracture", "category": "Trauma", "severity": "High", "color": "#7B1FA2", "is_emergency": 1},
-        {"condition_name": "Wear", "category": "Attrition", "severity": "Low", "color": "#795548", "is_emergency": 0},
-        {"condition_name": "Staining", "category": "Cosmetic", "severity": "Low", "color": "#607D8B", "is_emergency": 0}
-    ]
-    
-    for condition in conditions:
-        if not frappe.db.exists("Dental Condition Master", condition["condition_name"]):
-            doc = frappe.get_doc({
-                "doctype": "Dental Condition Master",
-                "condition_name": condition["condition_name"],
-                "category": condition["category"],
-                "severity": condition["severity"],
-                "color": condition["color"],
-                "is_emergency": condition["is_emergency"],
-                "description": f"Test condition: {condition['condition_name']}"
-            })
-            doc.insert()
+    try:
+        if frappe.db.exists("DocType", "Dental Condition Master"):
+            conditions = [
+                {"condition_name": "Caries", "category": "Caries", "severity": "Medium", "color": "#FF6B6B", "is_emergency": 0},
+                {"condition_name": "Pulpitis", "category": "Endodontic", "severity": "High", "color": "#FF4757", "is_emergency": 1},
+                {"condition_name": "Gingivitis", "category": "Periodontal", "severity": "Low", "color": "#FFA726", "is_emergency": 0},
+                {"condition_name": "Periodontitis", "category": "Periodontal", "severity": "High", "color": "#FF5722", "is_emergency": 0},
+                {"condition_name": "Abscess", "category": "Endodontic", "severity": "Critical", "color": "#D32F2F", "is_emergency": 1},
+                {"condition_name": "Fracture", "category": "Trauma", "severity": "High", "color": "#7B1FA2", "is_emergency": 1},
+                {"condition_name": "Wear", "category": "Attrition", "severity": "Low", "color": "#795548", "is_emergency": 0},
+                {"condition_name": "Staining", "category": "Cosmetic", "severity": "Low", "color": "#607D8B", "is_emergency": 0}
+            ]
+            
+            created_conditions = 0
+            for condition in conditions:
+                if not frappe.db.exists("Dental Condition Master", condition["condition_name"]):
+                    doc = frappe.get_doc({
+                        "doctype": "Dental Condition Master",
+                        "condition_name": condition["condition_name"],
+                        "category": condition["category"],
+                        "severity": condition["severity"],
+                        "color": condition["color"],
+                        "is_emergency": condition["is_emergency"],
+                        "description": f"Test condition: {condition['condition_name']}"
+                    })
+                    doc.insert()
+                    created_conditions += 1
+            
+            print(f"✅ Dental Conditions: Created {created_conditions} conditions")
+        else:
+            print("⚠️  Dental Condition Master: DocType not found")
+    except Exception as e:
+        print(f"⚠️  Dental Condition Master creation skipped: {str(e)}")
     
     # Generate Dental Procedure Masters
-    procedures = [
-        {"procedure_name": "Cleaning", "category": "Preventive", "estimated_cost": 120, "estimated_duration": 30},
-        {"procedure_name": "Filling", "category": "Restorative", "estimated_cost": 180, "estimated_duration": 45},
-        {"procedure_name": "Crown", "category": "Restorative", "estimated_cost": 800, "estimated_duration": 90},
-        {"procedure_name": "Root Canal", "category": "Endodontic", "estimated_cost": 1200, "estimated_duration": 120},
-        {"procedure_name": "Extraction", "category": "Surgical", "estimated_cost": 200, "estimated_duration": 30},
-        {"procedure_name": "Bridge", "category": "Prosthodontic", "estimated_cost": 2400, "estimated_duration": 180},
-        {"procedure_name": "Implant", "category": "Surgical", "estimated_cost": 3500, "estimated_duration": 120},
-        {"procedure_name": "Whitening", "category": "Cosmetic", "estimated_cost": 400, "estimated_duration": 60},
-        {"procedure_name": "Scaling", "category": "Periodontal", "estimated_cost": 150, "estimated_duration": 45},
-        {"procedure_name": "Fluoride Treatment", "category": "Preventive", "estimated_cost": 50, "estimated_duration": 15}
-    ]
-    
-    for procedure in procedures:
-        if not frappe.db.exists("Dental Procedure Master", procedure["procedure_name"]):
-            doc = frappe.get_doc({
-                "doctype": "Dental Procedure Master",
-                "procedure_name": procedure["procedure_name"],
-                "procedure_category": procedure["category"],
-                "estimated_cost": procedure["estimated_cost"],
-                "estimated_duration": procedure["estimated_duration"],
-                "description": f"Standard {procedure['procedure_name'].lower()} procedure",
-                "insurance_covered": 1 if procedure["category"] in ["Preventive", "Restorative"] else 0
-            })
-            doc.insert()
+    try:
+        if frappe.db.exists("DocType", "Dental Procedure Master"):
+            procedures = [
+                {"procedure_name": "Cleaning", "category": "Preventive", "estimated_cost": 120, "estimated_duration": 30},
+                {"procedure_name": "Filling", "category": "Restorative", "estimated_cost": 180, "estimated_duration": 45},
+                {"procedure_name": "Crown", "category": "Restorative", "estimated_cost": 800, "estimated_duration": 90},
+                {"procedure_name": "Root Canal", "category": "Endodontic", "estimated_cost": 1200, "estimated_duration": 120},
+                {"procedure_name": "Extraction", "category": "Surgical", "estimated_cost": 200, "estimated_duration": 30},
+                {"procedure_name": "Bridge", "category": "Prosthodontic", "estimated_cost": 2400, "estimated_duration": 180},
+                {"procedure_name": "Implant", "category": "Surgical", "estimated_cost": 3500, "estimated_duration": 120},
+                {"procedure_name": "Whitening", "category": "Cosmetic", "estimated_cost": 400, "estimated_duration": 60},
+                {"procedure_name": "Scaling", "category": "Periodontal", "estimated_cost": 150, "estimated_duration": 45},
+                {"procedure_name": "Fluoride Treatment", "category": "Preventive", "estimated_cost": 50, "estimated_duration": 15}
+            ]
+            
+            created_procedures = 0
+            for procedure in procedures:
+                if not frappe.db.exists("Dental Procedure Master", procedure["procedure_name"]):
+                    doc = frappe.get_doc({
+                        "doctype": "Dental Procedure Master",
+                        "procedure_name": procedure["procedure_name"],
+                        "procedure_category": procedure["category"],
+                        "estimated_cost": procedure["estimated_cost"],
+                        "estimated_duration": procedure["estimated_duration"],
+                        "description": f"Standard {procedure['procedure_name'].lower()} procedure",
+                        "insurance_covered": 1 if procedure["category"] in ["Preventive", "Restorative"] else 0
+                    })
+                    doc.insert()
+                    created_procedures += 1
+            
+            print(f"✅ Dental Procedures: Created {created_procedures} procedures")
+        else:
+            print("⚠️  Dental Procedure Master: DocType not found")
+    except Exception as e:
+        print(f"⚠️  Dental Procedure Master creation skipped: {str(e)}")
 
 def generate_clinics():
     """Generate test dental clinics"""
@@ -582,7 +617,13 @@ def generate_sample_data_for_testing():
         
     except Exception as e:
         frappe.db.rollback()
-        frappe.log_error(f"Sample Data Generation Error: {str(e)}")
+        # Use shorter title for error logging to avoid length issues
+        try:
+            frappe.log_error(str(e), "Sample Data Error")
+        except:
+            # If logging fails, just print the error
+            print(f"❌ Sample Data Generation Error: {str(e)}")
+        
         return {
             "success": False,
             "error": str(e)
