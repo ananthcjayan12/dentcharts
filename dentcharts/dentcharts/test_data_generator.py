@@ -980,4 +980,65 @@ def generate_simple_test_data():
         return {
             "success": False,
             "error": str(e)
+        }
+
+@frappe.whitelist()
+def test_reports():
+    """Test all reports to see if they return data"""
+    try:
+        results = {}
+        
+        # Test Patient Demographics Report
+        try:
+            from dentcharts.dentcharts.report.patient_demographics.patient_demographics import execute
+            patient_demo_data = execute({})
+            results["Patient Demographics"] = {
+                "status": "success",
+                "columns": len(patient_demo_data[0]) if patient_demo_data and patient_demo_data[0] else 0,
+                "rows": len(patient_demo_data[1]) if patient_demo_data and len(patient_demo_data) > 1 else 0
+            }
+        except Exception as e:
+            results["Patient Demographics"] = {"status": "error", "error": str(e)}
+        
+        # Test Revenue Analysis Report
+        try:
+            from dentcharts.dentcharts.report.revenue_analysis.revenue_analysis import execute
+            revenue_data = execute({})
+            results["Revenue Analysis"] = {
+                "status": "success", 
+                "columns": len(revenue_data[0]) if revenue_data and revenue_data[0] else 0,
+                "rows": len(revenue_data[1]) if revenue_data and len(revenue_data) > 1 else 0
+            }
+        except Exception as e:
+            results["Revenue Analysis"] = {"status": "error", "error": str(e)}
+        
+        # Test Treatment Success Metrics Report
+        try:
+            from dentcharts.dentcharts.report.treatment_success_metrics.treatment_success_metrics import execute
+            treatment_data = execute({})
+            results["Treatment Success Metrics"] = {
+                "status": "success",
+                "columns": len(treatment_data[0]) if treatment_data and treatment_data[0] else 0,
+                "rows": len(treatment_data[1]) if treatment_data and len(treatment_data) > 1 else 0
+            }
+        except Exception as e:
+            results["Treatment Success Metrics"] = {"status": "error", "error": str(e)}
+        
+        print("📊 Report Test Results:")
+        for report_name, result in results.items():
+            if result["status"] == "success":
+                print(f"✅ {report_name}: {result['rows']} rows, {result['columns']} columns")
+            else:
+                print(f"❌ {report_name}: {result['error']}")
+        
+        return {
+            "success": True,
+            "results": results
+        }
+        
+    except Exception as e:
+        print(f"❌ Report testing failed: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e)
         } 
