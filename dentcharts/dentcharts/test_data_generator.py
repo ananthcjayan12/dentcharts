@@ -1041,4 +1041,104 @@ def test_reports():
         return {
             "success": False,
             "error": str(e)
+        }
+
+@frappe.whitelist()
+def debug_data():
+    """Debug what data exists in the database"""
+    try:
+        print("🔍 Debugging database data...")
+        
+        # Check patients
+        patients = frappe.db.sql("SELECT name, patient_name, sex, dob FROM `tabPatient` ORDER BY creation DESC LIMIT 10", as_dict=True)
+        print(f"📋 Recent Patients ({len(patients)}):")
+        for p in patients[:5]:
+            print(f"  - {p.name}: {p.patient_name}, {p.sex}, DOB: {p.dob}")
+        
+        # Check invoices
+        invoices = frappe.db.sql("SELECT name, patient, invoice_date, total_amount, invoice_status FROM `tabInvoice` ORDER BY creation DESC LIMIT 10", as_dict=True)
+        print(f"💰 Recent Invoices ({len(invoices)}):")
+        for inv in invoices[:5]:
+            print(f"  - {inv.name}: Patient {inv.patient}, Date: {inv.invoice_date}, Amount: ${inv.total_amount}, Status: {inv.invoice_status}")
+        
+        # Check treatment plan items
+        tp_items = frappe.db.sql("SELECT name, parent, item_status, completed_date, actual_cost FROM `tabTreatment Plan Item` ORDER BY creation DESC LIMIT 10", as_dict=True)
+        print(f"🦷 Recent Treatment Plan Items ({len(tp_items)}):")
+        for item in tp_items[:5]:
+            print(f"  - {item.name}: Plan {item.parent}, Status: {item.item_status}, Completed: {item.completed_date}, Cost: ${item.actual_cost}")
+        
+        # Check what the reports are actually querying
+        print("\n🔍 Testing report queries directly...")
+        
+        # Test Patient Demographics query
+        try:
+            patient_demo_sql = """
+            SELECT 
+                p.sex,
+                YEAR(CURDATE()) - YEAR(p.dob) as age,
+                COUNT(*) as patient_count
+            FROM `tabPatient` p 
+            WHERE p.dob IS NOT NULL
+            GROUP BY p.sex, YEAR(CURDATE()) - YEAR(p.dob)
+            ORDER BY age
+            LIMIT 5
+            """
+            demo_results = frappe.db.sql(patient_demo_sql, as_dict=True)
+            print(f"👥 Patient Demographics Query Results ({len(demo_results)}):")
+            for result in demo_results:
+                print(f"  - {result.sex}, Age {result.age}: {result.patient_count} patients")
+        except Exception as e:
+            print(f"❌ Patient Demographics query error: {str(e)}")
+        
+        # Test Revenue Analysis query
+        try:
+            revenue_sql = """
+            SELECT 
+                DATE_FORMAT(invoice_date, '%%Y-%%m') as period,
+                COUNT(*) as invoice_count,
+                SUM(total_amount) as total_revenue
+            FROM `tabInvoice` 
+            WHERE invoice_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+            GROUP BY DATE_FORMAT(invoice_date, '%%Y-%%m')
+            ORDER BY period DESC
+            LIMIT 5
+            """
+            revenue_results = frappe.db.sql(revenue_sql, as_dict=True)
+            print(f"💰 Revenue Analysis Query Results ({len(revenue_results)}):")
+            for result in revenue_results:
+                print(f"  - {result.period}: {result.invoice_count} invoices, ${result.total_revenue} revenue")
+        except Exception as e:
+            print(f"❌ Revenue Analysis query error: {str(e)}")
+        
+        # Test Treatment Success query
+        try:
+            treatment_sql = """
+            SELECT 
+                tpi.item_status,
+                COUNT(*) as procedure_count,
+                AVG(tpi.actual_cost) as avg_cost
+            FROM `tabTreatment Plan Item` tpi
+            WHERE tpi.completed_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+            GROUP BY tpi.item_status
+            LIMIT 5
+            """
+            treatment_results = frappe.db.sql(treatment_sql, as_dict=True)
+            print(f"🦷 Treatment Success Query Results ({len(treatment_results)}):")
+            for result in treatment_results:
+                print(f"  - Status {result.item_status}: {result.procedure_count} procedures, Avg Cost: ${result.avg_cost}")
+        except Exception as e:
+            print(f"❌ Treatment Success query error: {str(e)}")
+        
+        return {
+            "success": True,
+            "patients": len(patients),
+            "invoices": len(invoices), 
+            "treatment_items": len(tp_items)
+        }
+        
+    except Exception as e:
+        print(f"❌ Debug failed: {str(e)}")
+        return {
+            "success": False,
+            "error": str(e)
         } 
