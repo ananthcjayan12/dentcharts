@@ -92,7 +92,7 @@ def get_data(filters):
     """Get treatment success metrics data"""
     conditions = get_conditions(filters)
     
-    # Main treatment success query - use parameterized query to avoid % conflicts
+    # Main treatment success query - use correct field names from Tooth Procedure DocType
     query = """
         SELECT 
             dpm.procedure_name,
@@ -101,15 +101,15 @@ def get_data(filters):
             SUM(CASE WHEN tp.status = 'Completed' THEN 1 ELSE 0 END) as completed_procedures,
             SUM(CASE WHEN tp.status IN ('Completed', 'In Progress') THEN 1 ELSE 0 END) as active_procedures,
             AVG(CASE 
-                WHEN tp.completion_date IS NOT NULL AND tp.planned_date IS NOT NULL 
-                THEN DATEDIFF(tp.completion_date, tp.planned_date) 
+                WHEN tp.completed_date IS NOT NULL AND tp.planned_date IS NOT NULL 
+                THEN DATEDIFF(tp.completed_date, tp.planned_date) 
                 ELSE NULL 
             END) as avg_duration_days,
-            AVG(COALESCE(tp.actual_cost, tp.estimated_cost, dpm.standard_fee)) as avg_cost,
-            SUM(COALESCE(tp.actual_cost, tp.estimated_cost, dpm.standard_fee)) as total_revenue,
+            AVG(COALESCE(tp.actual_fee, tp.standard_fee)) as avg_cost,
+            SUM(COALESCE(tp.actual_fee, tp.standard_fee)) as total_revenue,
             COUNT(CASE WHEN tp.notes LIKE %s OR tp.notes LIKE %s THEN 1 END) as complications
         FROM `tabDental Procedure Master` dpm
-        LEFT JOIN `tabTooth Procedure` tp ON dpm.name = tp.procedure
+        LEFT JOIN `tabTooth Procedure` tp ON dpm.name = tp.procedure_code
             AND tp.creation BETWEEN %s AND %s
             {conditions}
         GROUP BY dpm.name, dpm.procedure_name, dpm.category
@@ -176,7 +176,7 @@ def get_conditions(filters):
     conditions = []
     
     if filters.get("practitioner"):
-        conditions.append("tp.practitioner = '{}'".format(filters.get('practitioner')))
+        conditions.append("tp.performed_by = '{}'".format(filters.get('practitioner')))
     
     if filters.get("procedure_category"):
         conditions.append("dpm.category = '{}'".format(filters.get('procedure_category')))
@@ -246,11 +246,11 @@ def get_treatment_summary_data(filters=None):
                 SUM(CASE WHEN tp.status = 'In Progress' THEN 1 ELSE 0 END) as in_progress_treatments,
                 SUM(CASE WHEN tp.status = 'Planned' THEN 1 ELSE 0 END) as planned_treatments,
                 AVG(CASE 
-                    WHEN tp.completion_date IS NOT NULL AND tp.planned_date IS NOT NULL 
-                    THEN DATEDIFF(tp.completion_date, tp.planned_date) 
+                    WHEN tp.completed_date IS NOT NULL AND tp.planned_date IS NOT NULL 
+                    THEN DATEDIFF(tp.completed_date, tp.planned_date) 
                     ELSE NULL 
                 END) as avg_treatment_duration,
-                AVG(COALESCE(tp.actual_cost, tp.estimated_cost)) as avg_treatment_cost,
+                AVG(COALESCE(tp.actual_fee, tp.standard_fee)) as avg_treatment_cost,
                 COUNT(CASE WHEN tp.notes LIKE %s OR tp.notes LIKE %s THEN 1 END) as complications
             FROM `tabTooth Procedure` tp
             WHERE tp.creation BETWEEN %s AND %s
@@ -305,9 +305,9 @@ def get_emergency_treatments_data(filters=None):
         emergency_data = frappe.db.sql("""
             SELECT 
                 COUNT(*) as emergency_count,
-                AVG(DATEDIFF(tp.completion_date, tp.planned_date)) as avg_response_time
+                AVG(DATEDIFF(tp.completed_date, tp.planned_date)) as avg_response_time
             FROM `tabTooth Procedure` tp
-            JOIN `tabDental Procedure Master` dpm ON tp.procedure = dpm.name
+            JOIN `tabDental Procedure Master` dpm ON tp.procedure_code = dpm.name
             WHERE dpm.category = 'Emergency'
             AND tp.creation BETWEEN %s AND %s
             AND tp.status = 'Completed'

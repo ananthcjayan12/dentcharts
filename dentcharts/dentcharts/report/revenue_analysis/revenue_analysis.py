@@ -104,19 +104,19 @@ def get_data(filters):
         date_format = "%Y-%m-%d"
         period_label = "Date"
     
-    # Main revenue query - use proper parameterized query
+    # Main revenue query - use correct field names from Invoice DocType
     query = """
         SELECT 
-            DATE_FORMAT(i.posting_date, %s) as period,
-            SUM(i.grand_total) as total_revenue,
+            DATE_FORMAT(i.invoice_date, %s) as period,
+            SUM(i.total_amount) as total_revenue,
             COUNT(i.name) as invoice_count,
-            AVG(i.grand_total) as avg_invoice_value,
+            AVG(i.total_amount) as avg_invoice_value,
             SUM(i.outstanding_amount) as outstanding_amount
         FROM `tabInvoice` i
         WHERE i.docstatus = 1 
-        AND i.posting_date BETWEEN %s AND %s
+        AND i.invoice_date BETWEEN %s AND %s
         {conditions}
-        GROUP BY DATE_FORMAT(i.posting_date, %s)
+        GROUP BY DATE_FORMAT(i.invoice_date, %s)
         ORDER BY period
     """.format(conditions=conditions)
     
@@ -306,14 +306,14 @@ def get_revenue_summary_data(filters=None):
     try:
         query = """
             SELECT 
-                SUM(i.grand_total) as total_revenue,
+                SUM(i.total_amount) as total_revenue,
                 COUNT(i.name) as total_invoices,
-                AVG(i.grand_total) as avg_invoice_value,
+                AVG(i.total_amount) as avg_invoice_value,
                 SUM(i.outstanding_amount) as total_outstanding,
-                SUM(CASE WHEN i.outstanding_amount = 0 THEN i.grand_total ELSE 0 END) as collected_amount
+                SUM(CASE WHEN i.outstanding_amount = 0 THEN i.total_amount ELSE 0 END) as collected_amount
             FROM `tabInvoice` i
             WHERE i.docstatus = 1
-            AND i.posting_date BETWEEN %s AND %s
+            AND i.invoice_date BETWEEN %s AND %s
             {conditions}
         """.format(conditions=conditions)
         
@@ -358,12 +358,12 @@ def get_top_procedures_by_revenue(filters=None, limit=10):
             SELECT 
                 dpm.procedure_name,
                 COUNT(tp.name) as procedure_count,
-                SUM(tp.actual_cost) as total_revenue,
-                AVG(tp.actual_cost) as avg_cost
+                SUM(tp.actual_fee) as total_revenue,
+                AVG(tp.actual_fee) as avg_cost
             FROM `tabTooth Procedure` tp
-            JOIN `tabDental Procedure Master` dpm ON tp.procedure = dpm.name
+            JOIN `tabDental Procedure Master` dpm ON tp.procedure_code = dpm.name
             WHERE tp.status = 'Completed'
-            AND tp.completion_date BETWEEN %s AND %s
+            AND tp.completed_date BETWEEN %s AND %s
             GROUP BY dpm.procedure_name
             ORDER BY total_revenue DESC
             LIMIT %s
