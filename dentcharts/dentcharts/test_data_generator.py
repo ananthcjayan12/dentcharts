@@ -92,25 +92,26 @@ def generate_master_data():
     try:
         if frappe.db.exists("DocType", "Dental Condition Master"):
             conditions = [
-                {"condition_name": "Caries", "category": "Caries", "severity": "Medium", "color": "#FF6B6B", "is_emergency": 0},
-                {"condition_name": "Pulpitis", "category": "Endodontic", "severity": "High", "color": "#FF4757", "is_emergency": 1},
-                {"condition_name": "Gingivitis", "category": "Periodontal", "severity": "Low", "color": "#FFA726", "is_emergency": 0},
-                {"condition_name": "Periodontitis", "category": "Periodontal", "severity": "High", "color": "#FF5722", "is_emergency": 0},
-                {"condition_name": "Abscess", "category": "Endodontic", "severity": "Critical", "color": "#D32F2F", "is_emergency": 1},
-                {"condition_name": "Fracture", "category": "Trauma", "severity": "High", "color": "#7B1FA2", "is_emergency": 1},
-                {"condition_name": "Wear", "category": "Attrition", "severity": "Low", "color": "#795548", "is_emergency": 0},
-                {"condition_name": "Staining", "category": "Cosmetic", "severity": "Low", "color": "#607D8B", "is_emergency": 0}
+                {"condition_code": "CAR001", "condition_name": "Caries", "category": "Caries", "severity": "Medium", "color_code": "#FF6B6B", "is_emergency": 0},
+                {"condition_code": "END001", "condition_name": "Pulpitis", "category": "Endodontic", "severity": "High", "color_code": "#FF4757", "is_emergency": 1},
+                {"condition_code": "PER001", "condition_name": "Gingivitis", "category": "Periodontal", "severity": "Low", "color_code": "#FFA726", "is_emergency": 0},
+                {"condition_code": "PER002", "condition_name": "Periodontitis", "category": "Periodontal", "severity": "High", "color_code": "#FF5722", "is_emergency": 0},
+                {"condition_code": "END002", "condition_name": "Abscess", "category": "Endodontic", "severity": "Critical", "color_code": "#D32F2F", "is_emergency": 1},
+                {"condition_code": "TRA001", "condition_name": "Fracture", "category": "Other", "severity": "High", "color_code": "#7B1FA2", "is_emergency": 1},
+                {"condition_code": "OTH001", "condition_name": "Wear", "category": "Other", "severity": "Low", "color_code": "#795548", "is_emergency": 0},
+                {"condition_code": "COS001", "condition_name": "Staining", "category": "Cosmetic", "severity": "Low", "color_code": "#607D8B", "is_emergency": 0}
             ]
             
             created_conditions = 0
             for condition in conditions:
-                if not frappe.db.exists("Dental Condition Master", condition["condition_name"]):
+                if not frappe.db.exists("Dental Condition Master", condition["condition_code"]):
                     doc = frappe.get_doc({
                         "doctype": "Dental Condition Master",
+                        "condition_code": condition["condition_code"],
                         "condition_name": condition["condition_name"],
                         "category": condition["category"],
                         "severity": condition["severity"],
-                        "color": condition["color"],
+                        "color_code": condition["color_code"],
                         "is_emergency": condition["is_emergency"],
                         "description": f"Test condition: {condition['condition_name']}"
                     })
@@ -127,29 +128,30 @@ def generate_master_data():
     try:
         if frappe.db.exists("DocType", "Dental Procedure Master"):
             procedures = [
-                {"procedure_name": "Cleaning", "category": "Preventive", "estimated_cost": 120, "estimated_duration": 30},
-                {"procedure_name": "Filling", "category": "Restorative", "estimated_cost": 180, "estimated_duration": 45},
-                {"procedure_name": "Crown", "category": "Restorative", "estimated_cost": 800, "estimated_duration": 90},
-                {"procedure_name": "Root Canal", "category": "Endodontic", "estimated_cost": 1200, "estimated_duration": 120},
-                {"procedure_name": "Extraction", "category": "Surgical", "estimated_cost": 200, "estimated_duration": 30},
-                {"procedure_name": "Bridge", "category": "Prosthodontic", "estimated_cost": 2400, "estimated_duration": 180},
-                {"procedure_name": "Implant", "category": "Surgical", "estimated_cost": 3500, "estimated_duration": 120},
-                {"procedure_name": "Whitening", "category": "Cosmetic", "estimated_cost": 400, "estimated_duration": 60},
-                {"procedure_name": "Scaling", "category": "Periodontal", "estimated_cost": 150, "estimated_duration": 45},
-                {"procedure_name": "Fluoride Treatment", "category": "Preventive", "estimated_cost": 50, "estimated_duration": 15}
+                {"procedure_code": "PRE001", "procedure_name": "Cleaning", "category": "Preventive", "complexity": "Simple", "standard_fee": 120, "duration_minutes": 30},
+                {"procedure_code": "RES001", "procedure_name": "Filling", "category": "Restorative", "complexity": "Simple", "standard_fee": 180, "duration_minutes": 45},
+                {"procedure_code": "RES002", "procedure_name": "Crown", "category": "Restorative", "complexity": "Complex", "standard_fee": 800, "duration_minutes": 90},
+                {"procedure_code": "END001", "procedure_name": "Root Canal", "category": "Endodontic", "complexity": "Advanced", "standard_fee": 1200, "duration_minutes": 120},
+                {"procedure_code": "SUR001", "procedure_name": "Extraction", "category": "Oral Surgery", "complexity": "Moderate", "standard_fee": 200, "duration_minutes": 30},
+                {"procedure_code": "PRO001", "procedure_name": "Bridge", "category": "Prosthodontic", "complexity": "Advanced", "standard_fee": 2400, "duration_minutes": 180},
+                {"procedure_code": "SUR002", "procedure_name": "Implant", "category": "Oral Surgery", "complexity": "Advanced", "standard_fee": 3500, "duration_minutes": 120},
+                {"procedure_code": "COS001", "procedure_name": "Whitening", "category": "Cosmetic", "complexity": "Simple", "standard_fee": 400, "duration_minutes": 60},
+                {"procedure_code": "PER001", "procedure_name": "Scaling", "category": "Periodontal", "complexity": "Simple", "standard_fee": 150, "duration_minutes": 45},
+                {"procedure_code": "PRE002", "procedure_name": "Fluoride Treatment", "category": "Preventive", "complexity": "Simple", "standard_fee": 50, "duration_minutes": 15}
             ]
             
             created_procedures = 0
             for procedure in procedures:
-                if not frappe.db.exists("Dental Procedure Master", procedure["procedure_name"]):
+                if not frappe.db.exists("Dental Procedure Master", procedure["procedure_code"]):
                     doc = frappe.get_doc({
                         "doctype": "Dental Procedure Master",
+                        "procedure_code": procedure["procedure_code"],
                         "procedure_name": procedure["procedure_name"],
-                        "procedure_category": procedure["category"],
-                        "estimated_cost": procedure["estimated_cost"],
-                        "estimated_duration": procedure["estimated_duration"],
-                        "description": f"Standard {procedure['procedure_name'].lower()} procedure",
-                        "insurance_covered": 1 if procedure["category"] in ["Preventive", "Restorative"] else 0
+                        "category": procedure["category"],
+                        "complexity": procedure["complexity"],
+                        "standard_fee": procedure["standard_fee"],
+                        "duration_minutes": procedure["duration_minutes"],
+                        "description": f"Standard {procedure['procedure_name'].lower()} procedure"
                     })
                     doc.insert()
                     created_procedures += 1
@@ -591,7 +593,7 @@ def generate_sample_data_for_testing():
                     "first_name": "Test",
                     "last_name": f"Patient{i+1}",
                     "patient_name": patient_name,
-                    "gender": "Male" if i % 2 == 0 else "Female",
+                    "sex": "Male" if i % 2 == 0 else "Female",
                     "dob": getdate() - timedelta(days=(25 + i*5)*365),
                     "mobile": f"+1-555-000{i+2}",
                     "email": f"test.patient{i+1}@test.com"
