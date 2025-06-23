@@ -622,7 +622,19 @@ def generate_invoices_and_payments():
         invoice.outstanding_amount = subtotal + tax_amount
         invoice.patient_portion = subtotal + tax_amount
         
-        invoice.insert()
+        # Only insert if we have valid amounts
+        if invoice.total_amount > 0:
+            invoice.insert()
+            # Submit the invoice so it can be found by reports (docstatus = 1)
+            try:
+                # Set required fields for submission
+                invoice.invoice_status = "Sent"
+                invoice.save()
+                invoice.submit()
+                print(f"✅ Submitted invoice {invoice.name}")
+            except Exception as e:
+                # If submission fails, just leave as draft
+                print(f"⚠️  Failed to submit invoice {invoice.name}: {str(e)}")
         
         # Create payment (80% of invoices get paid)
         if random.random() < 0.8:
@@ -979,10 +991,14 @@ def generate_simple_test_data():
                     invoice.insert()
                     # Submit the invoice so it can be found by reports (docstatus = 1)
                     try:
+                        # Set required fields for submission
+                        invoice.invoice_status = "Sent"
+                        invoice.save()
                         invoice.submit()
-                    except Exception:
+                        print(f"✅ Submitted invoice {invoice.name}")
+                    except Exception as e:
                         # If submission fails, just leave as draft
-                        pass
+                        print(f"⚠️  Failed to submit invoice {invoice.name}: {str(e)}")
                     invoice_count += 1
         
         print(f"✅ Created {invoice_count} invoices")
@@ -1307,4 +1323,86 @@ def debug_report_queries():
         
     except Exception as e:
         print(f"❌ Debug failed: {str(e)}")
+        return {"success": False, "error": str(e)}
+
+@frappe.whitelist()
+def debug_patient_linking():
+    """Debug and fix Patient -> Dental Patient linking"""
+    try:
+        print("🔍 Debugging Patient -> Dental Patient linking...")
+        
+        # Check existing Patient records
+        patients = frappe.db.sql("""
+            SELECT name, patient_name, sex, dob 
+            FROM `tabPatient` 
+            ORDER BY creation DESC 
+            LIMIT 10
+        """, as_dict=True)
+        
+        print(f"📋 Found {len(patients)} Patient records:")
+        for p in patients[:5]:
+            print(f"  - {p.name}: {p.patient_name}")
+        
+        # Check existing Dental Patient records
+        dental_patients = frappe.db.sql("""
+            SELECT name, patient_name, healthcare_patient 
+            FROM `tabDental Patient` 
+            ORDER BY creation DESC 
+            LIMIT 10
+        """, as_dict=True)
+        
+        print(f"🦷 Found {len(dental_patients)} Dental Patient records:")
+        for dp in dental_patients[:5]:
+            print(f"  - {dp.name}: {dp.patient_name} -> {dp.healthcare_patient}")
+        
+        # Test the JOIN that's failing
+        join_test = frappe.db.sql("""
+            SELECT p.name as patient_name, dp.name as dental_patient_name
+            FROM `tabPatient` p
+            INNER JOIN `tabDental Patient` dp ON p.name = dp.healthcare_patient
+            LIMIT 5
+        """, as_dict=True)
+        
+        print(f"🔗 JOIN test results: {len(join_test)} records")
+        for jt in join_test:
+            print(f"  - Patient {jt.patient_name} -> Dental Patient {jt.dental_patient_name}")
+        
+        # If JOIN is failing, let's create missing Dental Patient records
+        if len(join_test) == 0:
+            print("⚠️  No JOIN results found. Creating missing Dental Patient records...")
+            
+            for patient in patients:
+                # Check if Dental Patient already exists
+                existing_dp = frappe.db.exists("Dental Patient", {"healthcare_patient": patient.name})
+                if not existing_dp:
+                    try:
+                        dental_patient = frappe.get_doc({
+                            "doctype": "Dental Patient",
+                            "patient_name": patient.patient_name,
+                            "healthcare_patient": patient.name,
+                            "dental_history": f"Auto-created dental record for {patient.patient_name}",
+                            "emergency_contact": "Emergency Contact",
+                            "emergency_phone": "+1-555-0000"
+                        })
+                        dental_patient.insert()
+                        print(f"✅ Created Dental Patient for {patient.patient_name}")
+                    except Exception as e:
+                        print(f"❌ Failed to create Dental Patient for {patient.patient_name}: {str(e)}")
+            
+            frappe.db.commit()
+            
+            # Test JOIN again
+            join_test_after = frappe.db.sql("""
+                SELECT p.name as patient_name, dp.name as dental_patient_name
+                FROM `tabPatient` p
+                INNER JOIN `tabDental Patient` dp ON p.name = dp.healthcare_patient
+                LIMIT 5
+            """, as_dict=True)
+            
+            print(f"🔗 JOIN test after fix: {len(join_test_after)} records")
+        
+        return {"success": True, "join_results": len(join_test)}
+        
+    except Exception as e:
+        print(f"❌ Patient linking debug failed: {str(e)}")
         return {"success": False, "error": str(e)} 
