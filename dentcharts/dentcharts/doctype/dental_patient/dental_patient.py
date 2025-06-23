@@ -36,12 +36,44 @@ class DentalPatient(Document):
 	def ensure_dental_chart_exists(self):
 		"""Ensure a dental chart exists for this patient"""
 		if not frappe.db.exists("Dental Chart", {"patient": self.healthcare_patient}):
+			# Get a default practitioner - try multiple sources
+			default_dentist = self.get_default_practitioner()
+			
 			# Create a new dental chart for this patient
 			chart = frappe.get_doc({
 				"doctype": "Dental Chart",
 				"patient": self.healthcare_patient,
-				"dentist": frappe.db.get_single_value("Global Defaults", "default_practitioner") or "Administrator",
+				"dentist": default_dentist,
 				"chart_type": "Comprehensive",
 				"status": "Draft"
 			})
-			chart.insert(ignore_permissions=True) 
+			chart.insert(ignore_permissions=True)
+	
+	def get_default_practitioner(self):
+		"""Get a default practitioner for dental chart creation"""
+		# Try to get from Global Defaults if the field exists
+		try:
+			default_practitioner = frappe.db.get_single_value("Global Defaults", "default_practitioner")
+			if default_practitioner:
+				return default_practitioner
+		except:
+			pass
+		
+		# Try to get any available Healthcare Practitioner
+		try:
+			practitioners = frappe.get_all("Healthcare Practitioner", limit=1, pluck="name")
+			if practitioners:
+				return practitioners[0]
+		except:
+			pass
+		
+		# Try to get any available Dental Practitioner
+		try:
+			dental_practitioners = frappe.get_all("Dental Practitioner", limit=1, pluck="healthcare_practitioner")
+			if dental_practitioners:
+				return dental_practitioners[0]
+		except:
+			pass
+		
+		# Fallback to Administrator
+		return "Administrator" 
