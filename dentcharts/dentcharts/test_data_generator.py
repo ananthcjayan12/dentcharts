@@ -63,29 +63,58 @@ def clear_test_data():
     test_doctypes = [
         "Payment Entry", "Invoice", "Invoice Item",
         "Treatment Plan Item", "Treatment Plan",
-        "Appointment Procedure", "Dental Appointment",
-        "Tooth Procedure", "Tooth Condition", "Dental Chart",
-        "Dental Patient", "Dental Practitioner", "Dental Clinic"
+        "Tooth Procedure", "Appointment Procedure", "Dental Appointment",
+        "Tooth Condition", "Dental Chart",
+        "Dental Patient", "Dental Practitioner", "Dental Clinic",
+        "Patient", "Healthcare Practitioner"  # Add base doctypes
     ]
     
     for doctype in test_doctypes:
         try:
-            frappe.db.delete(doctype, {"name": ["like", "TEST-%"]})
-        except:
-            pass  # DocType might not exist yet
+            # Delete records that start with TEST-
+            if frappe.db.exists("DocType", doctype):
+                test_records = frappe.get_all(doctype, 
+                    filters=[["name", "like", "TEST-%"]], 
+                    pluck="name")
+                
+                for record in test_records:
+                    try:
+                        frappe.delete_doc(doctype, record, force=True)
+                    except:
+                        pass
+                        
+                # Also delete by other test patterns
+                if doctype in ["Patient", "Healthcare Practitioner"]:
+                    test_records = frappe.get_all(doctype, 
+                        filters=[["first_name", "like", "Test%"]], 
+                        pluck="name")
+                    
+                    for record in test_records:
+                        try:
+                            frappe.delete_doc(doctype, record, force=True)
+                        except:
+                            pass
+                            
+        except Exception as e:
+            print(f"⚠️  Error clearing {doctype}: {str(e)}")
+            pass  # Continue with other doctypes
 
 def generate_master_data():
     """Generate master data if not exists"""
     
     # Generate Tooth Masters (if not exists)
     try:
-        if frappe.db.exists("DocType", "Tooth Master") and not frappe.db.exists("Tooth Master", {"universal_number": 11}):
-            # Import the class and call the static method
-            from dentcharts.dentcharts.doctype.tooth_master.tooth_master import ToothMaster
-            result = ToothMaster.create_standard_teeth()
-            print(f"✅ Tooth Master: {result}")
+        if frappe.db.exists("DocType", "Tooth Master"):
+            existing_teeth = frappe.db.count("Tooth Master")
+            if existing_teeth < 32:
+                # Import the class and call the static method
+                from dentcharts.dentcharts.doctype.tooth_master.tooth_master import ToothMaster
+                result = ToothMaster.create_standard_teeth()
+                print(f"✅ Tooth Master: {result}")
+            else:
+                print(f"⚠️  Tooth Master: {existing_teeth} teeth already exist")
         else:
-            print("⚠️  Tooth Master: DocType not found or teeth already exist")
+            print("⚠️  Tooth Master: DocType not found")
     except ImportError as e:
         print(f"⚠️  Tooth Master creation skipped - Import error: {str(e)}")
     except Exception as e:
@@ -95,31 +124,34 @@ def generate_master_data():
     try:
         if frappe.db.exists("DocType", "Dental Condition Master"):
             conditions = [
-                {"condition_code": "CAR001", "condition_name": "Caries", "category": "Caries", "severity": "Medium", "color_code": "#FF6B6B", "is_emergency": 0},
-                {"condition_code": "END001", "condition_name": "Pulpitis", "category": "Endodontic", "severity": "High", "color_code": "#FF4757", "is_emergency": 1},
-                {"condition_code": "PER001", "condition_name": "Gingivitis", "category": "Periodontal", "severity": "Low", "color_code": "#FFA726", "is_emergency": 0},
-                {"condition_code": "PER002", "condition_name": "Periodontitis", "category": "Periodontal", "severity": "High", "color_code": "#FF5722", "is_emergency": 0},
-                {"condition_code": "END002", "condition_name": "Abscess", "category": "Endodontic", "severity": "Critical", "color_code": "#D32F2F", "is_emergency": 1},
-                {"condition_code": "TRA001", "condition_name": "Fracture", "category": "Other", "severity": "High", "color_code": "#7B1FA2", "is_emergency": 1},
-                {"condition_code": "OTH001", "condition_name": "Wear", "category": "Other", "severity": "Low", "color_code": "#795548", "is_emergency": 0},
-                {"condition_code": "COS001", "condition_name": "Staining", "category": "Cosmetic", "severity": "Low", "color_code": "#607D8B", "is_emergency": 0}
+                {"condition_code": "TEST-CAR001", "condition_name": "Test Caries", "category": "Caries", "severity": "Medium", "color_code": "#FF6B6B", "is_emergency": 0},
+                {"condition_code": "TEST-END001", "condition_name": "Test Pulpitis", "category": "Endodontic", "severity": "High", "color_code": "#FF4757", "is_emergency": 1},
+                {"condition_code": "TEST-PER001", "condition_name": "Test Gingivitis", "category": "Periodontal", "severity": "Low", "color_code": "#FFA726", "is_emergency": 0},
+                {"condition_code": "TEST-PER002", "condition_name": "Test Periodontitis", "category": "Periodontal", "severity": "High", "color_code": "#FF5722", "is_emergency": 0},
+                {"condition_code": "TEST-END002", "condition_name": "Test Abscess", "category": "Endodontic", "severity": "Critical", "color_code": "#D32F2F", "is_emergency": 1},
+                {"condition_code": "TEST-TRA001", "condition_name": "Test Fracture", "category": "Other", "severity": "High", "color_code": "#7B1FA2", "is_emergency": 1},
+                {"condition_code": "TEST-OTH001", "condition_name": "Test Wear", "category": "Other", "severity": "Low", "color_code": "#795548", "is_emergency": 0},
+                {"condition_code": "TEST-COS001", "condition_name": "Test Staining", "category": "Cosmetic", "severity": "Low", "color_code": "#607D8B", "is_emergency": 0}
             ]
             
             created_conditions = 0
             for condition in conditions:
                 if not frappe.db.exists("Dental Condition Master", condition["condition_code"]):
-                    doc = frappe.get_doc({
-                        "doctype": "Dental Condition Master",
-                        "condition_code": condition["condition_code"],
-                        "condition_name": condition["condition_name"],
-                        "category": condition["category"],
-                        "severity": condition["severity"],
-                        "color_code": condition["color_code"],
-                        "is_emergency": condition["is_emergency"],
-                        "description": f"Test condition: {condition['condition_name']}"
-                    })
-                    doc.insert()
-                    created_conditions += 1
+                    try:
+                        doc = frappe.get_doc({
+                            "doctype": "Dental Condition Master",
+                            "condition_code": condition["condition_code"],
+                            "condition_name": condition["condition_name"],
+                            "category": condition["category"],
+                            "severity": condition["severity"],
+                            "color_code": condition["color_code"],
+                            "is_emergency": condition["is_emergency"],
+                            "description": f"Test condition: {condition['condition_name']}"
+                        })
+                        doc.insert()
+                        created_conditions += 1
+                    except Exception as e:
+                        print(f"⚠️  Error creating condition {condition['condition_code']}: {str(e)}")
             
             print(f"✅ Dental Conditions: Created {created_conditions} conditions")
         else:
@@ -131,33 +163,36 @@ def generate_master_data():
     try:
         if frappe.db.exists("DocType", "Dental Procedure Master"):
             procedures = [
-                {"procedure_code": "PRE001", "procedure_name": "Cleaning", "category": "Preventive", "complexity": "Simple", "standard_fee": 120, "duration_minutes": 30},
-                {"procedure_code": "RES001", "procedure_name": "Filling", "category": "Restorative", "complexity": "Simple", "standard_fee": 180, "duration_minutes": 45},
-                {"procedure_code": "RES002", "procedure_name": "Crown", "category": "Restorative", "complexity": "Complex", "standard_fee": 800, "duration_minutes": 90},
-                {"procedure_code": "END001", "procedure_name": "Root Canal", "category": "Endodontic", "complexity": "Advanced", "standard_fee": 1200, "duration_minutes": 120},
-                {"procedure_code": "SUR001", "procedure_name": "Extraction", "category": "Oral Surgery", "complexity": "Moderate", "standard_fee": 200, "duration_minutes": 30},
-                {"procedure_code": "PRO001", "procedure_name": "Bridge", "category": "Prosthodontic", "complexity": "Advanced", "standard_fee": 2400, "duration_minutes": 180},
-                {"procedure_code": "SUR002", "procedure_name": "Implant", "category": "Oral Surgery", "complexity": "Advanced", "standard_fee": 3500, "duration_minutes": 120},
-                {"procedure_code": "COS001", "procedure_name": "Whitening", "category": "Cosmetic", "complexity": "Simple", "standard_fee": 400, "duration_minutes": 60},
-                {"procedure_code": "PER001", "procedure_name": "Scaling", "category": "Periodontal", "complexity": "Simple", "standard_fee": 150, "duration_minutes": 45},
-                {"procedure_code": "PRE002", "procedure_name": "Fluoride Treatment", "category": "Preventive", "complexity": "Simple", "standard_fee": 50, "duration_minutes": 15}
+                {"procedure_code": "TEST-PRE001", "procedure_name": "Test Cleaning", "category": "Preventive", "complexity": "Simple", "standard_fee": 120, "duration_minutes": 30},
+                {"procedure_code": "TEST-RES001", "procedure_name": "Test Filling", "category": "Restorative", "complexity": "Simple", "standard_fee": 180, "duration_minutes": 45},
+                {"procedure_code": "TEST-RES002", "procedure_name": "Test Crown", "category": "Restorative", "complexity": "Complex", "standard_fee": 800, "duration_minutes": 90},
+                {"procedure_code": "TEST-END001", "procedure_name": "Test Root Canal", "category": "Endodontic", "complexity": "Advanced", "standard_fee": 1200, "duration_minutes": 120},
+                {"procedure_code": "TEST-SUR001", "procedure_name": "Test Extraction", "category": "Oral Surgery", "complexity": "Moderate", "standard_fee": 200, "duration_minutes": 30},
+                {"procedure_code": "TEST-PRO001", "procedure_name": "Test Bridge", "category": "Prosthodontic", "complexity": "Advanced", "standard_fee": 2400, "duration_minutes": 180},
+                {"procedure_code": "TEST-SUR002", "procedure_name": "Test Implant", "category": "Oral Surgery", "complexity": "Advanced", "standard_fee": 3500, "duration_minutes": 120},
+                {"procedure_code": "TEST-COS001", "procedure_name": "Test Whitening", "category": "Cosmetic", "complexity": "Simple", "standard_fee": 400, "duration_minutes": 60},
+                {"procedure_code": "TEST-PER001", "procedure_name": "Test Scaling", "category": "Periodontal", "complexity": "Simple", "standard_fee": 150, "duration_minutes": 45},
+                {"procedure_code": "TEST-PRE002", "procedure_name": "Test Fluoride Treatment", "category": "Preventive", "complexity": "Simple", "standard_fee": 50, "duration_minutes": 15}
             ]
             
             created_procedures = 0
             for procedure in procedures:
                 if not frappe.db.exists("Dental Procedure Master", procedure["procedure_code"]):
-                    doc = frappe.get_doc({
-                        "doctype": "Dental Procedure Master",
-                        "procedure_code": procedure["procedure_code"],
-                        "procedure_name": procedure["procedure_name"],
-                        "category": procedure["category"],
-                        "complexity": procedure["complexity"],
-                        "standard_fee": procedure["standard_fee"],
-                        "duration_minutes": procedure["duration_minutes"],
-                        "description": f"Standard {procedure['procedure_name'].lower()} procedure"
-                    })
-                    doc.insert()
-                    created_procedures += 1
+                    try:
+                        doc = frappe.get_doc({
+                            "doctype": "Dental Procedure Master",
+                            "procedure_code": procedure["procedure_code"],
+                            "procedure_name": procedure["procedure_name"],
+                            "category": procedure["category"],
+                            "complexity": procedure["complexity"],
+                            "standard_fee": procedure["standard_fee"],
+                            "duration_minutes": procedure["duration_minutes"],
+                            "description": f"Standard {procedure['procedure_name'].lower()} procedure"
+                        })
+                        doc.insert()
+                        created_procedures += 1
+                    except Exception as e:
+                        print(f"⚠️  Error creating procedure {procedure['procedure_code']}: {str(e)}")
             
             print(f"✅ Dental Procedures: Created {created_procedures} procedures")
         else:
@@ -256,53 +291,67 @@ def generate_practitioners():
         dental_prac.insert()
 
 def generate_patients():
-    """Generate test patients"""
+    """Generate test dental patients"""
     
-    first_names = ["John", "Jane", "Michael", "Sarah", "David", "Emily", "Robert", "Lisa", "James", "Maria", 
-                   "William", "Jennifer", "Richard", "Patricia", "Charles", "Linda", "Christopher", "Barbara",
-                   "Daniel", "Elizabeth", "Matthew", "Jessica", "Anthony", "Susan", "Mark", "Karen"]
+    # Sample patient data with unique identifiers
+    patients_data = [
+        {"first_name": "John", "last_name": "Smith", "sex": "Male", "age_years": 35},
+        {"first_name": "Sarah", "last_name": "Johnson", "sex": "Female", "age_years": 28},
+        {"first_name": "Michael", "last_name": "Brown", "sex": "Male", "age_years": 42},
+        {"first_name": "Emily", "last_name": "Davis", "sex": "Female", "age_years": 31},
+        {"first_name": "David", "last_name": "Wilson", "sex": "Male", "age_years": 55},
+        {"first_name": "Lisa", "last_name": "Miller", "sex": "Female", "age_years": 39},
+        {"first_name": "Robert", "last_name": "Garcia", "sex": "Male", "age_years": 47},
+        {"first_name": "Jennifer", "last_name": "Martinez", "sex": "Female", "age_years": 33},
+        {"first_name": "William", "last_name": "Anderson", "sex": "Male", "age_years": 29},
+        {"first_name": "Amanda", "last_name": "Taylor", "sex": "Female", "age_years": 36}
+    ]
     
-    last_names = ["Smith", "Johnson", "Williams", "Brown", "Jones", "Garcia", "Miller", "Davis", "Rodriguez",
-                  "Martinez", "Hernandez", "Lopez", "Gonzalez", "Wilson", "Anderson", "Thomas", "Taylor",
-                  "Moore", "Jackson", "Martin", "Lee", "Perez", "Thompson", "White", "Harris"]
+    created_patients = 0
+    for i, patient_data in enumerate(patients_data):
+        patient_name = f"TEST-{patient_data['first_name']} {patient_data['last_name']}"
+        
+        # Skip if patient already exists
+        if frappe.db.exists("Patient", {"patient_name": patient_name}):
+            continue
+            
+        try:
+            # Create Healthcare Patient (base patient record)
+            dob = getdate() - timedelta(days=patient_data['age_years'] * 365)
+            
+            healthcare_patient = frappe.get_doc({
+                "doctype": "Patient",
+                "first_name": patient_data['first_name'],
+                "last_name": patient_data['last_name'],
+                "patient_name": patient_name,
+                "sex": patient_data['sex'],
+                "dob": dob,
+                "mobile": f"+1-555-{1000 + i:04d}",  # Unique mobile numbers
+                "email": f"test.patient.{i+1}@testdental.com",  # Unique emails
+                "customer_group": "Individual",
+                "territory": "United States"
+            })
+            healthcare_patient.insert()
+            
+            # Create Dental Patient (extended patient record)
+            dental_patient = frappe.get_doc({
+                "doctype": "Dental Patient",
+                "patient_name": patient_name,
+                "healthcare_patient": healthcare_patient.name,
+                "dental_history": f"Patient has regular dental checkups. Age: {patient_data['age_years']}",
+                "emergency_contact": f"Emergency Contact for {patient_data['first_name']}",
+                "emergency_phone": f"+1-555-{9000 + i:04d}",
+                "insurance_provider": random.choice(["Delta Dental", "Blue Cross", "Aetna", "MetLife", "None"]),
+                "preferred_appointment_time": random.choice(["Morning", "Afternoon", "Evening"])
+            })
+            dental_patient.insert()
+            created_patients += 1
+            
+        except Exception as e:
+            print(f"⚠️  Error creating patient {patient_name}: {str(e)}")
+            continue
     
-    for i in range(50):  # Generate 50 test patients
-        first_name = random.choice(first_names)
-        last_name = random.choice(last_names)
-        
-        # Create Healthcare Patient first
-        birth_date = getdate() - timedelta(days=random.randint(18*365, 80*365))
-        
-        healthcare_patient = frappe.get_doc({
-            "doctype": "Patient",
-            "first_name": first_name,
-            "last_name": last_name,
-            "patient_name": f"{first_name} {last_name}",
-            "gender": random.choice(["Male", "Female"]),
-            "dob": birth_date,
-            "mobile": f"+1-555-{random.randint(1000, 9999)}",
-            "email": f"{first_name.lower()}.{last_name.lower()}@test.com"
-        })
-        healthcare_patient.insert()
-        
-        # Create Dental Patient
-        dental_patient = frappe.get_doc({
-            "doctype": "Dental Patient",
-            "patient_name": f"{first_name} {last_name}",
-            "healthcare_patient": healthcare_patient.name,
-            "dental_history": random.choice([
-                "Regular checkups, no major issues",
-                "Previous fillings, good oral hygiene",
-                "History of gum disease, improved with treatment",
-                "Orthodontic treatment completed",
-                "Previous root canal treatment"
-            ]),
-            "dental_allergies": random.choice(["None", "Latex", "Penicillin", "Local anesthetics", ""]),
-            "emergency_contact": f"Emergency Contact {i+1}",
-            "emergency_phone": f"+1-555-{random.randint(5000, 9999)}",
-            "preferred_dentist": random.choice(frappe.get_all("Dental Practitioner", pluck="name"))
-        })
-        dental_patient.insert()
+    print(f"✅ Patients: Created {created_patients} patients")
 
 def generate_dental_charts():
     """Generate dental charts and conditions"""
@@ -709,6 +758,165 @@ def generate_sample_data_for_testing():
         except:
             # If logging fails, just print the error
             print(f"❌ Sample Data Generation Error: {str(e)}")
+        
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@frappe.whitelist()
+def generate_simple_test_data():
+    """Generate minimal test data without user conflicts"""
+    try:
+        frappe.db.begin()
+        
+        print("🧪 Starting simple test data generation...")
+        
+        # 1. Generate master data
+        generate_master_data()
+        
+        # 2. Create one clinic (if not exists)
+        if not frappe.db.exists("Dental Clinic", {"clinic_code": "TEST-SIMPLE"}):
+            clinic = frappe.get_doc({
+                "doctype": "Dental Clinic",
+                "clinic_name": "TEST-Simple Dental Clinic",
+                "clinic_code": "TEST-SIMPLE",
+                "address": "123 Test Street",
+                "phone": "+1-555-0100",
+                "email": "test@simpledental.com",
+                "license_number": "TEST-LIC-SIMPLE",
+                "established_date": getdate(),
+                "status": "Active",
+                "default_currency": "USD"
+            })
+            clinic.insert()
+            print("✅ Created test clinic")
+        
+        # 3. Create one healthcare practitioner (if not exists)
+        if not frappe.db.exists("Healthcare Practitioner", {"first_name": "Test", "last_name": "Dentist"}):
+            healthcare_prac = frappe.get_doc({
+                "doctype": "Healthcare Practitioner",
+                "first_name": "Test",
+                "last_name": "Dentist",
+                "practitioner_name": "Dr. Test Dentist",
+                "mobile": "+1-555-9999",
+                "email": "test.dentist@simpledental.com"
+            })
+            healthcare_prac.insert()
+            
+            dental_prac = frappe.get_doc({
+                "doctype": "Dental Practitioner",
+                "practitioner_name": "Dr. Test Dentist",
+                "healthcare_practitioner": healthcare_prac.name,
+                "dental_license_number": "TEST-DDS-SIMPLE",
+                "specialization": "General Dentistry",
+                "years_of_experience": 10,
+                "consultation_fee": 200
+            })
+            dental_prac.insert()
+            print("✅ Created test practitioner")
+        
+        # 4. Generate some tooth procedures directly (for reports)
+        procedures = frappe.get_all("Dental Procedure Master", 
+                                  filters=[["procedure_code", "like", "TEST-%"]], 
+                                  pluck="name")
+        teeth = frappe.get_all("Tooth Master", pluck="name")
+        practitioners = frappe.get_all("Healthcare Practitioner", pluck="name")
+        
+        if procedures and teeth and practitioners:
+            procedure_count = 0
+            for i in range(50):  # Generate 50 procedures
+                procedure_master = frappe.get_doc("Dental Procedure Master", random.choice(procedures))
+                
+                # Random dates for procedures (last 3 months)
+                procedure_date = getdate() - timedelta(days=random.randint(1, 90))
+                status = random.choice(["Completed", "Completed", "In Progress", "Planned"])
+                
+                completed_date = None
+                if status == "Completed":
+                    completed_date = procedure_date + timedelta(days=random.randint(0, 3))
+                
+                # Calculate fees
+                standard_fee = procedure_master.standard_fee
+                actual_fee = standard_fee * random.uniform(0.9, 1.1) if status == "Completed" else None
+                
+                # Add complications occasionally
+                notes = f"Test procedure performed on {procedure_date}"
+                if random.random() < 0.1:
+                    notes += ". Minor complication noted."
+                
+                tooth_procedure = frappe.get_doc({
+                    "doctype": "Tooth Procedure",
+                    "tooth_number": random.choice(teeth),
+                    "procedure_code": procedure_master.name,
+                    "surface": random.choice(["Whole Tooth", "Occlusal", "Mesial"]),
+                    "status": status,
+                    "planned_date": procedure_date,
+                    "completed_date": completed_date,
+                    "planned_by": "Administrator",
+                    "performed_by": random.choice(practitioners) if status in ["Completed", "In Progress"] else None,
+                    "duration_minutes": procedure_master.duration_minutes,
+                    "standard_fee": standard_fee,
+                    "actual_fee": actual_fee,
+                    "notes": notes
+                })
+                tooth_procedure.insert()
+                procedure_count += 1
+            
+            print(f"✅ Created {procedure_count} tooth procedures")
+        
+        # 5. Generate some invoices
+        invoice_count = 0
+        for i in range(20):  # Generate 20 invoices
+            invoice_date = getdate() - timedelta(days=random.randint(1, 90))
+            
+            invoice = frappe.get_doc({
+                "doctype": "Invoice",
+                "patient": f"TEST-Patient-{i+1}",  # Simple patient reference
+                "practitioner": practitioners[0] if practitioners else "Dr. Test Dentist",
+                "invoice_date": invoice_date,
+                "due_date": add_days(invoice_date, 30),
+                "invoice_status": random.choice(["Sent", "Paid", "Partially Paid"]),
+                "priority": "Normal"
+            })
+            
+            # Add simple invoice items
+            procedure = random.choice(procedures) if procedures else None
+            if procedure:
+                procedure_master = frappe.get_doc("Dental Procedure Master", procedure)
+                
+                invoice.append("invoice_items", {
+                    "item_description": procedure_master.procedure_name,
+                    "procedure_code": procedure_master.procedure_code,
+                    "quantity": 1,
+                    "unit_price": procedure_master.standard_fee,
+                    "total_price": procedure_master.standard_fee
+                })
+                
+                # Calculate totals
+                subtotal = procedure_master.standard_fee
+                tax_amount = subtotal * 0.08
+                invoice.subtotal = subtotal
+                invoice.tax_amount = tax_amount
+                invoice.total_amount = subtotal + tax_amount
+                invoice.outstanding_amount = subtotal + tax_amount
+                
+                invoice.insert()
+                invoice_count += 1
+        
+        print(f"✅ Created {invoice_count} invoices")
+        
+        frappe.db.commit()
+        
+        return {
+            "success": True,
+            "message": "Simple test data generated successfully",
+            "data": get_test_data_summary()
+        }
+        
+    except Exception as e:
+        frappe.db.rollback()
+        print(f"❌ Simple Test Data Generation Error: {str(e)}")
         
         return {
             "success": False,
