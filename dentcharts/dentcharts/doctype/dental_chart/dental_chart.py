@@ -216,9 +216,22 @@ class DentalChart(Document):
 				chart_data["teeth"][tooth_key]["status"] = "has_condition"
 		
 		# Add procedures
+		general_procedures = []
 		for procedure in (self.tooth_procedures or []):
 			tooth_key = str(procedure.tooth_number)
-			if tooth_key in chart_data["teeth"]:
+			
+			# Handle general procedures separately
+			if tooth_key == "General":
+				general_procedures.append({
+					"code": procedure.procedure_code,
+					"surface": procedure.surface,
+					"status": procedure.status,
+					"notes": procedure.notes,
+					"date": procedure.planned_date,
+					"actual_fee": procedure.actual_fee,
+					"standard_fee": procedure.standard_fee
+				})
+			elif tooth_key in chart_data["teeth"]:
 				chart_data["teeth"][tooth_key]["procedures"].append({
 					"code": procedure.procedure_code,
 					"surface": procedure.surface,
@@ -230,6 +243,9 @@ class DentalChart(Document):
 					chart_data["teeth"][tooth_key]["status"] = "treated"
 				elif procedure.status == "In Progress":
 					chart_data["teeth"][tooth_key]["status"] = "in_treatment"
+		
+		# Add general procedures to chart data
+		chart_data["general_procedures"] = general_procedures
 		
 		return chart_data
 	
@@ -381,21 +397,53 @@ class DentalChart(Document):
 				)
 	
 	def track_procedure_changes(self, old_doc):
-		"""Track changes in tooth procedures"""
+		"""Track changes in tooth procedures with grouping for multi-tooth procedures"""
 		old_procedures = {f"{p.tooth_number}_{p.procedure_code}_{p.surface}": p for p in (old_doc.tooth_procedures or [])}
 		new_procedures = {f"{p.tooth_number}_{p.procedure_code}_{p.surface}": p for p in (self.tooth_procedures or [])}
 		
-		# Find added procedures
+		# Group new procedures by procedure_code and surface for batch tracking
+		new_procedure_groups = {}
 		for key, procedure in new_procedures.items():
 			if key not in old_procedures:
-				cost_impact = procedure.actual_fee or procedure.standard_fee or 0
+				group_key = f"{procedure.procedure_code}_{procedure.surface}_{procedure.status}"
+				if group_key not in new_procedure_groups:
+					new_procedure_groups[group_key] = {
+						'procedure_code': procedure.procedure_code,
+						'surface': procedure.surface,
+						'status': procedure.status,
+						'teeth': [],
+						'total_cost': 0,
+						'notes': procedure.notes or ""
+					}
+				new_procedure_groups[group_key]['teeth'].append(procedure.tooth_number)
+				cost = procedure.actual_fee or procedure.standard_fee or 0
+				new_procedure_groups[group_key]['total_cost'] += cost
+		
+		# Log grouped activities for multi-tooth procedures
+		for group_key, group_data in new_procedure_groups.items():
+			if len(group_data['teeth']) > 1:
+				# Multi-tooth procedure - create single grouped activity
+				teeth_list = ', '.join(sorted(group_data['teeth']))
+				description = f"Added procedure to multiple teeth ({len(group_data['teeth'])} teeth): {teeth_list}"
+				
 				self.log_activity(
 					activity_type="Procedure Added",
-					tooth_number=procedure.tooth_number,
-					procedure_code=procedure.procedure_code,
-					new_value=f"{procedure.procedure_code} ({procedure.status}) on {procedure.surface}",
-					cost_impact=cost_impact,
-					additional_notes=procedure.notes or ""
+					tooth_number=f"Multiple ({len(group_data['teeth'])})",
+					procedure_code=group_data['procedure_code'],
+					new_value=f"{group_data['procedure_code']} ({group_data['status']}) on {group_data['surface']} - {teeth_list}",
+					cost_impact=group_data['total_cost'],
+					additional_notes=f"Multi-tooth procedure: {group_data['notes']}"
+				)
+			elif len(group_data['teeth']) == 1:
+				# Single tooth procedure - log normally
+				tooth_number = group_data['teeth'][0]
+				self.log_activity(
+					activity_type="Procedure Added",
+					tooth_number=tooth_number,
+					procedure_code=group_data['procedure_code'],
+					new_value=f"{group_data['procedure_code']} ({group_data['status']}) on {group_data['surface']}",
+					cost_impact=group_data['total_cost'],
+					additional_notes=group_data['notes']
 				)
 		
 		# Find removed procedures
@@ -469,18 +517,47 @@ class DentalChart(Document):
 	
 	def generate_activity_description(self, activity_type, tooth_number=None, condition_code=None, procedure_code=None, cost_impact=None):
 		"""Generate a human-readable activity description"""
-		descriptions = {
-			"Condition Added": f"Added condition to tooth {tooth_number}",
-			"Condition Removed": f"Removed condition from tooth {tooth_number}",
-			"Condition Modified": f"Modified condition on tooth {tooth_number}",
-			"Procedure Added": f"Added procedure to tooth {tooth_number}",
-			"Procedure Removed": f"Removed procedure from tooth {tooth_number}",
-			"Procedure Status Changed": f"Changed procedure status on tooth {tooth_number}",
-			"Procedure Cost Modified": f"Modified procedure cost for tooth {tooth_number}",
-			"Visit Recorded": "Recorded new patient visit",
-			"Chart Updated": "Updated dental chart",
-			"Treatment Completed": f"Completed treatment on tooth {tooth_number}"
-		}
+		
+		# Handle special cases for general and multi-tooth procedures
+		if tooth_number == "General":
+			descriptions = {
+				"Condition Added": f"Added general condition",
+				"Condition Removed": f"Removed general condition",
+				"Condition Modified": f"Modified general condition",
+				"Procedure Added": f"Added general procedure",
+				"Procedure Removed": f"Removed general procedure",
+				"Procedure Status Changed": f"Changed general procedure status",
+				"Procedure Cost Modified": f"Modified general procedure cost",
+				"Visit Recorded": "Recorded new patient visit",
+				"Chart Updated": "Updated dental chart",
+				"Treatment Completed": f"Completed general treatment"
+			}
+		elif tooth_number and tooth_number.startswith("Multiple"):
+			descriptions = {
+				"Condition Added": f"Added condition to {tooth_number.lower()}",
+				"Condition Removed": f"Removed condition from {tooth_number.lower()}",
+				"Condition Modified": f"Modified condition on {tooth_number.lower()}",
+				"Procedure Added": f"Added procedure to {tooth_number.lower()}",
+				"Procedure Removed": f"Removed procedure from {tooth_number.lower()}",
+				"Procedure Status Changed": f"Changed procedure status on {tooth_number.lower()}",
+				"Procedure Cost Modified": f"Modified procedure cost for {tooth_number.lower()}",
+				"Visit Recorded": "Recorded new patient visit",
+				"Chart Updated": "Updated dental chart",
+				"Treatment Completed": f"Completed treatment on {tooth_number.lower()}"
+			}
+		else:
+			descriptions = {
+				"Condition Added": f"Added condition to tooth {tooth_number}",
+				"Condition Removed": f"Removed condition from tooth {tooth_number}",
+				"Condition Modified": f"Modified condition on tooth {tooth_number}",
+				"Procedure Added": f"Added procedure to tooth {tooth_number}",
+				"Procedure Removed": f"Removed procedure from tooth {tooth_number}",
+				"Procedure Status Changed": f"Changed procedure status on tooth {tooth_number}",
+				"Procedure Cost Modified": f"Modified procedure cost for tooth {tooth_number}",
+				"Visit Recorded": "Recorded new patient visit",
+				"Chart Updated": "Updated dental chart",
+				"Treatment Completed": f"Completed treatment on tooth {tooth_number}"
+			}
 		
 		description = descriptions.get(activity_type, f"{activity_type} on tooth {tooth_number}")
 		

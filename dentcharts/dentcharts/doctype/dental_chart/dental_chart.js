@@ -52,6 +52,10 @@ frappe.ui.form.on('Dental Chart', {
 			frm.add_custom_button(__('Clear Old Activities'), function() {
 				clear_old_activities(frm);
 			}, __('Activity History'));
+			
+			frm.add_custom_button(__('Add General Procedure'), function() {
+				add_general_procedure(frm);
+			}, __('Add Treatments'));
 		}
 		
 		// Show dentition type info
@@ -235,7 +239,48 @@ function build_interactive_chart_html(frm, chart_data) {
 					<p style="margin: 5px 0;"><span style="display: inline-block; width: 20px; height: 15px; background: #d1ecf1; border: 1px solid #ccc; margin-right: 8px;"></span> In Treatment</p>
 					<p style="margin: 5px 0;"><span style="display: inline-block; width: 20px; height: 15px; background: #d4edda; border: 1px solid #ccc; margin-right: 8px;"></span> Treated</p>
 				</div>
-			</div>
+			</div>`;
+
+	// Add general procedures section if any exist
+	if (chart_data.general_procedures && chart_data.general_procedures.length > 0) {
+		html += `
+			<div style="margin-top: 20px; padding: 15px; background: linear-gradient(135deg, #e8f4fd, #d1ecf1); border-radius: 8px;">
+				<h5 style="margin: 0 0 15px 0; color: #0c5460;">🔧 General Procedures</h5>
+				<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px;">`;
+		
+		chart_data.general_procedures.forEach(procedure => {
+			let status_color = procedure.status === 'Completed' ? '#28a745' : 
+							  procedure.status === 'In Progress' ? '#17a2b8' : '#ffc107';
+			html += `
+				<div style="background: white; padding: 12px; border-radius: 6px; border-left: 4px solid ${status_color};">
+					<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+						<strong style="color: #333;">${procedure.code}</strong>
+						<span style="background: ${status_color}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">
+							${procedure.status}
+						</span>
+					</div>
+					<div style="font-size: 13px; color: #666; margin-bottom: 5px;">
+						<strong>Surface:</strong> ${procedure.surface}
+					</div>
+					<div style="font-size: 13px; color: #666; margin-bottom: 5px;">
+						<strong>Date:</strong> ${frappe.datetime.str_to_user(procedure.date)}
+					</div>
+					${procedure.actual_fee ? `<div style="font-size: 13px; color: #28a745; font-weight: bold;">
+						<strong>Fee:</strong> ${format_currency(procedure.actual_fee)}
+					</div>` : ''}
+					${procedure.notes ? `<div style="font-size: 12px; color: #666; margin-top: 8px; font-style: italic;">
+						${procedure.notes}
+					</div>` : ''}
+				</div>
+			`;
+		});
+		
+		html += `
+				</div>
+			</div>`;
+	}
+	
+	html += `
 		</div>
 	`;
 
@@ -1803,10 +1848,14 @@ function update_activity_timeline(frm) {
 					${icon}
 				</div>
 				<div style="background: white; border: 1px solid #dee2e6; border-radius: 8px; 
-							padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
-					<div style="display: flex; justify-content: between; align-items: start; margin-bottom: 8px;">
+							padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); position: relative;">
+					<div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 8px;">
 						<h6 style="margin: 0; color: ${color};">${activity.activity_type}</h6>
-						<small style="color: #6c757d;">${datetime}</small>
+						<div style="display: flex; gap: 8px; align-items: center;">
+							<button class="btn btn-xs btn-secondary" onclick="edit_activity_from_timeline('${activity.name}')" 
+									style="padding: 2px 6px; font-size: 10px;">✏️ Edit</button>
+							<small style="color: #6c757d;">${datetime}</small>
+						</div>
 					</div>
 					<p style="margin: 0 0 8px 0; font-weight: 500;">${activity.activity_description || 'No description'}</p>
 					${activity.tooth_number ? `<div style="margin-bottom: 5px;"><strong>Tooth:</strong> ${activity.tooth_number}</div>` : ''}
@@ -2162,6 +2211,356 @@ function clear_old_activities(frm) {
 					});
 				}
 			);
+		}
+	});
+	d.show();
+}
+
+function add_general_procedure(frm) {
+	let d = new frappe.ui.Dialog({
+		title: __('Add General Procedure'),
+		size: 'large',
+		fields: [
+			{
+				fieldtype: 'HTML',
+				options: `
+					<div style="background: linear-gradient(135deg, #007bff, #0056b3); color: white; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+						<h5 style="margin: 0;">🔧 General Procedure</h5>
+						<p style="margin: 5px 0 0 0; opacity: 0.9;">Add a procedure that applies to the entire mouth or general treatment</p>
+					</div>
+				`
+			},
+			{
+				fieldtype: 'Link',
+				fieldname: 'procedure_code',
+				label: __('Procedure'),
+				options: 'Dental Procedure Master',
+				reqd: 1,
+				change: function() {
+					let procedure_code = this.get_value();
+					if (procedure_code) {
+						frappe.call({
+							method: 'frappe.client.get',
+							args: {
+								doctype: 'Dental Procedure Master',
+								name: procedure_code
+							},
+							callback: function(r) {
+								if (r.message) {
+									let procedure = r.message;
+									d.set_value('standard_fee', procedure.standard_fee || 0);
+									d.set_value('actual_fee', procedure.standard_fee || 0);
+									update_general_cost_info_display(d, procedure);
+								}
+							}
+						});
+					}
+				}
+			},
+			{
+				fieldtype: 'Select',
+				fieldname: 'status',
+				label: __('Status'),
+				options: 'Planned\nIn Progress\nCompleted\nCancelled',
+				default: 'Planned',
+				reqd: 1
+			},
+			{
+				fieldtype: 'Column Break'
+			},
+			{
+				fieldtype: 'Date',
+				fieldname: 'planned_date',
+				label: __('Planned Date'),
+				default: frappe.datetime.nowdate(),
+				reqd: 1
+			},
+			{
+				fieldtype: 'Link',
+				fieldname: 'planned_by',
+				label: __('Planned By'),
+				options: 'User',
+				default: frappe.session.user,
+				reqd: 1
+			},
+			{
+				fieldtype: 'Section Break',
+				label: __('Cost Information')
+			},
+			{
+				fieldtype: 'Currency',
+				fieldname: 'standard_fee',
+				label: __('Standard Fee'),
+				read_only: 1,
+				description: __('Standard fee from procedure master')
+			},
+			{
+				fieldtype: 'Currency',
+				fieldname: 'actual_fee',
+				label: __('Actual Fee'),
+				description: __('Actual fee to be charged (editable by doctor)'),
+				change: function() {
+					calculate_general_patient_portion(d);
+				}
+			},
+			{
+				fieldtype: 'Column Break'
+			},
+			{
+				fieldtype: 'Currency',
+				fieldname: 'insurance_covered',
+				label: __('Insurance Covered'),
+				default: 0,
+				description: __('Amount covered by insurance'),
+				change: function() {
+					calculate_general_patient_portion(d);
+				}
+			},
+			{
+				fieldtype: 'Currency',
+				fieldname: 'patient_portion',
+				label: __('Patient Portion'),
+				read_only: 1,
+				description: __('Amount patient needs to pay')
+			},
+			{
+				fieldtype: 'Section Break'
+			},
+			{
+				fieldtype: 'HTML',
+				fieldname: 'cost_info_display',
+				options: '<div id="general-cost-info"></div>'
+			},
+			{
+				fieldtype: 'Section Break',
+				label: __('Additional Information')
+			},
+			{
+				fieldtype: 'Small Text',
+				fieldname: 'notes',
+				label: __('Notes')
+			},
+			{
+				fieldtype: 'Small Text',
+				fieldname: 'treatment_plan_notes',
+				label: __('Treatment Plan Notes')
+			}
+		],
+		primary_action_label: __('Add General Procedure'),
+		primary_action: function(values) {
+			// Add the general procedure
+			let procedure_row = frm.add_child('tooth_procedures');
+			procedure_row.tooth_number = 'General'; // Special marker for general procedures
+			procedure_row.procedure_code = values.procedure_code;
+			procedure_row.surface = 'General Treatment';
+			procedure_row.status = values.status;
+			procedure_row.planned_date = values.planned_date;
+			procedure_row.planned_by = values.planned_by;
+			procedure_row.notes = values.notes;
+			procedure_row.treatment_plan_notes = values.treatment_plan_notes;
+			procedure_row.standard_fee = values.standard_fee || 0;
+			procedure_row.actual_fee = values.actual_fee || values.standard_fee || 0;
+			procedure_row.insurance_covered = values.insurance_covered || 0;
+			procedure_row.patient_portion = values.patient_portion || 0;
+			
+			if (values.status === 'Completed') {
+				procedure_row.completed_date = frappe.datetime.nowdate();
+			}
+			
+			frm.refresh_field('tooth_procedures');
+			frm.save();
+			d.hide();
+			
+			// Refresh the chart
+			setTimeout(() => {
+				create_interactive_dental_chart(frm);
+			}, 500);
+			
+			frappe.show_alert({
+				message: __('General procedure added successfully'),
+				indicator: 'green'
+			});
+		}
+	});
+	d.show();
+}
+
+function calculate_general_patient_portion(dialog) {
+	let actual_fee = dialog.get_value('actual_fee') || 0;
+	let insurance_covered = dialog.get_value('insurance_covered') || 0;
+	let patient_portion = Math.max(0, actual_fee - insurance_covered);
+	dialog.set_value('patient_portion', patient_portion);
+}
+
+function update_general_cost_info_display(dialog, procedure) {
+	let actual_fee = dialog.get_value('actual_fee') || 0;
+	let insurance_covered = dialog.get_value('insurance_covered') || 0;
+	let patient_portion = actual_fee - insurance_covered;
+	
+	let cost_html = `
+		<div style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); padding: 15px; border-radius: 8px; margin: 10px 0;">
+			<h6 style="margin: 0 0 10px 0; color: #1565c0;">💰 General Procedure Cost Breakdown</h6>
+			<div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+				<div style="background: white; padding: 10px; border-radius: 4px;">
+					<div style="font-size: 12px; color: #666; margin-bottom: 4px;">STANDARD FEE</div>
+					<div style="font-size: 16px; font-weight: bold; color: #333;">${format_currency(procedure.standard_fee || 0)}</div>
+				</div>
+				<div style="background: white; padding: 10px; border-radius: 4px;">
+					<div style="font-size: 12px; color: #666; margin-bottom: 4px;">ACTUAL FEE</div>
+					<div style="font-size: 16px; font-weight: bold; color: #007bff;">${format_currency(actual_fee)}</div>
+				</div>
+				<div style="background: white; padding: 10px; border-radius: 4px;">
+					<div style="font-size: 12px; color: #666; margin-bottom: 4px;">INSURANCE COVERED</div>
+					<div style="font-size: 16px; font-weight: bold; color: #28a745;">${format_currency(insurance_covered)}</div>
+				</div>
+				<div style="background: white; padding: 10px; border-radius: 4px;">
+					<div style="font-size: 12px; color: #666; margin-bottom: 4px;">PATIENT PORTION</div>
+					<div style="font-size: 16px; font-weight: bold; color: ${patient_portion > 0 ? '#dc3545' : '#28a745'};">${format_currency(patient_portion)}</div>
+				</div>
+			</div>
+			<div style="margin-top: 10px; padding: 8px; background: rgba(255,255,255,0.7); border-radius: 4px; font-size: 13px;">
+				<strong>Procedure:</strong> ${procedure.procedure_name || procedure.name} - General Treatment
+			</div>
+		</div>
+	`;
+	
+	dialog.get_field('cost_info_display').$wrapper.html(cost_html);
+}
+
+// Enhanced timeline with edit functionality and multi-tooth grouping
+window.edit_activity_from_timeline = function(activity_name) {
+	let frm = window.current_frm;
+	let activity = frm.doc.chart_activities.find(a => a.name === activity_name);
+	
+	if (!activity) {
+		frappe.msgprint(__('Activity not found'));
+		return;
+	}
+	
+	let d = new frappe.ui.Dialog({
+		title: __('Edit Activity: ') + activity.activity_type,
+		size: 'large',
+		fields: [
+			{
+				fieldtype: 'HTML',
+				options: `
+					<div style="background: linear-gradient(135deg, #17a2b8, #138496); color: white; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+						<h5 style="margin: 0;">✏️ Edit Activity</h5>
+						<p style="margin: 5px 0 0 0; opacity: 0.9;">Modify the details of this activity entry</p>
+					</div>
+				`
+			},
+			{
+				fieldtype: 'Select',
+				fieldname: 'activity_type',
+				label: __('Activity Type'),
+				options: 'Condition Added\nCondition Removed\nCondition Modified\nProcedure Added\nProcedure Removed\nProcedure Status Changed\nProcedure Cost Modified\nVisit Recorded\nChart Updated\nTreatment Completed\nNote Added\nCustom Entry',
+				default: activity.activity_type,
+				reqd: 1
+			},
+			{
+				fieldtype: 'Small Text',
+				fieldname: 'activity_description',
+				label: __('Activity Description'),
+				default: activity.activity_description,
+				reqd: 1
+			},
+			{
+				fieldtype: 'Column Break'
+			},
+			{
+				fieldtype: 'Datetime',
+				fieldname: 'activity_datetime',
+				label: __('Date & Time'),
+				default: activity.activity_datetime,
+				reqd: 1
+			},
+			{
+				fieldtype: 'Link',
+				fieldname: 'performed_by',
+				label: __('Performed By'),
+				options: 'User',
+				default: activity.performed_by,
+				reqd: 1
+			},
+			{
+				fieldtype: 'Section Break',
+				label: __('Additional Details')
+			},
+			{
+				fieldtype: 'Data',
+				fieldname: 'tooth_number',
+				label: __('Tooth Number'),
+				default: activity.tooth_number
+			},
+			{
+				fieldtype: 'Link',
+				fieldname: 'condition_code',
+				label: __('Related Condition'),
+				options: 'Dental Condition Master',
+				default: activity.condition_code
+			},
+			{
+				fieldtype: 'Column Break'
+			},
+			{
+				fieldtype: 'Link',
+				fieldname: 'procedure_code',
+				label: __('Related Procedure'),
+				options: 'Dental Procedure Master',
+				default: activity.procedure_code
+			},
+			{
+				fieldtype: 'Currency',
+				fieldname: 'cost_impact',
+				label: __('Cost Impact'),
+				default: activity.cost_impact
+			},
+			{
+				fieldtype: 'Section Break',
+				label: __('Notes')
+			},
+			{
+				fieldtype: 'Small Text',
+				fieldname: 'old_value',
+				label: __('Previous Value'),
+				default: activity.old_value
+			},
+			{
+				fieldtype: 'Small Text',
+				fieldname: 'new_value',
+				label: __('New Value'),
+				default: activity.new_value
+			},
+			{
+				fieldtype: 'Text',
+				fieldname: 'additional_notes',
+				label: __('Additional Notes'),
+				default: activity.additional_notes
+			}
+		],
+		primary_action_label: __('Update Activity'),
+		primary_action: function(values) {
+			// Update the activity
+			Object.keys(values).forEach(key => {
+				if (values[key] !== undefined) {
+					activity[key] = values[key];
+				}
+			});
+			
+			frm.refresh_field('chart_activities');
+			frm.save();
+			d.hide();
+			
+			// Update timeline
+			setTimeout(() => {
+				update_activity_timeline(frm);
+			}, 1000);
+			
+			frappe.show_alert({
+				message: __('Activity updated successfully'),
+				indicator: 'green'
+			});
 		}
 	});
 	d.show();
