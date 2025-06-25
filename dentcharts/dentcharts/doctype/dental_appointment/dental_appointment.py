@@ -345,16 +345,16 @@ class DentalAppointment(Document):
 		)
 		
 		return appointments
-
-@frappe.whitelist()
-def get_available_time_slots(practitioner, date, duration=60):
-	"""Get available time slots for a practitioner on a specific date"""
-	# Business hours: 8 AM to 6 PM
-	business_start = 8
-	business_end = 18
-	slot_duration = 30  # 30-minute slots
 	
-	# Get existing appointments
+@frappe.whitelist()
+	def get_available_time_slots(practitioner, date, duration=60):
+		"""Get available time slots for a practitioner on a specific date"""
+		# Business hours: 8 AM to 6 PM
+		business_start = 8
+		business_end = 18
+		slot_duration = 30  # 30-minute slots
+		
+		# Get existing appointments
 	existing_appointments = frappe.get_all("Dental Appointment",
 		filters={
 			"practitioner": practitioner,
@@ -364,40 +364,40 @@ def get_available_time_slots(practitioner, date, duration=60):
 		fields=["name", "appointment_time", "duration_minutes"],
 		order_by="appointment_time"
 	)
-	
-	# Generate all possible slots
-	available_slots = []
-	current_time = business_start * 60  # Convert to minutes
-	end_time = business_end * 60
-	
+		
+		# Generate all possible slots
+		available_slots = []
+		current_time = business_start * 60  # Convert to minutes
+		end_time = business_end * 60
+		
 	while current_time + int(duration) <= end_time:
-		slot_start = f"{current_time // 60:02d}:{current_time % 60:02d}:00"
+			slot_start = f"{current_time // 60:02d}:{current_time % 60:02d}:00"
 		slot_end_minutes = current_time + int(duration)
-		slot_end = f"{slot_end_minutes // 60:02d}:{slot_end_minutes % 60:02d}:00"
-		
-		# Check if slot conflicts with existing appointments
-		is_available = True
-		for apt in existing_appointments:
-			# Handle both string and timedelta formats
-			if isinstance(apt.appointment_time, str):
-				time_parts = apt.appointment_time.split(':')
-				apt_start_minutes = int(time_parts[0]) * 60 + int(time_parts[1])
-			else:
-				# Handle timedelta object
-				apt_start_minutes = int(apt.appointment_time.total_seconds() // 60)
-			apt_end_minutes = apt_start_minutes + (apt.duration_minutes or 60)
+			slot_end = f"{slot_end_minutes // 60:02d}:{slot_end_minutes % 60:02d}:00"
 			
-			if (current_time < apt_end_minutes and slot_end_minutes > apt_start_minutes):
-				is_available = False
-				break
-		
-		if is_available:
-			available_slots.append({
-				"start_time": slot_start,
-				"end_time": slot_end,
+			# Check if slot conflicts with existing appointments
+			is_available = True
+			for apt in existing_appointments:
+				# Handle both string and timedelta formats
+				if isinstance(apt.appointment_time, str):
+					time_parts = apt.appointment_time.split(':')
+					apt_start_minutes = int(time_parts[0]) * 60 + int(time_parts[1])
+				else:
+					# Handle timedelta object
+					apt_start_minutes = int(apt.appointment_time.total_seconds() // 60)
+				apt_end_minutes = apt_start_minutes + (apt.duration_minutes or 60)
+				
+				if (current_time < apt_end_minutes and slot_end_minutes > apt_start_minutes):
+					is_available = False
+					break
+			
+			if is_available:
+				available_slots.append({
+					"start_time": slot_start,
+					"end_time": slot_end,
 				"duration": int(duration)
-			})
+				})
+			
+			current_time += slot_duration
 		
-		current_time += slot_duration
-	
-	return available_slots 
+		return available_slots 

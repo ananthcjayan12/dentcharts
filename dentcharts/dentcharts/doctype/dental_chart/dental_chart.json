@@ -43,6 +43,7 @@
   "estimated_cost",
   "activity_history_section",
   "activity_timeline",
+  "chart_activities",
   "timestamps_section",
   "created_by",
   "created_on",
@@ -260,6 +261,14 @@
    "fieldname": "activity_timeline",
    "fieldtype": "HTML",
    "label": "Treatment Timeline"
+  },
+  {
+   "description": "Complete history of all chart activities. Click rows to edit, use Activity History buttons for advanced management.",
+   "fieldname": "chart_activities",
+   "fieldtype": "Table",
+   "label": "Activity Log",
+   "options": "Dental Chart Activity",
+   "read_only": 0
   },
   {
    "fieldname": "timestamps_section",

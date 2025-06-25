@@ -814,10 +814,9 @@ function add_tooth_procedure_for_tooth(frm, selected_tooth) {
 					indicator: 'green'
 				});
 				
-				// Refresh the interactive chart and timeline
+				// Refresh the interactive chart
 				setTimeout(() => {
 					create_interactive_dental_chart(frm);
-					update_activity_timeline(frm);
 				}, 500);
 			});
 			
@@ -1055,10 +1054,9 @@ window.add_procedure_to_selected = function() {
 				// Refresh the form to update calculated fields like estimated_cost
 				frm.reload_doc();
 				
-				// Refresh the chart and timeline
+				// Refresh the chart
 				setTimeout(() => {
 					create_interactive_dental_chart(frm);
-					update_activity_timeline(frm);
 				}, 500);
 				
 				frappe.show_alert({
@@ -1812,45 +1810,22 @@ function update_multi_cost_summary(dialog, teeth_count) {
 
 // Activity Timeline Functions
 function update_activity_timeline(frm) {
-	
-	// Since we removed the table field, we need to explicitly fetch the activities
-	if (!frm.doc.chart_activities) {
-		// Try to reload the document to get the child table data
-		frappe.call({
-			method: 'frappe.client.get',
-			args: {
-				doctype: 'Dental Chart',
-				name: frm.doc.name
-			},
-			callback: function(r) {
-				if (r.message && r.message.chart_activities) {
-					frm.doc.chart_activities = r.message.chart_activities;
-					render_activity_timeline(frm);
-				} else {
-					render_empty_timeline(frm);
-				}
-			}
-		});
-		return;
+	// Update help text for editable history
+	if (frm.doc.chart_activities && frm.doc.chart_activities.length > 0) {
+		frm.set_df_property('chart_activities', 'description', 
+			`📝 <strong>Editable History:</strong> Click any row to edit details. Use Activity History buttons for advanced management (add manual entries, export, cleanup). Total activities: ${frm.doc.chart_activities.length}`
+		);
 	}
 	
-	render_activity_timeline(frm);
-}
-
-function render_empty_timeline(frm) {
-	let empty_html = `
-		<div style="text-align: center; padding: 40px; color: #6c757d;">
-			<div style="font-size: 48px; margin-bottom: 15px;">📋</div>
-			<h5>No Activities Recorded Yet</h5>
-			<p>Start adding conditions or procedures to see the activity timeline</p>
-		</div>
-	`;
-	frm.get_field('activity_timeline').$wrapper.html(empty_html);
-}
-
-function render_activity_timeline(frm) {
 	if (!frm.doc.chart_activities || frm.doc.chart_activities.length === 0) {
-		render_empty_timeline(frm);
+		let empty_html = `
+			<div style="text-align: center; padding: 40px; color: #6c757d;">
+				<div style="font-size: 48px; margin-bottom: 15px;">📋</div>
+				<h5>No Activities Recorded Yet</h5>
+				<p>Start adding conditions or procedures to see the activity timeline</p>
+			</div>
+		`;
+		frm.get_field('activity_timeline').$wrapper.html(empty_html);
 		return;
 	}
 	
@@ -2081,29 +2056,27 @@ function add_manual_activity(frm) {
 		],
 		primary_action_label: __('Add Activity'),
 		primary_action: function(values) {
-			// Call backend method to add the activity since we removed the table field
-			frappe.call({
-				method: 'dentcharts.dentcharts.doctype.dental_chart.dental_chart.add_manual_activity',
-				args: {
-					chart_name: frm.doc.name,
-					activity_data: values
-				},
-				callback: function(r) {
-					if (r.message) {
-						frm.reload_doc();
-						d.hide();
-						
-						// Update timeline
-						setTimeout(() => {
-							update_activity_timeline(frm);
-						}, 1000);
-						
-						frappe.show_alert({
-							message: __('Manual activity added successfully'),
-							indicator: 'green'
-						});
-					}
+			// Add the manual activity to the chart
+			let activity_row = frm.add_child('chart_activities');
+			
+			Object.keys(values).forEach(key => {
+				if (values[key]) {
+					activity_row[key] = values[key];
 				}
+			});
+			
+			frm.refresh_field('chart_activities');
+			frm.save();
+			d.hide();
+			
+			// Update timeline
+			setTimeout(() => {
+				update_activity_timeline(frm);
+			}, 1000);
+			
+			frappe.show_alert({
+				message: __('Manual activity added successfully'),
+				indicator: 'green'
 			});
 		}
 	});
@@ -2218,29 +2191,27 @@ function clear_old_activities(frm) {
 			frappe.confirm(
 				__(`This will delete ${deleted_count} activities and keep ${activities_to_keep.length}. Continue?`),
 				function() {
-					// Call backend method to clear old activities
-					frappe.call({
-						method: 'dentcharts.dentcharts.doctype.dental_chart.dental_chart.clear_old_activities',
-						args: {
-							chart_name: frm.doc.name,
-							cutoff_date: values.cutoff_date
-						},
-						callback: function(r) {
-							if (r.message) {
-								frm.reload_doc();
-								d.hide();
-								
-								// Update timeline
-								setTimeout(() => {
-									update_activity_timeline(frm);
-								}, 1000);
-								
-								frappe.show_alert({
-									message: __(`Deleted ${deleted_count} old activities successfully`),
-									indicator: 'green'
-								});
-							}
-						}
+					// Clear the table and add back only the activities to keep
+					frm.clear_table('chart_activities');
+					activities_to_keep.forEach(activity => {
+						let new_row = frm.add_child('chart_activities');
+						Object.keys(activity).forEach(key => {
+							new_row[key] = activity[key];
+						});
+					});
+					
+					frm.refresh_field('chart_activities');
+					frm.save();
+					d.hide();
+					
+					// Update timeline
+					setTimeout(() => {
+						update_activity_timeline(frm);
+					}, 1000);
+					
+					frappe.show_alert({
+						message: __(`Deleted ${deleted_count} old activities successfully`),
+						indicator: 'green'
 					});
 				}
 			);
@@ -2402,20 +2373,17 @@ function add_general_procedure(frm) {
 			}
 			
 			frm.refresh_field('tooth_procedures');
-			frm.save().then(() => {
-				frm.reload_doc();
-				d.hide();
-				
-				// Refresh the chart and timeline
-				setTimeout(() => {
-					create_interactive_dental_chart(frm);
-					update_activity_timeline(frm);
-				}, 500);
-				
-				frappe.show_alert({
-					message: __('General procedure added successfully'),
-					indicator: 'green'
-				});
+			frm.save();
+			d.hide();
+			
+			// Refresh the chart
+			setTimeout(() => {
+				create_interactive_dental_chart(frm);
+			}, 500);
+			
+			frappe.show_alert({
+				message: __('General procedure added successfully'),
+				indicator: 'green'
 			});
 		}
 	});
@@ -2467,12 +2435,7 @@ function update_general_cost_info_display(dialog, procedure) {
 // Enhanced timeline with edit functionality and multi-tooth grouping
 window.edit_activity_from_timeline = function(activity_name) {
 	let frm = window.current_frm;
-	
-	// Since we removed the table field, we need to find the activity differently
-	let activity = null;
-	if (frm.doc.chart_activities) {
-		activity = frm.doc.chart_activities.find(a => a.name === activity_name);
-	}
+	let activity = frm.doc.chart_activities.find(a => a.name === activity_name);
 	
 	if (!activity) {
 		frappe.msgprint(__('Activity not found'));
@@ -2590,6 +2553,7 @@ window.edit_activity_from_timeline = function(activity_name) {
 				}
 			});
 			
+			frm.refresh_field('chart_activities');
 			frm.save();
 			d.hide();
 			
