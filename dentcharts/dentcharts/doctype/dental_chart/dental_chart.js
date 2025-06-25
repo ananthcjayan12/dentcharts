@@ -598,7 +598,32 @@ function add_tooth_procedure_for_tooth(frm, selected_tooth) {
 				fieldname: 'procedure_code',
 				label: __('Procedure'),
 				options: 'Dental Procedure Master',
-				reqd: 1
+				reqd: 1,
+				change: function() {
+					let procedure_code = d.get_value('procedure_code');
+					if (procedure_code) {
+						// Fetch procedure details and update cost fields
+						frappe.call({
+							method: 'frappe.client.get',
+							args: {
+								doctype: 'Dental Procedure Master',
+								name: procedure_code
+							},
+							callback: function(r) {
+								if (r.message) {
+									let procedure = r.message;
+									// Update cost fields with prefilled values
+									d.set_value('standard_fee', procedure.standard_fee || 0);
+									d.set_value('actual_fee', procedure.standard_fee || 0);
+									d.set_value('duration_minutes', procedure.duration_minutes || 0);
+									
+									// Update cost info display
+									update_cost_info_display(d, procedure);
+								}
+							}
+						});
+					}
+				}
 			},
 			{
 				fieldtype: 'Select',
@@ -611,13 +636,61 @@ function add_tooth_procedure_for_tooth(frm, selected_tooth) {
 				fieldtype: 'Select',
 				fieldname: 'status',
 				label: __('Status'),
-				options: 'Planned\nIn Progress\nCompleted\nCancelled',
+				options: 'Planned\nScheduled\nIn Progress\nCompleted\nCancelled',
 				default: 'Planned'
+			},
+			{
+				fieldtype: 'Section Break',
+				label: __('Cost Information')
+			},
+			{
+				fieldtype: 'HTML',
+				fieldname: 'cost_info',
+				label: __('Cost Details')
+			},
+			{
+				fieldtype: 'Currency',
+				fieldname: 'standard_fee',
+				label: __('Standard Fee'),
+				read_only: 1,
+				description: __('This is the standard fee from procedure master')
+			},
+			{
+				fieldtype: 'Currency',
+				fieldname: 'actual_fee',
+				label: __('Actual Fee (Editable)'),
+				description: __('You can modify this amount as needed')
+			},
+			{
+				fieldtype: 'Column Break'
+			},
+			{
+				fieldtype: 'Currency',
+				fieldname: 'insurance_covered',
+				label: __('Insurance Covered'),
+				default: 0
+			},
+			{
+				fieldtype: 'Currency',
+				fieldname: 'patient_portion',
+				label: __('Patient Portion'),
+				read_only: 1,
+				description: __('Calculated as: Actual Fee - Insurance Covered')
+			},
+			{
+				fieldtype: 'Section Break',
+				label: __('Additional Details')
+			},
+			{
+				fieldtype: 'Int',
+				fieldname: 'duration_minutes',
+				label: __('Duration (Minutes)'),
+				read_only: 1
 			},
 			{
 				fieldtype: 'Small Text',
 				fieldname: 'notes',
-				label: __('Notes')
+				label: __('Procedure Notes')
 			}
 		],
 		primary_action_label: __('Add Procedure'),
@@ -631,9 +704,22 @@ function add_tooth_procedure_for_tooth(frm, selected_tooth) {
 			procedure_row.planned_date = frappe.datetime.nowdate();
 			procedure_row.planned_by = frappe.session.user;
 			
+			// Add cost information
+			procedure_row.standard_fee = values.standard_fee || 0;
+			procedure_row.actual_fee = values.actual_fee || 0;
+			procedure_row.insurance_covered = values.insurance_covered || 0;
+			procedure_row.patient_portion = (values.actual_fee || 0) - (values.insurance_covered || 0);
+			procedure_row.duration_minutes = values.duration_minutes || 0;
+			
 			frm.refresh_field('tooth_procedures');
 			frm.save();
 			d.hide();
+			
+			// Show success message with cost summary
+			frappe.show_alert({
+				message: __(`Procedure added: ${values.procedure_code} - Fee: ${format_currency(values.actual_fee || 0)}`),
+				indicator: 'green'
+			});
 			
 			// Refresh the interactive chart
 			setTimeout(() => {
@@ -641,6 +727,16 @@ function add_tooth_procedure_for_tooth(frm, selected_tooth) {
 			}, 500);
 		}
 	});
+	
+	// Add change handler for insurance and actual fee to calculate patient portion
+	d.fields_dict.actual_fee.$input.on('change', function() {
+		calculate_patient_portion(d);
+	});
+	
+	d.fields_dict.insurance_covered.$input.on('change', function() {
+		calculate_patient_portion(d);
+	});
+	
 	d.show();
 }
 
@@ -736,7 +832,32 @@ window.add_procedure_to_selected = function() {
 				fieldname: 'procedure_code',
 				label: __('Procedure'),
 				options: 'Dental Procedure Master',
-				reqd: 1
+				reqd: 1,
+				change: function() {
+					let procedure_code = d.get_value('procedure_code');
+					if (procedure_code) {
+						// Fetch procedure details and update cost fields
+						frappe.call({
+							method: 'frappe.client.get',
+							args: {
+								doctype: 'Dental Procedure Master',
+								name: procedure_code
+							},
+							callback: function(r) {
+								if (r.message) {
+									let procedure = r.message;
+									// Update cost fields with prefilled values
+									d.set_value('standard_fee', procedure.standard_fee || 0);
+									d.set_value('actual_fee', procedure.standard_fee || 0);
+									d.set_value('duration_minutes', procedure.duration_minutes || 0);
+									
+									// Update cost info display for multiple teeth
+									update_multi_cost_info_display(d, procedure, window.selected_teeth.length);
+								}
+							}
+						});
+					}
+				}
 			},
 			{
 				fieldtype: 'Select',
@@ -749,18 +870,66 @@ window.add_procedure_to_selected = function() {
 				fieldtype: 'Select',
 				fieldname: 'status',
 				label: __('Status'),
-				options: 'Planned\nIn Progress\nCompleted\nCancelled',
+				options: 'Planned\nScheduled\nIn Progress\nCompleted\nCancelled',
 				default: 'Planned'
+			},
+			{
+				fieldtype: 'Section Break',
+				label: __('Cost Information (Per Tooth)')
+			},
+			{
+				fieldtype: 'HTML',
+				fieldname: 'cost_info',
+				label: __('Cost Summary')
+			},
+			{
+				fieldtype: 'Currency',
+				fieldname: 'standard_fee',
+				label: __('Standard Fee (Per Tooth)'),
+				read_only: 1,
+				description: __('Standard fee from procedure master')
+			},
+			{
+				fieldtype: 'Currency',
+				fieldname: 'actual_fee',
+				label: __('Actual Fee (Per Tooth)'),
+				description: __('You can modify this amount as needed')
+			},
+			{
+				fieldtype: 'Column Break'
+			},
+			{
+				fieldtype: 'Currency',
+				fieldname: 'insurance_covered',
+				label: __('Insurance Covered (Per Tooth)'),
+				default: 0
+			},
+			{
+				fieldtype: 'Currency',
+				fieldname: 'patient_portion',
+				label: __('Patient Portion (Per Tooth)'),
+				read_only: 1
+			},
+			{
+				fieldtype: 'Section Break',
+				label: __('Additional Details')
+			},
+			{
+				fieldtype: 'Int',
+				fieldname: 'duration_minutes',
+				label: __('Duration (Minutes per tooth)'),
+				read_only: 1
 			},
 			{
 				fieldtype: 'Small Text',
 				fieldname: 'notes',
-				label: __('Notes')
+				label: __('Procedure Notes')
 			}
 		],
 		primary_action_label: __('Add to All Selected'),
 		primary_action: function(values) {
 			let frm = window.current_frm;
+			let total_cost = (values.actual_fee || 0) * window.selected_teeth.length;
 			
 			window.selected_teeth.forEach(tooth_number => {
 				let procedure_row = frm.add_child('tooth_procedures');
@@ -771,6 +940,13 @@ window.add_procedure_to_selected = function() {
 				procedure_row.notes = values.notes;
 				procedure_row.planned_date = frappe.datetime.nowdate();
 				procedure_row.planned_by = frappe.session.user;
+				
+				// Add cost information
+				procedure_row.standard_fee = values.standard_fee || 0;
+				procedure_row.actual_fee = values.actual_fee || 0;
+				procedure_row.insurance_covered = values.insurance_covered || 0;
+				procedure_row.patient_portion = (values.actual_fee || 0) - (values.insurance_covered || 0);
+				procedure_row.duration_minutes = values.duration_minutes || 0;
 			});
 			
 			frm.refresh_field('tooth_procedures');
@@ -784,11 +960,23 @@ window.add_procedure_to_selected = function() {
 			}, 500);
 			
 			frappe.show_alert({
-				message: __(`Procedure added to ${window.selected_teeth.length} teeth successfully`),
+				message: __(`Procedure added to ${window.selected_teeth.length} teeth - Total Cost: ${format_currency(total_cost)}`),
 				indicator: 'green'
 			});
 		}
 	});
+	
+	// Add change handler for insurance and actual fee to calculate patient portion
+	d.fields_dict.actual_fee.$input.on('change', function() {
+		calculate_patient_portion(d);
+		update_multi_cost_summary(d, window.selected_teeth.length);
+	});
+	
+	d.fields_dict.insurance_covered.$input.on('change', function() {
+		calculate_patient_portion(d);
+		update_multi_cost_summary(d, window.selected_teeth.length);
+	});
+	
 	d.show();
 }
 
@@ -1431,4 +1619,87 @@ function adjustColor(color, amount) {
 	g = g > 255 ? 255 : g < 0 ? 0 : g;
 	b = b > 255 ? 255 : b < 0 ? 0 : b;
 	return (usePound ? "#" : "") + String("000000" + (r << 16 | g << 8 | b).toString(16)).slice(-6);
+}
+
+// Cost calculation and display helper functions
+function calculate_patient_portion(dialog) {
+	let actual_fee = dialog.get_value('actual_fee') || 0;
+	let insurance_covered = dialog.get_value('insurance_covered') || 0;
+	let patient_portion = actual_fee - insurance_covered;
+	dialog.set_value('patient_portion', patient_portion);
+}
+
+function update_cost_info_display(dialog, procedure) {
+	let html = `
+		<div style="background: linear-gradient(135deg, #17a2b8, #138496); color: white; padding: 12px; border-radius: 6px; margin: 8px 0;">
+			<div style="display: flex; align-items: center; gap: 10px;">
+				<span style="font-size: 20px;">💰</span>
+				<div style="flex: 1;">
+					<strong style="font-size: 14px;">${procedure.procedure_name}</strong>
+					<div style="font-size: 12px; opacity: 0.9; margin-top: 2px;">
+						Standard Fee: ${format_currency(procedure.standard_fee || 0)} • 
+						Duration: ${procedure.duration_minutes || 0} mins
+					</div>
+				</div>
+			</div>
+		</div>
+	`;
+	
+	let cost_field = dialog.get_field('cost_info');
+	if (cost_field) {
+		cost_field.$wrapper.html(html);
+	}
+}
+
+function update_multi_cost_info_display(dialog, procedure, teeth_count) {
+	let standard_fee = procedure.standard_fee || 0;
+	let total_standard = standard_fee * teeth_count;
+	
+	let html = `
+		<div style="background: linear-gradient(135deg, #fd7e14, #e55a00); color: white; padding: 12px; border-radius: 6px; margin: 8px 0;">
+			<div style="display: flex; align-items: center; gap: 10px;">
+				<span style="font-size: 20px;">💰</span>
+				<div style="flex: 1;">
+					<strong style="font-size: 14px;">${procedure.procedure_name}</strong>
+					<div style="font-size: 12px; opacity: 0.9; margin-top: 2px;">
+						${teeth_count} teeth × ${format_currency(standard_fee)} = ${format_currency(total_standard)} (Standard Total)
+					</div>
+					<div style="font-size: 12px; opacity: 0.9; margin-top: 2px;">
+						Duration per tooth: ${procedure.duration_minutes || 0} mins
+					</div>
+				</div>
+			</div>
+		</div>
+	`;
+	
+	let cost_field = dialog.get_field('cost_info');
+	if (cost_field) {
+		cost_field.$wrapper.html(html);
+	}
+}
+
+function update_multi_cost_summary(dialog, teeth_count) {
+	let actual_fee = dialog.get_value('actual_fee') || 0;
+	let insurance_covered = dialog.get_value('insurance_covered') || 0;
+	let patient_portion = actual_fee - insurance_covered;
+	
+	let total_actual = actual_fee * teeth_count;
+	let total_insurance = insurance_covered * teeth_count;
+	let total_patient = patient_portion * teeth_count;
+	
+	// Update the cost info display with totals
+	let existing_html = dialog.get_field('cost_info').$wrapper.html();
+	let summary_html = `
+		${existing_html}
+		<div style="background: rgba(0,0,0,0.1); padding: 8px; border-radius: 4px; margin-top: 8px;">
+			<div style="font-size: 12px; opacity: 0.9;">
+				<strong>Total Summary:</strong><br>
+				Actual Total: ${format_currency(total_actual)} | 
+				Insurance Total: ${format_currency(total_insurance)} | 
+				Patient Total: ${format_currency(total_patient)}
+			</div>
+		</div>
+	`;
+	
+	dialog.get_field('cost_info').$wrapper.html(summary_html);
 } 
