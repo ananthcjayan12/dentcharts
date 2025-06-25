@@ -3,19 +3,27 @@
 
 frappe.ui.form.on('Dental Chart', {
 	refresh: function(frm) {
+		// Clear any existing dashboard sections first
+		frm.dashboard.clear_headline();
+		
 		// Show master chart header
 		if (!frm.is_new()) {
 			// Add master chart indicator
-			frm.dashboard.clear_headline();
-			
 			if (frm.doc.chart_type === 'Master Chart') {
 				frm.dashboard.set_headline(`
 					<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
 						<h4 style="margin: 0 0 5px 0;">🦷 Master Dental Chart - ${frm.doc.patient_name}</h4>
 						<p style="margin: 0; opacity: 0.9;">Lifetime dental record • Last updated: ${frappe.datetime.str_to_user(frm.doc.modified)}</p>
+						<div style="margin-top: 10px; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 4px;">
+							<strong>📋 Current Dentition: ${frm.doc.dentition_type || 'Permanent'}</strong>
+							<span style="margin-left: 15px; opacity: 0.8;">${get_dentition_description(frm.doc.dentition_type)}</span>
+						</div>
 					</div>
 				`);
 			}
+			
+			// Clear any existing chart sections
+			$('.dental-chart-container').remove();
 			
 			// Create interactive dental chart
 			create_interactive_dental_chart(frm);
@@ -37,50 +45,56 @@ frappe.ui.form.on('Dental Chart', {
 		// Show dentition type info
 		if (frm.doc.dentition_type) {
 			frm.set_df_property('dentition_type', 'description', get_dentition_description(frm.doc.dentition_type));
+			update_dentition_info_display(frm);
 		}
 	},
 	
 	// Handle dentition type change - refresh chart immediately
 	dentition_type: function(frm) {
-		if (!frm.is_new()) {
-			// Save the change and refresh chart
-			frm.save().then(() => {
-				create_interactive_dental_chart(frm);
-				frappe.show_alert({
-					message: __('Dental chart updated for ' + frm.doc.dentition_type + ' teeth'),
-					indicator: 'green'
-				});
-			});
-		}
-	},
-	
-	dentition_type: function(frm) {
 		// Update description when dentition type changes
 		frm.set_df_property('dentition_type', 'description', get_dentition_description(frm.doc.dentition_type));
+		update_dentition_info_display(frm);
 		
-		// Clear existing conditions and procedures if dentition type changes
-		if (!frm.is_new() && frm.doc.tooth_conditions && frm.doc.tooth_conditions.length > 0) {
-			frappe.confirm(
-				__('Changing dentition type will clear existing conditions and procedures. Continue?'),
-				function() {
-					frm.clear_table('tooth_conditions');
-					frm.clear_table('tooth_procedures');
-					frm.refresh_fields();
-				},
-				function() {
-					// Revert to previous value
-					frm.reload_doc();
-				}
-			);
-		}
-	},
-	
-	after_save: function(frm) {
-		// Refresh interactive chart after saving
 		if (!frm.is_new()) {
-			setTimeout(() => {
-				create_interactive_dental_chart(frm);
-			}, 500);
+			// Show loading indicator
+			frappe.show_alert({
+				message: __('Updating dental chart...'),
+				indicator: 'blue'
+			});
+			
+			// Clear existing conditions and procedures if dentition type changes
+			if (frm.doc.tooth_conditions && frm.doc.tooth_conditions.length > 0) {
+				frappe.confirm(
+					__('Changing dentition type will clear existing conditions and procedures. Continue?'),
+					function() {
+						frm.clear_table('tooth_conditions');
+						frm.clear_table('tooth_procedures');
+						frm.refresh_fields();
+						
+						// Save and refresh chart immediately
+						frm.save().then(() => {
+							refresh_dental_chart(frm);
+							frappe.show_alert({
+								message: __('Dental chart updated for ' + frm.doc.dentition_type + ' teeth'),
+								indicator: 'green'
+							});
+						});
+					},
+					function() {
+						// Revert to previous value
+						frm.reload_doc();
+					}
+				);
+			} else {
+				// Save and refresh chart immediately if no existing data
+				frm.save().then(() => {
+					refresh_dental_chart(frm);
+					frappe.show_alert({
+						message: __('Dental chart updated for ' + frm.doc.dentition_type + ' teeth'),
+						indicator: 'green'
+					});
+				});
+			}
 		}
 	}
 });
@@ -109,8 +123,22 @@ function create_interactive_dental_chart(frm) {
 				let chart_data = r.message;
 				let chart_html = build_interactive_chart_html(frm, chart_data);
 				
-				// Add chart to the form
-				frm.dashboard.add_section(chart_html, __('Interactive Dental Chart'));
+				// Clear any existing chart sections before adding new one
+				$('.dental-chart-container').remove();
+				
+				// Add chart directly to the form's layout container instead of dashboard
+				let form_layout = frm.page.main.find('.frappe-control[data-fieldname="tooth_conditions_section"]').parent();
+				if (form_layout.length) {
+					form_layout.before(chart_html);
+				} else {
+					// Fallback to dashboard if section not found
+					frm.dashboard.add_section(chart_html, __('Interactive Dental Chart'));
+				}
+				
+				// Attach click handlers after DOM is ready
+				setTimeout(() => {
+					attach_tooth_click_handlers(frm);
+				}, 200);
 			}
 		}
 	});
@@ -123,7 +151,17 @@ function build_interactive_chart_html(frm, chart_data) {
 	let html = `
 		<div class="dental-chart-container" style="background: white; padding: 20px; border: 1px solid #d1d8dd; border-radius: 6px; margin: 10px 0;">
 			<div style="text-align: center; margin-bottom: 20px;">
-				<h4>${chart_data.patient} - ${chart_data.dentition_type} Dentition Chart</h4>
+				<div style="background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+					<h4 style="margin: 0 0 8px 0;">${chart_data.patient} - Dental Chart</h4>
+					<div style="display: flex; justify-content: center; align-items: center; gap: 20px; flex-wrap: wrap;">
+						<div style="background: rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 4px;">
+							<strong>🦷 ${chart_data.dentition_type} Dentition</strong>
+						</div>
+						<div style="background: rgba(255,255,255,0.2); padding: 8px 12px; border-radius: 4px; font-size: 14px;">
+							${get_dentition_description(chart_data.dentition_type)}
+						</div>
+					</div>
+				</div>
 				<div style="margin-bottom: 15px;">
 					<p style="color: #6c757d; margin: 5px 0;">🖱️ Click teeth to select • Hold Ctrl/Cmd for multiple selection</p>
 					<div id="selection-info" style="background: #e3f2fd; padding: 8px; border-radius: 4px; margin: 10px 0; min-height: 20px;">
@@ -157,11 +195,6 @@ function build_interactive_chart_html(frm, chart_data) {
 			</div>
 		</div>
 	`;
-
-	// Add click handlers after DOM is ready
-	setTimeout(() => {
-		attach_tooth_click_handlers(frm);
-	}, 100);
 
 	return html;
 }
@@ -1316,4 +1349,86 @@ function show_dental_history(frm) {
 		message: history_html,
 		wide: true
 	});
+}
+
+function refresh_dental_chart(frm) {
+	// Clear existing chart completely
+	$('.dental-chart-container').remove();
+	
+	// Update dashboard header with new dentition type
+	frm.dashboard.clear_headline();
+	if (frm.doc.chart_type === 'Master Chart') {
+		frm.dashboard.set_headline(`
+			<div style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+				<h4 style="margin: 0 0 5px 0;">🦷 Master Dental Chart - ${frm.doc.patient_name}</h4>
+				<p style="margin: 0; opacity: 0.9;">Lifetime dental record • Last updated: ${frappe.datetime.str_to_user(frm.doc.modified)}</p>
+				<div style="margin-top: 10px; padding: 8px; background: rgba(255,255,255,0.1); border-radius: 4px;">
+					<strong>📋 Current Dentition: ${frm.doc.dentition_type || 'Permanent'}</strong>
+					<span style="margin-left: 15px; opacity: 0.8;">${get_dentition_description(frm.doc.dentition_type)}</span>
+				</div>
+			</div>
+		`);
+	}
+	
+	// Create new chart
+	create_interactive_dental_chart(frm);
+}
+
+function update_dentition_info_display(frm) {
+	if (!frm.doc.dentition_type) return;
+	
+	let html = '';
+	let icon = '';
+	let color = '';
+	let description = '';
+	
+	switch(frm.doc.dentition_type) {
+		case 'Permanent':
+			icon = '🦷';
+			color = '#007bff';
+			description = 'Adult teeth (32 teeth) • FDI numbering system (11-48)';
+			break;
+		case 'Primary':
+			icon = '👶';
+			color = '#28a745';
+			description = 'Baby teeth (20 teeth) • Palmer notation (UR-A, UL-B, etc.)';
+			break;
+		case 'Mixed':
+			icon = '🔄';
+			color = '#fd7e14';
+			description = 'Both permanent and primary teeth • Transitional dentition';
+			break;
+	}
+	
+	html = `
+		<div style="background: linear-gradient(135deg, ${color}, ${adjustColor(color, -20)}); 
+					color: white; padding: 12px; border-radius: 6px; margin: 8px 0; 
+					box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+			<div style="display: flex; align-items: center; gap: 10px;">
+				<span style="font-size: 24px;">${icon}</span>
+				<div style="flex: 1;">
+					<strong style="font-size: 16px;">${frm.doc.dentition_type} Dentition Selected</strong>
+					<div style="font-size: 13px; opacity: 0.9; margin-top: 3px;">${description}</div>
+				</div>
+				<div style="background: rgba(255,255,255,0.2); padding: 4px 8px; border-radius: 4px; font-size: 12px;">
+					Chart Type: ${frm.doc.chart_type || 'Master Chart'}
+				</div>
+			</div>
+		</div>
+	`;
+	
+	frm.get_field('dentition_info').html(html);
+}
+
+function adjustColor(color, amount) {
+	const usePound = color[0] === "#";
+	const col = usePound ? color.slice(1) : color;
+	const num = parseInt(col, 16);
+	let r = (num >> 16) + amount;
+	let g = (num >> 8 & 0x00FF) + amount;
+	let b = (num & 0x0000FF) + amount;
+	r = r > 255 ? 255 : r < 0 ? 0 : r;
+	g = g > 255 ? 255 : g < 0 ? 0 : g;
+	b = b > 255 ? 255 : b < 0 ? 0 : b;
+	return (usePound ? "#" : "") + String("000000" + (r << 16 | g << 8 | b).toString(16)).slice(-6);
 } 

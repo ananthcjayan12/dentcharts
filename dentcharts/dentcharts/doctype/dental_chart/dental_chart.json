@@ -19,6 +19,7 @@
   "status",
   "chart_type",
   "dentition_type",
+  "dentition_info",
   "clinic",
   "clinic_name",
   "chart_details_section",
@@ -125,6 +126,11 @@
    "label": "Dentition Type",
    "options": "Permanent\nPrimary\nMixed",
    "reqd": 1
+  },
+  {
+   "fieldname": "dentition_info",
+   "fieldtype": "HTML",
+   "label": "Dentition Info"
   },
   {
    "fieldname": "clinic",
