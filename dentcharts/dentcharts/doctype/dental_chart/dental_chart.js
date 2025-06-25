@@ -519,7 +519,7 @@ function show_enhanced_tooth_dialog(frm, tooth_number) {
 				fieldtype: 'Select',
 				fieldname: `condition_surface_${index}`,
 				label: 'Surface',
-				options: 'Whole Tooth\nOcclusal\nIncisal\nMesial\nDistal\nBuccal\nLingual\nFacial',
+				options: 'Whole Tooth\nOcclusal\nIncisal\nMesial\nDistal\nBuccal\nLingual\nFacial\nGeneral Treatment',
 				default: condition.surface
 			});
 			dialog_fields.push({
@@ -565,7 +565,7 @@ function show_enhanced_tooth_dialog(frm, tooth_number) {
 				fieldtype: 'Select',
 				fieldname: `procedure_surface_${index}`,
 				label: 'Surface',
-				options: 'Whole Tooth\nOcclusal\nIncisal\nMesial\nDistal\nBuccal\nLingual\nFacial',
+				options: 'Whole Tooth\nOcclusal\nIncisal\nMesial\nDistal\nBuccal\nLingual\nFacial\nGeneral Treatment',
 				default: procedure.surface
 			});
 			dialog_fields.push({
@@ -645,7 +645,7 @@ function add_tooth_condition_for_tooth(frm, selected_tooth) {
 				fieldtype: 'Select',
 				fieldname: 'surface',
 				label: __('Surface'),
-				options: 'Whole Tooth\nOcclusal\nIncisal\nMesial\nDistal\nBuccal\nLingual\nFacial',
+				options: 'Whole Tooth\nOcclusal\nIncisal\nMesial\nDistal\nBuccal\nLingual\nFacial\nGeneral Treatment',
 				default: 'Whole Tooth'
 			},
 			{
@@ -658,6 +658,7 @@ function add_tooth_condition_for_tooth(frm, selected_tooth) {
 		primary_action: function(values) {
 			let condition_row = frm.add_child('tooth_conditions');
 			condition_row.tooth_number = selected_tooth;
+			condition_row.tooth_name = selected_tooth; // Set tooth_name since we removed the link
 			condition_row.condition_code = values.condition_code;
 			condition_row.surface = values.surface;
 			condition_row.notes = values.notes;
@@ -717,7 +718,7 @@ function add_tooth_procedure_for_tooth(frm, selected_tooth) {
 				fieldtype: 'Select',
 				fieldname: 'surface',
 				label: __('Surface'),
-				options: 'Whole Tooth\nOcclusal\nIncisal\nMesial\nDistal\nBuccal\nLingual\nFacial',
+				options: 'Whole Tooth\nOcclusal\nIncisal\nMesial\nDistal\nBuccal\nLingual\nFacial\nGeneral Treatment',
 				default: 'Whole Tooth'
 			},
 			{
@@ -785,6 +786,7 @@ function add_tooth_procedure_for_tooth(frm, selected_tooth) {
 		primary_action: function(values) {
 			let procedure_row = frm.add_child('tooth_procedures');
 			procedure_row.tooth_number = selected_tooth;
+			procedure_row.tooth_name = selected_tooth; // Set tooth_name since we removed the link
 			procedure_row.procedure_code = values.procedure_code;
 			procedure_row.surface = values.surface;
 			procedure_row.status = values.status;
@@ -859,7 +861,7 @@ window.add_condition_to_selected = function() {
 				fieldtype: 'Select',
 				fieldname: 'surface',
 				label: __('Surface'),
-				options: 'Whole Tooth\nOcclusal\nIncisal\nMesial\nDistal\nBuccal\nLingual\nFacial',
+				options: 'Whole Tooth\nOcclusal\nIncisal\nMesial\nDistal\nBuccal\nLingual\nFacial\nGeneral Treatment',
 				default: 'Whole Tooth'
 			},
 			{
@@ -881,6 +883,7 @@ window.add_condition_to_selected = function() {
 			window.selected_teeth.forEach(tooth_number => {
 				let condition_row = frm.add_child('tooth_conditions');
 				condition_row.tooth_number = tooth_number;
+				condition_row.tooth_name = tooth_number; // Set tooth_name since we removed the link
 				condition_row.condition_code = values.condition_code;
 				condition_row.surface = values.surface;
 				condition_row.severity = values.severity;
@@ -957,7 +960,7 @@ window.add_procedure_to_selected = function() {
 				fieldtype: 'Select',
 				fieldname: 'surface',
 				label: __('Surface'),
-				options: 'Whole Tooth\nOcclusal\nIncisal\nMesial\nDistal\nBuccal\nLingual\nFacial',
+				options: 'Whole Tooth\nOcclusal\nIncisal\nMesial\nDistal\nBuccal\nLingual\nFacial\nGeneral Treatment',
 				default: 'Whole Tooth'
 			},
 			{
@@ -1028,6 +1031,7 @@ window.add_procedure_to_selected = function() {
 			window.selected_teeth.forEach(tooth_number => {
 				let procedure_row = frm.add_child('tooth_procedures');
 				procedure_row.tooth_number = tooth_number;
+				procedure_row.tooth_name = tooth_number; // Set tooth_name since we removed the link
 				procedure_row.procedure_code = values.procedure_code;
 				procedure_row.surface = values.surface;
 				procedure_row.status = values.status;
@@ -1263,7 +1267,7 @@ function add_tooth_condition(frm) {
 							fieldtype: 'Select',
 							fieldname: 'surface',
 							label: __('Surface'),
-							options: 'Whole Tooth\nOcclusal\nIncisal\nMesial\nDistal\nBuccal\nLingual\nFacial',
+							options: 'Whole Tooth\nOcclusal\nIncisal\nMesial\nDistal\nBuccal\nLingual\nFacial\nGeneral Treatment',
 							default: 'Whole Tooth'
 						},
 						{
@@ -1322,7 +1326,7 @@ function add_tooth_procedure(frm) {
 							fieldtype: 'Select',
 							fieldname: 'surface',
 							label: __('Surface'),
-							options: 'Whole Tooth\nOcclusal\nIncisal\nMesial\nDistal\nBuccal\nLingual\nFacial',
+							options: 'Whole Tooth\nOcclusal\nIncisal\nMesial\nDistal\nBuccal\nLingual\nFacial\nGeneral Treatment',
 							default: 'Whole Tooth'
 						},
 						{
@@ -2351,6 +2355,7 @@ function add_general_procedure(frm) {
 			// Add the general procedure
 			let procedure_row = frm.add_child('tooth_procedures');
 			procedure_row.tooth_number = 'General'; // Special marker for general procedures
+			procedure_row.tooth_name = 'General Treatment';
 			procedure_row.procedure_code = values.procedure_code;
 			procedure_row.surface = 'General Treatment';
 			procedure_row.status = values.status;

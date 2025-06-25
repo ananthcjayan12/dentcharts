@@ -111,8 +111,8 @@ class DentalChart(Document):
 	
 	def add_tooth_condition(self, tooth_number, condition_code, surface=None, notes=None):
 		"""Add a new tooth condition to the chart"""
-		# Validate inputs
-		if not frappe.db.exists("Tooth Master", tooth_number):
+		# Validate inputs - skip tooth validation for general conditions
+		if tooth_number != "General" and not frappe.db.exists("Tooth Master", tooth_number):
 			frappe.throw(f"Invalid tooth number: {tooth_number}")
 		
 		if not frappe.db.exists("Dental Condition Master", condition_code):
@@ -136,8 +136,8 @@ class DentalChart(Document):
 	
 	def add_tooth_procedure(self, tooth_number, procedure_code, surface=None, notes=None, status="Planned"):
 		"""Add a new tooth procedure to the chart"""
-		# Validate inputs
-		if not frappe.db.exists("Tooth Master", tooth_number):
+		# Validate inputs - skip tooth validation for general procedures
+		if tooth_number != "General" and not frappe.db.exists("Tooth Master", tooth_number):
 			frappe.throw(f"Invalid tooth number: {tooth_number}")
 		
 		if not frappe.db.exists("Dental Procedure Master", procedure_code):

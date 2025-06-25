@@ -16,6 +16,10 @@ class ToothCondition(Document):
 		if not self.tooth_number:
 			frappe.throw("Tooth number is required")
 		
+		# Skip validation for general conditions
+		if self.tooth_number == "General":
+			return
+		
 		if not frappe.db.exists("Tooth Master", self.tooth_number):
 			frappe.throw(f"Invalid tooth number: {self.tooth_number}")
 	

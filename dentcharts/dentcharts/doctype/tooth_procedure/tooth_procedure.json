@@ -35,14 +35,12 @@
  "fields": [
   {
    "fieldname": "tooth_number",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Tooth Number",
-   "options": "Tooth Master",
    "reqd": 1
   },
   {
-   "fetch_from": "tooth_number.tooth_name",
    "fieldname": "tooth_name",
    "fieldtype": "Data",
    "label": "Tooth Name",
@@ -54,7 +52,7 @@
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Surface",
-   "options": "Whole Tooth\nOcclusal\nMesial\nDistal\nBuccal\nLingual\nIncisal\nCervical"
+   "options": "Whole Tooth\nOcclusal\nMesial\nDistal\nBuccal\nLingual\nIncisal\nCervical\nGeneral Treatment"
   },
   {
    "fieldname": "column_break_4",
