@@ -706,4 +706,75 @@ def record_visit(chart_name, visit_data):
 	
 	chart.save()
 	
-	return {"success": True, "message": "Visit recorded successfully"} 
+	return {"success": True, "message": "Visit recorded successfully"}
+
+@frappe.whitelist()
+def add_manual_activity(chart_name, activity_data):
+	"""Add a manual activity entry to the chart"""
+	import json
+	if isinstance(activity_data, str):
+		activity_data = json.loads(activity_data)
+	
+	chart = frappe.get_doc("Dental Chart", chart_name)
+	
+	# Add the manual activity
+	chart.log_activity(
+		activity_type=activity_data.get('activity_type'),
+		tooth_number=activity_data.get('tooth_number'),
+		condition_code=activity_data.get('condition_code'),
+		procedure_code=activity_data.get('procedure_code'),
+		old_value=activity_data.get('old_value'),
+		new_value=activity_data.get('new_value'),
+		cost_impact=activity_data.get('cost_impact'),
+		additional_notes=activity_data.get('additional_notes')
+	)
+	
+	# Override the activity description if provided
+	if activity_data.get('activity_description'):
+		if chart.chart_activities:
+			chart.chart_activities[-1].activity_description = activity_data['activity_description']
+	
+	# Override the datetime if provided
+	if activity_data.get('activity_datetime'):
+		if chart.chart_activities:
+			chart.chart_activities[-1].activity_datetime = activity_data['activity_datetime']
+	
+	# Override the performed_by if provided
+	if activity_data.get('performed_by'):
+		if chart.chart_activities:
+			chart.chart_activities[-1].performed_by = activity_data['performed_by']
+	
+	chart.save()
+	
+	return {"success": True, "message": "Manual activity added successfully"}
+
+@frappe.whitelist()
+def clear_old_activities(chart_name, cutoff_date):
+	"""Clear old activities from the chart"""
+	chart = frappe.get_doc("Dental Chart", chart_name)
+	
+	if not chart.chart_activities:
+		return {"success": False, "message": "No activities to clear"}
+	
+	# Filter activities to keep only those newer than cutoff date
+	from datetime import datetime
+	cutoff = datetime.strptime(cutoff_date, "%Y-%m-%d")
+	
+	activities_to_keep = []
+	deleted_count = 0
+	
+	for activity in chart.chart_activities:
+		activity_date = datetime.strptime(str(activity.activity_datetime)[:10], "%Y-%m-%d")
+		if activity_date >= cutoff:
+			activities_to_keep.append(activity)
+		else:
+			deleted_count += 1
+	
+	# Clear and rebuild the activities list
+	chart.chart_activities = []
+	for activity in activities_to_keep:
+		chart.append("chart_activities", activity.as_dict())
+	
+	chart.save()
+	
+	return {"success": True, "message": f"Deleted {deleted_count} old activities successfully"} 
