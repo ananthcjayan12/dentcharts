@@ -712,19 +712,25 @@ function add_tooth_procedure_for_tooth(frm, selected_tooth) {
 			procedure_row.duration_minutes = values.duration_minutes || 0;
 			
 			frm.refresh_field('tooth_procedures');
-			frm.save();
-			d.hide();
 			
-			// Show success message with cost summary
-			frappe.show_alert({
-				message: __(`Procedure added: ${values.procedure_code} - Fee: ${format_currency(values.actual_fee || 0)}`),
-				indicator: 'green'
+			// Save and refresh summary fields
+			frm.save().then(() => {
+				// Refresh the form to update calculated fields like estimated_cost
+				frm.reload_doc();
+				
+				// Show success message with cost summary
+				frappe.show_alert({
+					message: __(`Procedure added: ${values.procedure_code} - Fee: ${format_currency(values.actual_fee || 0)}`),
+					indicator: 'green'
+				});
+				
+				// Refresh the interactive chart
+				setTimeout(() => {
+					create_interactive_dental_chart(frm);
+				}, 500);
 			});
 			
-			// Refresh the interactive chart
-			setTimeout(() => {
-				create_interactive_dental_chart(frm);
-			}, 500);
+			d.hide();
 		}
 	});
 	
@@ -950,19 +956,25 @@ window.add_procedure_to_selected = function() {
 			});
 			
 			frm.refresh_field('tooth_procedures');
-			frm.save();
+			
+			// Save and refresh summary fields
+			frm.save().then(() => {
+				// Refresh the form to update calculated fields like estimated_cost
+				frm.reload_doc();
+				
+				// Refresh the chart
+				setTimeout(() => {
+					create_interactive_dental_chart(frm);
+				}, 500);
+				
+				frappe.show_alert({
+					message: __(`Procedure added to ${window.selected_teeth.length} teeth - Total Cost: ${format_currency(total_cost)}`),
+					indicator: 'green'
+				});
+			});
+			
 			d.hide();
 			clear_selection();
-			
-			// Refresh the chart
-			setTimeout(() => {
-				create_interactive_dental_chart(frm);
-			}, 500);
-			
-			frappe.show_alert({
-				message: __(`Procedure added to ${window.selected_teeth.length} teeth - Total Cost: ${format_currency(total_cost)}`),
-				indicator: 'green'
-			});
 		}
 	});
 	

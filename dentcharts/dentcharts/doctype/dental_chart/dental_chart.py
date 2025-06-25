@@ -74,12 +74,17 @@ class DentalChart(Document):
 					emergency_count += 1
 		self.emergency_conditions = emergency_count
 		
-		# Calculate estimated cost
+		# Calculate estimated cost using actual fees (if set) or standard fees as fallback
 		total_cost = 0
 		for procedure in (self.tooth_procedures or []):
 			if procedure.procedure_code:
-				procedure_master = frappe.get_cached_doc("Dental Procedure Master", procedure.procedure_code)
-				total_cost += procedure_master.standard_fee or 0
+				# Use actual_fee if set by doctor, otherwise fall back to standard_fee
+				if hasattr(procedure, 'actual_fee') and procedure.actual_fee:
+					total_cost += procedure.actual_fee
+				else:
+					# Fallback to standard fee from procedure master
+					procedure_master = frappe.get_cached_doc("Dental Procedure Master", procedure.procedure_code)
+					total_cost += procedure_master.standard_fee or 0
 		self.estimated_cost = total_cost
 		
 		# Set treatment required flag
@@ -253,15 +258,23 @@ class DentalChart(Document):
 		for procedure in (self.tooth_procedures or []):
 			if procedure.status in ["Planned", "In Progress"]:
 				procedure_master = frappe.get_cached_doc("Dental Procedure Master", procedure.procedure_code)
+				
+				# Use actual_fee if set by doctor, otherwise use standard_fee
+				procedure_cost = 0
+				if hasattr(procedure, 'actual_fee') and procedure.actual_fee:
+					procedure_cost = procedure.actual_fee
+				else:
+					procedure_cost = procedure_master.standard_fee or 0
+				
 				planned_procedures.append({
 					"tooth_number": procedure.tooth_number,
 					"procedure": procedure_master.procedure_name,
 					"surface": procedure.surface,
-					"cost": procedure_master.standard_fee or 0,
+					"cost": procedure_cost,
 					"duration": procedure_master.duration_minutes or 0,
 					"status": procedure.status
 				})
-				total_cost += procedure_master.standard_fee or 0
+				total_cost += procedure_cost
 		
 		return {
 			"procedures": planned_procedures,
