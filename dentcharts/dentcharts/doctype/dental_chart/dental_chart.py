@@ -16,6 +16,7 @@ class DentalChart(Document):
 	def before_save(self):
 		self.update_timestamps()
 		self.validate_chart_consistency()
+		self.track_changes()
 	
 	def validate_patient(self):
 		"""Validate that the patient exists and is active"""
@@ -332,6 +333,144 @@ class DentalChart(Document):
 					letter = letter_map.get(parts[1], parts[1])
 					return f"{quadrant} {letter} (Primary)"
 			return tooth_number
+	
+	def track_changes(self):
+		"""Track changes made to conditions and procedures"""
+		if self.is_new():
+			return
+		
+		# Get the current document from database to compare
+		old_doc = frappe.get_doc("Dental Chart", self.name)
+		
+		# Track condition changes
+		self.track_condition_changes(old_doc)
+		
+		# Track procedure changes
+		self.track_procedure_changes(old_doc)
+	
+	def track_condition_changes(self, old_doc):
+		"""Track changes in tooth conditions"""
+		old_conditions = {f"{c.tooth_number}_{c.condition_code}_{c.surface}": c for c in (old_doc.tooth_conditions or [])}
+		new_conditions = {f"{c.tooth_number}_{c.condition_code}_{c.surface}": c for c in (self.tooth_conditions or [])}
+		
+		# Find added conditions
+		for key, condition in new_conditions.items():
+			if key not in old_conditions:
+				self.log_activity(
+					activity_type="Condition Added",
+					tooth_number=condition.tooth_number,
+					condition_code=condition.condition_code,
+					new_value=f"{condition.condition_code} on {condition.surface}",
+					additional_notes=condition.notes or ""
+				)
+		
+		# Find removed conditions
+		for key, condition in old_conditions.items():
+			if key not in new_conditions:
+				self.log_activity(
+					activity_type="Condition Removed",
+					tooth_number=condition.tooth_number,
+					condition_code=condition.condition_code,
+					old_value=f"{condition.condition_code} on {condition.surface}",
+					additional_notes=f"Removed: {condition.notes or ''}"
+				)
+	
+	def track_procedure_changes(self, old_doc):
+		"""Track changes in tooth procedures"""
+		old_procedures = {f"{p.tooth_number}_{p.procedure_code}_{p.surface}": p for p in (old_doc.tooth_procedures or [])}
+		new_procedures = {f"{p.tooth_number}_{p.procedure_code}_{p.surface}": p for p in (self.tooth_procedures or [])}
+		
+		# Find added procedures
+		for key, procedure in new_procedures.items():
+			if key not in old_procedures:
+				cost_impact = procedure.actual_fee or procedure.standard_fee or 0
+				self.log_activity(
+					activity_type="Procedure Added",
+					tooth_number=procedure.tooth_number,
+					procedure_code=procedure.procedure_code,
+					new_value=f"{procedure.procedure_code} ({procedure.status}) on {procedure.surface}",
+					cost_impact=cost_impact,
+					additional_notes=procedure.notes or ""
+				)
+		
+		# Find removed procedures
+		for key, procedure in old_procedures.items():
+			if key not in new_procedures:
+				cost_impact = -(procedure.actual_fee or procedure.standard_fee or 0)
+				self.log_activity(
+					activity_type="Procedure Removed",
+					tooth_number=procedure.tooth_number,
+					procedure_code=procedure.procedure_code,
+					old_value=f"{procedure.procedure_code} ({procedure.status}) on {procedure.surface}",
+					cost_impact=cost_impact,
+					additional_notes=f"Removed: {procedure.notes or ''}"
+				)
+		
+		# Find modified procedures (status or cost changes)
+		for key, new_procedure in new_procedures.items():
+			if key in old_procedures:
+				old_procedure = old_procedures[key]
+				
+				# Check for status changes
+				if old_procedure.status != new_procedure.status:
+					self.log_activity(
+						activity_type="Procedure Status Changed",
+						tooth_number=new_procedure.tooth_number,
+						procedure_code=new_procedure.procedure_code,
+						old_value=f"Status: {old_procedure.status}",
+						new_value=f"Status: {new_procedure.status}",
+						additional_notes=f"Status changed from {old_procedure.status} to {new_procedure.status}"
+					)
+				
+				# Check for cost changes
+				old_cost = old_procedure.actual_fee or old_procedure.standard_fee or 0
+				new_cost = new_procedure.actual_fee or new_procedure.standard_fee or 0
+				if old_cost != new_cost:
+					cost_impact = new_cost - old_cost
+					self.log_activity(
+						activity_type="Procedure Cost Modified",
+						tooth_number=new_procedure.tooth_number,
+						procedure_code=new_procedure.procedure_code,
+						old_value=f"Cost: {frappe.format_value(old_cost, {'fieldtype': 'Currency'})}",
+						new_value=f"Cost: {frappe.format_value(new_cost, {'fieldtype': 'Currency'})}",
+						cost_impact=cost_impact,
+						additional_notes=f"Cost changed from {old_cost} to {new_cost}"
+					)
+	
+	def log_activity(self, activity_type, tooth_number=None, condition_code=None, procedure_code=None, 
+					old_value=None, new_value=None, cost_impact=None, additional_notes=None):
+		"""Log an activity to the chart activities table"""
+		activity = {
+			"activity_type": activity_type,
+			"tooth_number": tooth_number,
+			"condition_code": condition_code,
+			"procedure_code": procedure_code,
+			"old_value": old_value,
+			"new_value": new_value,
+			"cost_impact": cost_impact,
+			"additional_notes": additional_notes,
+			"activity_datetime": now(),
+			"performed_by": frappe.session.user
+		}
+		
+		self.append("chart_activities", activity)
+	
+	def record_visit(self, visit_notes, findings=None, treatment_provided=None):
+		"""Record a new visit with detailed information"""
+		self.log_activity(
+			activity_type="Visit Recorded",
+			new_value=visit_notes,
+			additional_notes=f"Findings: {findings or 'None'}\nTreatment: {treatment_provided or 'None'}"
+		)
+		
+		# Update chart notes with visit information
+		visit_entry = f"\n--- Visit on {today()} ---\n{visit_notes}"
+		if findings:
+			visit_entry += f"\nFindings: {findings}"
+		if treatment_provided:
+			visit_entry += f"\nTreatment: {treatment_provided}"
+		
+		self.notes = (self.notes or "") + visit_entry
 
 	@staticmethod
 	def create_chart_for_patient(patient, dentist, chart_type="Comprehensive", dentition_type="Permanent"):
@@ -377,4 +516,66 @@ def get_available_teeth_for_chart(dentition_type):
 def get_chart_data(chart_name):
 	"""Get chart data for visualization"""
 	chart = frappe.get_doc("Dental Chart", chart_name)
-	return chart.get_tooth_chart_data() 
+	return chart.get_tooth_chart_data()
+
+@frappe.whitelist()
+def record_visit(chart_name, visit_data):
+	"""Record a new visit with comprehensive details"""
+	import json
+	if isinstance(visit_data, str):
+		visit_data = json.loads(visit_data)
+	
+	chart = frappe.get_doc("Dental Chart", chart_name)
+	
+	# Create comprehensive visit summary
+	visit_summary = f"{visit_data.get('visit_type', 'Visit')} - {visit_data.get('chief_complaint', 'No complaint')}"
+	
+	# Build detailed notes
+	visit_notes = f"=== {visit_data.get('visit_type', 'VISIT')} - {visit_data.get('visit_date', today())} ===\n"
+	visit_notes += f"Attending Dentist: {visit_data.get('attending_dentist', chart.dentist)}\n"
+	visit_notes += f"Chief Complaint: {visit_data.get('chief_complaint', 'None')}\n"
+	
+	if visit_data.get('examination_findings'):
+		visit_notes += f"Examination Findings: {visit_data['examination_findings']}\n"
+	
+	if visit_data.get('treatment_provided'):
+		visit_notes += f"Treatment Provided: {visit_data['treatment_provided']}\n"
+	
+	if visit_data.get('medications_prescribed'):
+		visit_notes += f"Medications: {visit_data['medications_prescribed']}\n"
+	
+	if visit_data.get('follow_up_instructions'):
+		visit_notes += f"Follow-up Instructions: {visit_data['follow_up_instructions']}\n"
+	
+	if visit_data.get('next_visit_date'):
+		visit_notes += f"Next Visit: {visit_data['next_visit_date']}\n"
+	
+	if visit_data.get('visit_outcome'):
+		visit_notes += f"Outcome: {visit_data['visit_outcome']}\n"
+	
+	if visit_data.get('visit_charges'):
+		visit_notes += f"Charges: {frappe.format_value(visit_data['visit_charges'], {'fieldtype': 'Currency'})}\n"
+	
+	if visit_data.get('visit_notes'):
+		visit_notes += f"Additional Notes: {visit_data['visit_notes']}\n"
+	
+	visit_notes += "=" * 50 + "\n"
+	
+	# Log the visit activity
+	chart.log_activity(
+		activity_type="Visit Recorded",
+		new_value=visit_summary,
+		cost_impact=visit_data.get('visit_charges', 0),
+		additional_notes=visit_notes
+	)
+	
+	# Update chart notes
+	chart.notes = (chart.notes or "") + "\n" + visit_notes
+	
+	# Update chart date if this is a new visit
+	if visit_data.get('visit_date'):
+		chart.chart_date = visit_data['visit_date']
+	
+	chart.save()
+	
+	return {"success": True, "message": "Visit recorded successfully"} 

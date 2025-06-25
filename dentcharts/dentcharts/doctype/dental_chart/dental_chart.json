@@ -41,6 +41,9 @@
   "emergency_conditions",
   "treatment_required",
   "estimated_cost",
+  "activity_history_section",
+  "activity_timeline",
+  "chart_activities",
   "timestamps_section",
   "created_by",
   "created_on",
@@ -247,6 +250,23 @@
    "fieldname": "estimated_cost",
    "fieldtype": "Currency",
    "label": "Estimated Treatment Cost",
+   "read_only": 1
+  },
+  {
+   "fieldname": "activity_history_section",
+   "fieldtype": "Section Break",
+   "label": "Activity History & Timeline"
+  },
+  {
+   "fieldname": "activity_timeline",
+   "fieldtype": "HTML",
+   "label": "Treatment Timeline"
+  },
+  {
+   "fieldname": "chart_activities",
+   "fieldtype": "Table",
+   "label": "Activity Log",
+   "options": "Dental Chart Activity",
    "read_only": 1
   },
   {

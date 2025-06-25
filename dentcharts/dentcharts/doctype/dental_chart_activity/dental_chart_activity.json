@@ -1,0 +1,119 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2024-01-15 10:00:00.000000",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "activity_type",
+  "activity_description",
+  "tooth_number",
+  "column_break_4",
+  "activity_datetime",
+  "performed_by",
+  "activity_details_section",
+  "old_value",
+  "new_value",
+  "column_break_9",
+  "condition_code",
+  "procedure_code",
+  "cost_impact",
+  "additional_notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "activity_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Activity Type",
+   "options": "Condition Added\nCondition Removed\nCondition Modified\nProcedure Added\nProcedure Removed\nProcedure Status Changed\nProcedure Cost Modified\nVisit Recorded\nChart Updated\nTreatment Completed",
+   "reqd": 1
+  },
+  {
+   "fieldname": "activity_description",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Activity Description",
+   "reqd": 1
+  },
+  {
+   "fieldname": "tooth_number",
+   "fieldtype": "Data",
+   "label": "Tooth Number"
+  },
+  {
+   "fieldname": "column_break_4",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "now",
+   "fieldname": "activity_datetime",
+   "fieldtype": "Datetime",
+   "in_list_view": 1,
+   "label": "Date & Time",
+   "reqd": 1
+  },
+  {
+   "default": "user",
+   "fieldname": "performed_by",
+   "fieldtype": "Link",
+   "label": "Performed By",
+   "options": "User",
+   "reqd": 1
+  },
+  {
+   "fieldname": "activity_details_section",
+   "fieldtype": "Section Break",
+   "label": "Activity Details"
+  },
+  {
+   "fieldname": "old_value",
+   "fieldtype": "Small Text",
+   "label": "Previous Value"
+  },
+  {
+   "fieldname": "new_value",
+   "fieldtype": "Small Text",
+   "label": "New Value"
+  },
+  {
+   "fieldname": "column_break_9",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "condition_code",
+   "fieldtype": "Link",
+   "label": "Related Condition",
+   "options": "Dental Condition Master"
+  },
+  {
+   "fieldname": "procedure_code",
+   "fieldtype": "Link",
+   "label": "Related Procedure",
+   "options": "Dental Procedure Master"
+  },
+  {
+   "fieldname": "cost_impact",
+   "fieldtype": "Currency",
+   "label": "Cost Impact"
+  },
+  {
+   "fieldname": "additional_notes",
+   "fieldtype": "Text",
+   "label": "Additional Notes"
+  }
+ ],
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "modified": "2024-01-15 10:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Dentcharts",
+ "name": "Dental Chart Activity",
+ "owner": "Administrator",
+ "permissions": [],
+ "sort_field": "activity_datetime",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+} 

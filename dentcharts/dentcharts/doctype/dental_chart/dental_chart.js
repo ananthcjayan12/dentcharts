@@ -47,6 +47,11 @@ frappe.ui.form.on('Dental Chart', {
 			frm.set_df_property('dentition_type', 'description', get_dentition_description(frm.doc.dentition_type));
 			update_dentition_info_display(frm);
 		}
+		
+		// Update activity timeline
+		if (!frm.is_new()) {
+			update_activity_timeline(frm);
+		}
 	},
 	
 	// Handle dentition type change - refresh chart immediately
@@ -1714,4 +1719,137 @@ function update_multi_cost_summary(dialog, teeth_count) {
 	`;
 	
 	dialog.get_field('cost_info').$wrapper.html(summary_html);
+}
+
+// Activity Timeline Functions
+function update_activity_timeline(frm) {
+	if (!frm.doc.chart_activities || frm.doc.chart_activities.length === 0) {
+		let empty_html = `
+			<div style="text-align: center; padding: 40px; color: #6c757d;">
+				<div style="font-size: 48px; margin-bottom: 15px;">📋</div>
+				<h5>No Activities Recorded Yet</h5>
+				<p>Start adding conditions or procedures to see the activity timeline</p>
+			</div>
+		`;
+		frm.get_field('activity_timeline').$wrapper.html(empty_html);
+		return;
+	}
+	
+	// Sort activities by date (newest first)
+	let activities = [...frm.doc.chart_activities].sort((a, b) => new Date(b.activity_datetime) - new Date(a.activity_datetime));
+	
+	let timeline_html = `
+		<div class="activity-timeline" style="position: relative; padding: 20px 0;">
+			<div style="position: absolute; left: 30px; top: 0; bottom: 0; width: 2px; background: #dee2e6;"></div>
+	`;
+	
+	activities.forEach((activity, index) => {
+		let icon = get_activity_icon(activity.activity_type);
+		let color = get_activity_color(activity.activity_type);
+		let datetime = frappe.datetime.str_to_user(activity.activity_datetime);
+		
+		timeline_html += `
+			<div style="position: relative; margin-bottom: 25px; padding-left: 70px;">
+				<div style="position: absolute; left: 20px; width: 20px; height: 20px; 
+							background: ${color}; border-radius: 50%; display: flex; 
+							align-items: center; justify-content: center; color: white; 
+							font-size: 12px; z-index: 1; border: 3px solid white; 
+							box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+					${icon}
+				</div>
+				<div style="background: white; border: 1px solid #dee2e6; border-radius: 8px; 
+							padding: 15px; box-shadow: 0 2px 4px rgba(0,0,0,0.05);">
+					<div style="display: flex; justify-content: between; align-items: start; margin-bottom: 8px;">
+						<h6 style="margin: 0; color: ${color};">${activity.activity_type}</h6>
+						<small style="color: #6c757d;">${datetime}</small>
+					</div>
+					<p style="margin: 0 0 8px 0; font-weight: 500;">${activity.activity_description || 'No description'}</p>
+					${activity.tooth_number ? `<div style="margin-bottom: 5px;"><strong>Tooth:</strong> ${activity.tooth_number}</div>` : ''}
+					${activity.old_value ? `<div style="margin-bottom: 5px;"><strong>Previous:</strong> ${activity.old_value}</div>` : ''}
+					${activity.new_value ? `<div style="margin-bottom: 5px;"><strong>Current:</strong> ${activity.new_value}</div>` : ''}
+					${activity.cost_impact ? `<div style="margin-bottom: 5px;"><strong>Cost Impact:</strong> <span style="color: ${activity.cost_impact > 0 ? '#dc3545' : '#28a745'};">${format_currency(activity.cost_impact)}</span></div>` : ''}
+					${activity.additional_notes ? `<div style="margin-top: 8px; padding: 8px; background: #f8f9fa; border-radius: 4px; font-size: 13px;">${activity.additional_notes}</div>` : ''}
+					<div style="margin-top: 8px; font-size: 12px; color: #6c757d;">
+						👨‍⚕️ ${activity.performed_by || 'Unknown'}
+					</div>
+				</div>
+			</div>
+		`;
+	});
+	
+	timeline_html += '</div>';
+	
+	// Add summary stats
+	let stats = get_activity_stats(activities);
+	timeline_html += `
+		<div style="background: linear-gradient(135deg, #f8f9fa, #e9ecef); padding: 15px; border-radius: 8px; margin-top: 20px;">
+			<h6 style="margin: 0 0 10px 0;">📊 Activity Summary</h6>
+			<div style="display: flex; gap: 20px; flex-wrap: wrap;">
+				<div><strong>Total Activities:</strong> ${activities.length}</div>
+				<div><strong>Conditions:</strong> ${stats.conditions}</div>
+				<div><strong>Procedures:</strong> ${stats.procedures}</div>
+				<div><strong>Visits:</strong> ${stats.visits}</div>
+				<div><strong>Cost Changes:</strong> ${format_currency(stats.total_cost_impact)}</div>
+			</div>
+		</div>
+	`;
+	
+	frm.get_field('activity_timeline').$wrapper.html(timeline_html);
+}
+
+function get_activity_icon(activity_type) {
+	const icons = {
+		'Condition Added': '🦷',
+		'Condition Removed': '✅',
+		'Condition Modified': '📝',
+		'Procedure Added': '🔧',
+		'Procedure Removed': '🗑️',
+		'Procedure Status Changed': '🔄',
+		'Procedure Cost Modified': '💰',
+		'Visit Recorded': '📋',
+		'Chart Updated': '📊',
+		'Treatment Completed': '✨'
+	};
+	return icons[activity_type] || '📌';
+}
+
+function get_activity_color(activity_type) {
+	const colors = {
+		'Condition Added': '#dc3545',
+		'Condition Removed': '#28a745',
+		'Condition Modified': '#ffc107',
+		'Procedure Added': '#007bff',
+		'Procedure Removed': '#6c757d',
+		'Procedure Status Changed': '#17a2b8',
+		'Procedure Cost Modified': '#fd7e14',
+		'Visit Recorded': '#28a745',
+		'Chart Updated': '#6f42c1',
+		'Treatment Completed': '#20c997'
+	};
+	return colors[activity_type] || '#6c757d';
+}
+
+function get_activity_stats(activities) {
+	let stats = {
+		conditions: 0,
+		procedures: 0,
+		visits: 0,
+		total_cost_impact: 0
+	};
+	
+	activities.forEach(activity => {
+		if (activity.activity_type.includes('Condition')) {
+			stats.conditions++;
+		} else if (activity.activity_type.includes('Procedure')) {
+			stats.procedures++;
+		} else if (activity.activity_type.includes('Visit')) {
+			stats.visits++;
+		}
+		
+		if (activity.cost_impact) {
+			stats.total_cost_impact += activity.cost_impact;
+		}
+	});
+	
+	return stats;
 } 
