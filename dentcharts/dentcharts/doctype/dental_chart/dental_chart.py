@@ -339,14 +339,19 @@ class DentalChart(Document):
 		if self.is_new():
 			return
 		
-		# Get the current document from database to compare
-		old_doc = frappe.get_doc("Dental Chart", self.name)
-		
-		# Track condition changes
-		self.track_condition_changes(old_doc)
-		
-		# Track procedure changes
-		self.track_procedure_changes(old_doc)
+		try:
+			# Get the current document from database to compare
+			old_doc = frappe.get_doc("Dental Chart", self.name)
+			
+			# Track condition changes
+			self.track_condition_changes(old_doc)
+			
+			# Track procedure changes
+			self.track_procedure_changes(old_doc)
+		except Exception as e:
+			# If we can't track changes (e.g., during first save), just continue
+			frappe.log_error(f"Error tracking changes for {self.name}: {str(e)}")
+			pass
 	
 	def track_condition_changes(self, old_doc):
 		"""Track changes in tooth conditions"""
@@ -440,8 +445,15 @@ class DentalChart(Document):
 	def log_activity(self, activity_type, tooth_number=None, condition_code=None, procedure_code=None, 
 					old_value=None, new_value=None, cost_impact=None, additional_notes=None):
 		"""Log an activity to the chart activities table"""
+		
+		# Generate activity description
+		activity_description = self.generate_activity_description(
+			activity_type, tooth_number, condition_code, procedure_code, cost_impact
+		)
+		
 		activity = {
 			"activity_type": activity_type,
+			"activity_description": activity_description,
 			"tooth_number": tooth_number,
 			"condition_code": condition_code,
 			"procedure_code": procedure_code,
@@ -454,6 +466,45 @@ class DentalChart(Document):
 		}
 		
 		self.append("chart_activities", activity)
+	
+	def generate_activity_description(self, activity_type, tooth_number=None, condition_code=None, procedure_code=None, cost_impact=None):
+		"""Generate a human-readable activity description"""
+		descriptions = {
+			"Condition Added": f"Added condition to tooth {tooth_number}",
+			"Condition Removed": f"Removed condition from tooth {tooth_number}",
+			"Condition Modified": f"Modified condition on tooth {tooth_number}",
+			"Procedure Added": f"Added procedure to tooth {tooth_number}",
+			"Procedure Removed": f"Removed procedure from tooth {tooth_number}",
+			"Procedure Status Changed": f"Changed procedure status on tooth {tooth_number}",
+			"Procedure Cost Modified": f"Modified procedure cost for tooth {tooth_number}",
+			"Visit Recorded": "Recorded new patient visit",
+			"Chart Updated": "Updated dental chart",
+			"Treatment Completed": f"Completed treatment on tooth {tooth_number}"
+		}
+		
+		description = descriptions.get(activity_type, f"{activity_type} on tooth {tooth_number}")
+		
+		# Add more specific details if available
+		if condition_code:
+			try:
+				condition_name = frappe.db.get_value("Dental Condition Master", condition_code, "condition_name")
+				if condition_name:
+					description += f" ({condition_name})"
+			except:
+				pass
+		
+		if procedure_code:
+			try:
+				procedure_name = frappe.db.get_value("Dental Procedure Master", procedure_code, "procedure_name")
+				if procedure_name:
+					description += f" ({procedure_name})"
+			except:
+				pass
+		
+		if cost_impact:
+			description += f" - Cost Impact: {frappe.format_value(cost_impact, {'fieldtype': 'Currency'})}"
+		
+		return description
 	
 	def record_visit(self, visit_notes, findings=None, treatment_provided=None):
 		"""Record a new visit with detailed information"""

@@ -263,11 +263,12 @@
    "label": "Treatment Timeline"
   },
   {
+   "description": "Complete history of all chart activities. Click rows to edit, use Activity History buttons for advanced management.",
    "fieldname": "chart_activities",
    "fieldtype": "Table",
    "label": "Activity Log",
    "options": "Dental Chart Activity",
-   "read_only": 1
+   "read_only": 0
   },
   {
    "fieldname": "timestamps_section",

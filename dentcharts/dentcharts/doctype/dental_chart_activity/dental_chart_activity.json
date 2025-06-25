@@ -32,10 +32,10 @@
   },
   {
    "fieldname": "activity_description",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "in_list_view": 1,
    "label": "Activity Description",
-   "reqd": 1
+   "reqd": 0
   },
   {
    "fieldname": "tooth_number",

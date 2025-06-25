@@ -40,6 +40,18 @@ frappe.ui.form.on('Dental Chart', {
 			frm.add_custom_button(__('Print Chart'), function() {
 				frm.print_doc();
 			}, __('Actions'));
+			
+			frm.add_custom_button(__('Add Manual Activity'), function() {
+				add_manual_activity(frm);
+			}, __('Activity History'));
+			
+			frm.add_custom_button(__('Export Activity Log'), function() {
+				export_activity_log(frm);
+			}, __('Activity History'));
+			
+			frm.add_custom_button(__('Clear Old Activities'), function() {
+				clear_old_activities(frm);
+			}, __('Activity History'));
 		}
 		
 		// Show dentition type info
@@ -100,6 +112,32 @@ frappe.ui.form.on('Dental Chart', {
 					});
 				});
 			}
+		}
+	},
+	
+	// Handle activity table changes
+	chart_activities_add: function(frm, cdt, cdn) {
+		let row = locals[cdt][cdn];
+		// Set default values for new manual activities
+		row.activity_datetime = frappe.datetime.now();
+		row.performed_by = frappe.session.user;
+		row.activity_type = 'Chart Updated';
+		frm.refresh_field('chart_activities');
+	},
+	
+	chart_activities_on_form_rendered: function(frm, cdt, cdn) {
+		// Add custom styling to activity rows
+		let row = locals[cdt][cdn];
+		let grid_row = frm.fields_dict.chart_activities.grid.get_row(cdn);
+		
+		if (grid_row && row.activity_type) {
+			let color = get_activity_color(row.activity_type);
+			grid_row.$wrapper.find('.grid-row').css({
+				'border-left': `4px solid ${color}`,
+				'background': `${color}08`,
+				'border-radius': '4px',
+				'margin': '2px 0'
+			});
 		}
 	}
 });
@@ -1723,6 +1761,13 @@ function update_multi_cost_summary(dialog, teeth_count) {
 
 // Activity Timeline Functions
 function update_activity_timeline(frm) {
+	// Update help text for editable history
+	if (frm.doc.chart_activities && frm.doc.chart_activities.length > 0) {
+		frm.set_df_property('chart_activities', 'description', 
+			`📝 <strong>Editable History:</strong> Click any row to edit details. Use Activity History buttons for advanced management (add manual entries, export, cleanup). Total activities: ${frm.doc.chart_activities.length}`
+		);
+	}
+	
 	if (!frm.doc.chart_activities || frm.doc.chart_activities.length === 0) {
 		let empty_html = `
 			<div style="text-align: center; padding: 40px; color: #6c757d;">
@@ -1852,4 +1897,272 @@ function get_activity_stats(activities) {
 	});
 	
 	return stats;
+}
+
+// Activity Management Functions
+function add_manual_activity(frm) {
+	let d = new frappe.ui.Dialog({
+		title: __('Add Manual Activity Entry'),
+		size: 'large',
+		fields: [
+			{
+				fieldtype: 'HTML',
+				options: `
+					<div style="background: linear-gradient(135deg, #6f42c1, #6610f2); color: white; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+						<h5 style="margin: 0;">✏️ Manual Activity Entry</h5>
+						<p style="margin: 5px 0 0 0; opacity: 0.9;">Add a custom activity entry to the dental chart history</p>
+					</div>
+				`
+			},
+			{
+				fieldtype: 'Select',
+				fieldname: 'activity_type',
+				label: __('Activity Type'),
+				options: 'Condition Added\nCondition Removed\nCondition Modified\nProcedure Added\nProcedure Removed\nProcedure Status Changed\nProcedure Cost Modified\nVisit Recorded\nChart Updated\nTreatment Completed\nNote Added\nCustom Entry',
+				reqd: 1,
+				default: 'Note Added'
+			},
+			{
+				fieldtype: 'Small Text',
+				fieldname: 'activity_description',
+				label: __('Activity Description'),
+				reqd: 1,
+				description: __('Describe what happened in this activity')
+			},
+			{
+				fieldtype: 'Column Break'
+			},
+			{
+				fieldtype: 'Datetime',
+				fieldname: 'activity_datetime',
+				label: __('Date & Time'),
+				default: frappe.datetime.now(),
+				reqd: 1
+			},
+			{
+				fieldtype: 'Link',
+				fieldname: 'performed_by',
+				label: __('Performed By'),
+				options: 'User',
+				default: frappe.session.user,
+				reqd: 1
+			},
+			{
+				fieldtype: 'Section Break',
+				label: __('Additional Details')
+			},
+			{
+				fieldtype: 'Data',
+				fieldname: 'tooth_number',
+				label: __('Tooth Number'),
+				description: __('If this activity relates to a specific tooth')
+			},
+			{
+				fieldtype: 'Link',
+				fieldname: 'condition_code',
+				label: __('Related Condition'),
+				options: 'Dental Condition Master'
+			},
+			{
+				fieldtype: 'Column Break'
+			},
+			{
+				fieldtype: 'Link',
+				fieldname: 'procedure_code',
+				label: __('Related Procedure'),
+				options: 'Dental Procedure Master'
+			},
+			{
+				fieldtype: 'Currency',
+				fieldname: 'cost_impact',
+				label: __('Cost Impact'),
+				description: __('Positive for additional costs, negative for reductions')
+			},
+			{
+				fieldtype: 'Section Break',
+				label: __('Notes')
+			},
+			{
+				fieldtype: 'Small Text',
+				fieldname: 'old_value',
+				label: __('Previous Value'),
+				description: __('What was the value before this change?')
+			},
+			{
+				fieldtype: 'Small Text',
+				fieldname: 'new_value',
+				label: __('New Value'),
+				description: __('What is the value after this change?')
+			},
+			{
+				fieldtype: 'Text',
+				fieldname: 'additional_notes',
+				label: __('Additional Notes'),
+				description: __('Any other relevant information')
+			}
+		],
+		primary_action_label: __('Add Activity'),
+		primary_action: function(values) {
+			// Add the manual activity to the chart
+			let activity_row = frm.add_child('chart_activities');
+			
+			Object.keys(values).forEach(key => {
+				if (values[key]) {
+					activity_row[key] = values[key];
+				}
+			});
+			
+			frm.refresh_field('chart_activities');
+			frm.save();
+			d.hide();
+			
+			// Update timeline
+			setTimeout(() => {
+				update_activity_timeline(frm);
+			}, 1000);
+			
+			frappe.show_alert({
+				message: __('Manual activity added successfully'),
+				indicator: 'green'
+			});
+		}
+	});
+	d.show();
+}
+
+function export_activity_log(frm) {
+	if (!frm.doc.chart_activities || frm.doc.chart_activities.length === 0) {
+		frappe.msgprint(__('No activities to export'));
+		return;
+	}
+	
+	// Prepare data for export
+	let activities = frm.doc.chart_activities.map(activity => ({
+		'Date & Time': frappe.datetime.str_to_user(activity.activity_datetime),
+		'Activity Type': activity.activity_type,
+		'Description': activity.activity_description,
+		'Tooth Number': activity.tooth_number || '',
+		'Condition': activity.condition_code || '',
+		'Procedure': activity.procedure_code || '',
+		'Cost Impact': activity.cost_impact ? frappe.format_value(activity.cost_impact, {'fieldtype': 'Currency'}) : '',
+		'Previous Value': activity.old_value || '',
+		'New Value': activity.new_value || '',
+		'Performed By': activity.performed_by || '',
+		'Notes': activity.additional_notes || ''
+	}));
+	
+	// Create CSV content
+	let csv_content = "data:text/csv;charset=utf-8,";
+	let headers = Object.keys(activities[0]);
+	csv_content += headers.join(',') + '\n';
+	
+	activities.forEach(activity => {
+		let row = headers.map(header => {
+			let value = activity[header] || '';
+			// Escape commas and quotes in CSV
+			if (value.includes(',') || value.includes('"')) {
+				value = '"' + value.replace(/"/g, '""') + '"';
+			}
+			return value;
+		});
+		csv_content += row.join(',') + '\n';
+	});
+	
+	// Download the file
+	let encoded_uri = encodeURI(csv_content);
+	let link = document.createElement("a");
+	link.setAttribute("href", encoded_uri);
+	link.setAttribute("download", `dental_chart_activities_${frm.doc.name}_${frappe.datetime.nowdate()}.csv`);
+	document.body.appendChild(link);
+	link.click();
+	document.body.removeChild(link);
+	
+	frappe.show_alert({
+		message: __('Activity log exported successfully'),
+		indicator: 'green'
+	});
+}
+
+function clear_old_activities(frm) {
+	if (!frm.doc.chart_activities || frm.doc.chart_activities.length === 0) {
+		frappe.msgprint(__('No activities to clear'));
+		return;
+	}
+	
+	let d = new frappe.ui.Dialog({
+		title: __('Clear Old Activities'),
+		fields: [
+			{
+				fieldtype: 'HTML',
+				options: `
+					<div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 12px; border-radius: 6px; margin-bottom: 15px;">
+						<h6 style="margin: 0 0 8px 0; color: #856404;">⚠️ Warning</h6>
+						<p style="margin: 0; color: #856404;">This action will permanently delete old activity entries. This cannot be undone.</p>
+					</div>
+				`
+			},
+			{
+				fieldtype: 'Date',
+				fieldname: 'cutoff_date',
+				label: __('Delete activities older than'),
+				default: frappe.datetime.add_days(frappe.datetime.nowdate(), -90),
+				reqd: 1,
+				description: __('All activities before this date will be deleted')
+			},
+			{
+				fieldtype: 'HTML',
+				options: `<p><strong>Current total activities:</strong> ${frm.doc.chart_activities.length}</p>`
+			}
+		],
+		primary_action_label: __('Delete Old Activities'),
+		primary_action: function(values) {
+			let cutoff_date = new Date(values.cutoff_date);
+			let activities_to_keep = [];
+			let deleted_count = 0;
+			
+			frm.doc.chart_activities.forEach(activity => {
+				let activity_date = new Date(activity.activity_datetime);
+				if (activity_date >= cutoff_date) {
+					activities_to_keep.push(activity);
+				} else {
+					deleted_count++;
+				}
+			});
+			
+			if (deleted_count === 0) {
+				frappe.msgprint(__('No activities found older than the specified date'));
+				d.hide();
+				return;
+			}
+			
+			frappe.confirm(
+				__(`This will delete ${deleted_count} activities and keep ${activities_to_keep.length}. Continue?`),
+				function() {
+					// Clear the table and add back only the activities to keep
+					frm.clear_table('chart_activities');
+					activities_to_keep.forEach(activity => {
+						let new_row = frm.add_child('chart_activities');
+						Object.keys(activity).forEach(key => {
+							new_row[key] = activity[key];
+						});
+					});
+					
+					frm.refresh_field('chart_activities');
+					frm.save();
+					d.hide();
+					
+					// Update timeline
+					setTimeout(() => {
+						update_activity_timeline(frm);
+					}, 1000);
+					
+					frappe.show_alert({
+						message: __(`Deleted ${deleted_count} old activities successfully`),
+						indicator: 'green'
+					});
+				}
+			);
+		}
+	});
+	d.show();
 } 
