@@ -144,6 +144,37 @@ frappe.ui.form.on('Dental Chart', {
 			});
 		}
 	}
+	, // add comma to separate new handlers
+	// Client-side logging when adding a tooth condition
+	tooth_conditions_add: function(frm, cdt, cdn) {
+		let cond = locals[cdt][cdn];
+		let act = frm.add_child('chart_activities');
+		act.activity_type = 'Condition Added';
+		act.activity_description = __('Added condition {0} to tooth {1}', [cond.condition_code, cond.tooth_number]);
+		act.tooth_number = cond.tooth_number;
+		act.condition_code = cond.condition_code;
+		act.new_value = `${cond.condition_code} on ${cond.surface}`;
+		act.activity_datetime = frappe.datetime.now();
+		act.performed_by = frappe.session.user;
+		frm.refresh_field('chart_activities');
+		update_activity_timeline(frm);
+	},
+	// Client-side logging when adding a tooth procedure
+	tooth_procedures_add: function(frm, cdt, cdn) {
+		let proc = locals[cdt][cdn];
+		let cost = proc.actual_fee || proc.standard_fee || 0;
+		let act = frm.add_child('chart_activities');
+		act.activity_type = 'Procedure Added';
+		act.activity_description = __('Added procedure {0} to tooth {1}', [proc.procedure_code, proc.tooth_number]);
+		act.tooth_number = proc.tooth_number;
+		act.procedure_code = proc.procedure_code;
+		act.new_value = `${proc.procedure_code} (${proc.status}) on ${proc.surface}`;
+		act.cost_impact = cost;
+		act.activity_datetime = frappe.datetime.now();
+		act.performed_by = frappe.session.user;
+		frm.refresh_field('chart_activities');
+		update_activity_timeline(frm);
+	}
 });
 
 function get_dentition_description(dentition_type) {
