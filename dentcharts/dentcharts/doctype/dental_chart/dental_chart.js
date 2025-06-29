@@ -936,7 +936,7 @@ window.add_condition_to_selected = function() {
 			window.selected_teeth.forEach(tooth_number => {
 				let condition_row = frm.add_child('tooth_conditions');
 				condition_row.tooth_number = tooth_number;
-				condition_row.tooth_name = tooth_number; // Set tooth_name since we removed the link
+				condition_row.tooth_name = tooth_number;
 				condition_row.condition_code = values.condition_code;
 				condition_row.surface = values.surface;
 				condition_row.severity = values.severity;
@@ -946,15 +946,31 @@ window.add_condition_to_selected = function() {
 			});
 			
 			frm.refresh_field('tooth_conditions');
-			frm.save();
+			// Bulk condition activity log
+			let condCode = values.condition_code;
+			let condSurf = values.surface;
+			let condCount = window.selected_teeth.length;
+			let condList = window.selected_teeth.join(', ');
+			let actCond = frm.add_child('chart_activities');
+			actCond.activity_type = 'Condition Added';
+			actCond.activity_description = __('Added condition {0} to {1} teeth: {2}', [condCode, condCount, condList]);
+			actCond.tooth_number = `Multiple (${condCount})`;
+			actCond.condition_code = condCode;
+			actCond.new_value = `${condCode} on ${condSurf}`;
+			actCond.activity_datetime = frappe.datetime.now_datetime();
+			actCond.performed_by = frappe.session.user;
+			frm.refresh_field('chart_activities');
+			update_activity_timeline(frm);
+			
+			// Save and reload to pick up server-appended activities
+			frm.save().then(() => {
+				frm.reload_doc().then(() => {
+					create_interactive_dental_chart(frm);
+					update_activity_timeline(frm);
+				});
+			});
 			d.hide();
 			clear_selection();
-			
-			// Refresh the chart
-			setTimeout(() => {
-				create_interactive_dental_chart(frm);
-			}, 500);
-			
 			frappe.show_alert({
 				message: __(`Condition added to ${window.selected_teeth.length} teeth successfully`),
 				indicator: 'green'
@@ -1084,15 +1100,13 @@ window.add_procedure_to_selected = function() {
 			window.selected_teeth.forEach(tooth_number => {
 				let procedure_row = frm.add_child('tooth_procedures');
 				procedure_row.tooth_number = tooth_number;
-				procedure_row.tooth_name = tooth_number; // Set tooth_name since we removed the link
+				procedure_row.tooth_name = tooth_number;
 				procedure_row.procedure_code = values.procedure_code;
 				procedure_row.surface = values.surface;
 				procedure_row.status = values.status;
 				procedure_row.notes = values.notes;
 				procedure_row.planned_date = frappe.datetime.nowdate();
 				procedure_row.planned_by = frappe.session.user;
-				
-				// Add cost information
 				procedure_row.standard_fee = values.standard_fee || 0;
 				procedure_row.actual_fee = values.actual_fee || 0;
 				procedure_row.insurance_covered = values.insurance_covered || 0;
@@ -1101,23 +1115,33 @@ window.add_procedure_to_selected = function() {
 			});
 			
 			frm.refresh_field('tooth_procedures');
+			// Bulk procedure activity log
+			let procCode = values.procedure_code;
+			let procSurf = values.surface;
+			let procStatus = values.status;
+			let procCount = window.selected_teeth.length;
+			let procList = window.selected_teeth.join(', ');
+			let procTotalCost = (values.actual_fee || 0) * procCount;
+			let actProc = frm.add_child('chart_activities');
+			actProc.activity_type = 'Procedure Added';
+			actProc.activity_description = __('Added procedure {0} to {1} teeth: {2}', [procCode, procCount, procList]);
+			actProc.tooth_number = `Multiple (${procCount})`;
+			actProc.procedure_code = procCode;
+			actProc.new_value = `${procCode} (${procStatus}) on ${procSurf}`;
+			actProc.cost_impact = procTotalCost;
+			actProc.activity_datetime = frappe.datetime.now_datetime();
+			actProc.performed_by = frappe.session.user;
+			frm.refresh_field('chart_activities');
+			update_activity_timeline(frm);
 			
-			// Save and refresh summary fields
+			// Save and reload to pick up server-appended activities
 			frm.save().then(() => {
-				// Refresh the form to update calculated fields like estimated_cost
-				frm.reload_doc();
-				
-				// Refresh the chart
-				setTimeout(() => {
+				frm.reload_doc().then(() => {
+					frappe.show_alert({ message: __(`Procedure added to ${window.selected_teeth.length} teeth - Total Cost: ${format_currency(total_cost)}`), indicator: 'green' });
 					create_interactive_dental_chart(frm);
-				}, 500);
-				
-				frappe.show_alert({
-					message: __(`Procedure added to ${window.selected_teeth.length} teeth - Total Cost: ${format_currency(total_cost)}`),
-					indicator: 'green'
+					update_activity_timeline(frm);
 				});
 			});
-			
 			d.hide();
 			clear_selection();
 		}
