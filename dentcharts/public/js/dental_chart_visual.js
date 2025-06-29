@@ -1225,23 +1225,23 @@ window.remove_condition = function(condition_name) {
 		function() {
 			// Find and remove the condition
 			let frm = window.current_frm;
-			let condition_index = frm.doc.tooth_conditions.findIndex(c => c.name === condition_name);
-			if (condition_index > -1) {
-				frm.doc.tooth_conditions.splice(condition_index, 1);
-				frm.refresh_field('tooth_conditions');
-				frm.save();
-				
-				// Close dialog and refresh chart
-				window.current_tooth_dialog.hide();
-				setTimeout(() => {
-					create_interactive_dental_chart(frm);
-				}, 500);
-				
-				frappe.show_alert({
-					message: __('Condition removed successfully'),
-					indicator: 'green'
-				});
+			// Properly remove child row via grid API to flag deletion
+			let grid = frm.fields_dict.tooth_conditions.grid;
+			let row = grid.get_row(condition_name);
+			if (row) {
+				row.remove();
 			}
+			// Save form to persist deletion
+			frm.save();
+			
+			// Close dialog and refresh chart
+			window.current_tooth_dialog.hide();
+			setTimeout(() => create_interactive_dental_chart(frm), 500);
+			
+			frappe.show_alert({
+				message: __('Condition removed successfully'),
+				indicator: 'green'
+			});
 		}
 	);
 }
@@ -1252,23 +1252,23 @@ window.remove_procedure = function(procedure_name) {
 		function() {
 			// Find and remove the procedure
 			let frm = window.current_frm;
-			let procedure_index = frm.doc.tooth_procedures.findIndex(p => p.name === procedure_name);
-			if (procedure_index > -1) {
-				frm.doc.tooth_procedures.splice(procedure_index, 1);
-				frm.refresh_field('tooth_procedures');
-				frm.save();
-				
-				// Close dialog and refresh chart
-				window.current_tooth_dialog.hide();
-				setTimeout(() => {
-					create_interactive_dental_chart(frm);
-				}, 500);
-				
-				frappe.show_alert({
-					message: __('Procedure removed successfully'),
-					indicator: 'green'
-				});
+			// Properly remove child row via grid API to flag deletion
+			let grid = frm.fields_dict.tooth_procedures.grid;
+			let row = grid.get_row(procedure_name);
+			if (row) {
+				row.remove();
 			}
+			// Save form to persist deletion
+			frm.save();
+			
+			// Close dialog and refresh chart
+			window.current_tooth_dialog.hide();
+			setTimeout(() => create_interactive_dental_chart(frm), 500);
+			
+			frappe.show_alert({
+				message: __('Procedure removed successfully'),
+				indicator: 'green'
+			});
 		}
 	);
 }
