@@ -217,6 +217,8 @@ function create_interactive_dental_chart(frm) {
 				setTimeout(() => {
 					attach_tooth_click_handlers(frm);
 				}, 200);
+				// Render payment cards section for this patient
+				render_payment_section(frm);
 			}
 		}
 	});
@@ -2694,3 +2696,48 @@ frappe.ui.form.on('Tooth Condition', {
     severity: log_condition_change,
     notes: log_condition_change
 });
+
+// Payment section: fetch and display payment cards, with New Payment action
+function render_payment_section(frm) {
+    frappe.call({
+        method: 'dentcharts.dentcharts.doctype.dental_payment_entry.payment_entry.get_payments_for_patient',
+        args: { patient: frm.doc.patient },
+        callback: function(r) {
+            if (r.message) {
+                let payments = r.message;
+                let cards = payments.map(p => {
+                    return `
+                        <div class="payment-card" style="background:white; padding:15px; border:1px solid #dee2e6; border-radius:6px; min-width:180px;">  
+                            <div><strong>${frappe.datetime.str_to_user(p.payment_date)}</strong></div>
+                            <div>Invoice: ${p.invoice || ''}</div>
+                            <div>Amount: ${format_currency(p.payment_amount)}</div>
+                            <div>Method: ${p.payment_method}</div>
+                            <div>Status: ${p.payment_status}</div>
+                        </div>`;
+                }).join('');
+
+                let html = `
+                    <div class="dental-payments-section" style="margin-top:30px;">
+                        <h5>🧾 Payments</h5>
+                        <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:flex-start;">
+                            ${cards}
+                            <div style="display:flex; align-items:center;">
+                                <button class="btn btn-primary" onclick="record_payment_for_patient()">
+                                    ➕ New Payment
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                // Append below chart
+                $('.dental-chart-container').append(html);
+            }
+        }
+    });
+}
+
+// Open a new Dental Payment Entry form for this patient
+window.record_payment_for_patient = function() {
+    let frm = window.current_frm;
+    frappe.new_doc('Dental Payment Entry', { patient: frm.doc.patient });
+};
