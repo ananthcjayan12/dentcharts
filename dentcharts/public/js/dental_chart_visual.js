@@ -1162,30 +1162,32 @@ window.add_procedure_to_selected = function() {
 }
 
 function save_tooth_changes(frm, tooth_number, existing_conditions, existing_procedures, values) {
-	// Update existing conditions
+	// Update existing conditions using frappe.model.set_value for reliable persistence
 	existing_conditions.forEach((condition, index) => {
-		let condition_doc = frm.doc.tooth_conditions.find(c => c.name === condition.name);
-		if (condition_doc) {
-			condition_doc.condition_code = values[`condition_code_${index}`] || condition_doc.condition_code;
-			condition_doc.surface = values[`condition_surface_${index}`] || condition_doc.surface;
-			condition_doc.severity = values[`condition_severity_${index}`] || condition_doc.severity;
-			condition_doc.notes = values[`condition_notes_${index}`] || condition_doc.notes;
-		}
+		const name = condition.name;
+		const newCode = values[`condition_code_${index}`]    || condition.condition_code;
+		const newSurface = values[`condition_surface_${index}`] || condition.surface;
+		const newSeverity = values[`condition_severity_${index}`]|| condition.severity;
+		const newNotes = values[`condition_notes_${index}`]   || condition.notes;
+		frappe.model.set_value('Tooth Condition', name, 'condition_code', newCode);
+		frappe.model.set_value('Tooth Condition', name, 'surface', newSurface);
+		frappe.model.set_value('Tooth Condition', name, 'severity', newSeverity);
+		frappe.model.set_value('Tooth Condition', name, 'notes', newNotes);
 	});
-	
-	// Update existing procedures
+
+	// Update existing procedures using frappe.model.set_value for reliable persistence
 	existing_procedures.forEach((procedure, index) => {
-		let procedure_doc = frm.doc.tooth_procedures.find(p => p.name === procedure.name);
-		if (procedure_doc) {
-			procedure_doc.procedure_code = values[`procedure_code_${index}`] || procedure_doc.procedure_code;
-			procedure_doc.surface = values[`procedure_surface_${index}`] || procedure_doc.surface;
-			procedure_doc.status = values[`procedure_status_${index}`] || procedure_doc.status;
-			procedure_doc.notes = values[`procedure_notes_${index}`] || procedure_doc.notes;
-			
-			// Auto-set completion date if status changed to completed
-			if (values[`procedure_status_${index}`] === 'Completed' && !procedure_doc.completed_date) {
-				procedure_doc.completed_date = frappe.datetime.nowdate();
-			}
+		const name = procedure.name;
+		const newProcCode = values[`procedure_code_${index}`]   || procedure.procedure_code;
+		const newSurface = values[`procedure_surface_${index}`] || procedure.surface;
+		const newStatus = values[`procedure_status_${index}`]  || procedure.status;
+		const newNotes = values[`procedure_notes_${index}`]    || procedure.notes;
+		frappe.model.set_value('Tooth Procedure', name, 'procedure_code', newProcCode);
+		frappe.model.set_value('Tooth Procedure', name, 'surface', newSurface);
+		frappe.model.set_value('Tooth Procedure', name, 'status', newStatus);
+		frappe.model.set_value('Tooth Procedure', name, 'notes', newNotes);
+		if (newStatus === 'Completed') {
+			frappe.model.set_value('Tooth Procedure', name, 'completed_date', frappe.datetime.nowdate());
 		}
 	});
 	
@@ -2666,4 +2668,29 @@ frappe.ui.form.on('Tooth Procedure', {
 		update_activity_timeline(frm);
 		frm.save();
 	}
+});
+
+// Log changes to Tooth Condition child rows and persist edits
+function log_condition_change(frm, cdt, cdn) {
+    let cond = locals[cdt][cdn];
+    let act = frm.add_child('chart_activities');
+    act.activity_type = 'Condition Modified';
+    act.activity_description = __('Modified condition {0} on tooth {1}', [cond.condition_code, cond.tooth_number]);
+    act.tooth_number = cond.tooth_number;
+    act.condition_code = cond.condition_code;
+    act.new_value = `${cond.condition_code} on ${cond.surface}` + (cond.severity ? ` (${cond.severity})` : '');
+    act.activity_datetime = frappe.datetime.now_datetime();
+    act.performed_by = frappe.session.user;
+    
+    frm.refresh_field('chart_activities');
+    update_activity_timeline(frm);
+    frm.save();
+}
+
+// Catch field changes in the Tooth Condition child table to log and save
+frappe.ui.form.on('Tooth Condition', {
+    condition_code: log_condition_change,
+    surface: log_condition_change,
+    severity: log_condition_change,
+    notes: log_condition_change
 });
