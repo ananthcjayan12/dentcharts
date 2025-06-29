@@ -214,4 +214,9 @@ class DentalPaymentEntry(Document):
 			},
 			fields=["name", "invoice", "patient_name", "payment_amount", "payment_method", "payment_date"],
 			order_by="payment_date asc"
-		) 
+		)
+
+@frappe.whitelist()
+def get_payments_for_patient(patient):
+	"""Wrapper to fetch submitted payments for a given patient"""
+	return DentalPaymentEntry.get_payments_for_patient(patient) 
