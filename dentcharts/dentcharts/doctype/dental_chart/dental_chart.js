@@ -1165,18 +1165,19 @@ function save_tooth_changes(frm, tooth_number, existing_conditions, existing_pro
 		}
 	});
 	
+	// Update fields and save
 	frm.refresh_field('tooth_conditions');
 	frm.refresh_field('tooth_procedures');
-	frm.save();
-	
-	// Refresh the chart
-	setTimeout(() => {
-		create_interactive_dental_chart(frm);
-	}, 500);
-	
-	frappe.show_alert({
-		message: __('Tooth changes saved successfully'),
-		indicator: 'green'
+	// Save and reload to pick up server-side logged status changes, then refresh UI
+	frm.save().then(() => {
+		frm.reload_doc().then(() => {
+			create_interactive_dental_chart(frm);
+			update_activity_timeline(frm);
+			frappe.show_alert({
+				message: __('Tooth changes saved successfully'),
+				indicator: 'green'
+			});
+		});
 	});
 }
 
@@ -2621,5 +2622,24 @@ window.edit_activity_from_timeline = function(activity_name) {
 			});
 		}
 	});
-	d.show();
-} 
+	d.show(); 
+}
+
+// Catch status changes in the Tooth Procedure table and log them immediately
+frappe.ui.form.on('Tooth Procedure', {
+	status: function(frm, cdt, cdn) {
+		let proc = locals[cdt][cdn];
+		let act = frm.add_child('chart_activities');
+		act.activity_type = 'Procedure Status Changed';
+		act.activity_description = __('Changed status of {0} on tooth {1} to {2}', [proc.procedure_code, proc.tooth_number, proc.status]);
+		act.tooth_number = proc.tooth_number;
+		act.procedure_code = proc.procedure_code;
+		act.new_value = `Status: ${proc.status}`;
+		act.activity_datetime = frappe.datetime.now_datetime();
+		act.performed_by = frappe.session.user;
+		
+		frm.refresh_field('chart_activities');
+		update_activity_timeline(frm);
+		frm.save();
+	}
+});
