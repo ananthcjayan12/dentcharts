@@ -704,7 +704,7 @@ function add_tooth_condition_for_tooth(frm, selected_tooth) {
 			act_cond.tooth_number = selected_tooth;
 			act_cond.condition_code = values.condition_code;
 			act_cond.new_value = `${values.condition_code} on ${values.surface}`;
-			act_cond.activity_datetime = frappe.datetime.now();
+			act_cond.activity_datetime = frappe.datetime.now_datetime();
 			act_cond.performed_by = frappe.session.user;
 			frm.refresh_field('chart_activities');
 			update_activity_timeline(frm);
@@ -856,7 +856,7 @@ function add_tooth_procedure_for_tooth(frm, selected_tooth) {
 			act_proc.procedure_code = values.procedure_code;
 			act_proc.new_value = `${values.procedure_code} (${values.status}) on ${values.surface}`;
 			act_proc.cost_impact = cost;
-			act_proc.activity_datetime = frappe.datetime.now();
+			act_proc.activity_datetime = frappe.datetime.now_datetime();
 			act_proc.performed_by = frappe.session.user;
 			frm.refresh_field('chart_activities');
 			update_activity_timeline(frm);
