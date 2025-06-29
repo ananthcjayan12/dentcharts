@@ -689,7 +689,7 @@ function add_tooth_condition_for_tooth(frm, selected_tooth) {
 		primary_action: function(values) {
 			let condition_row = frm.add_child('tooth_conditions');
 			condition_row.tooth_number = selected_tooth;
-			condition_row.tooth_name = selected_tooth; // Set tooth_name since we removed the link
+			condition_row.tooth_name = selected_tooth;
 			condition_row.condition_code = values.condition_code;
 			condition_row.surface = values.surface;
 			condition_row.notes = values.notes;
@@ -697,6 +697,18 @@ function add_tooth_condition_for_tooth(frm, selected_tooth) {
 			condition_row.identified_by = frappe.session.user;
 			
 			frm.refresh_field('tooth_conditions');
+			// Immediately log this addition client-side
+			let act_cond = frm.add_child('chart_activities');
+			act_cond.activity_type = 'Condition Added';
+			act_cond.activity_description = __('Added condition {0} to tooth {1}', [values.condition_code, selected_tooth]);
+			act_cond.tooth_number = selected_tooth;
+			act_cond.condition_code = values.condition_code;
+			act_cond.new_value = `${values.condition_code} on ${values.surface}`;
+			act_cond.activity_datetime = frappe.datetime.now();
+			act_cond.performed_by = frappe.session.user;
+			frm.refresh_field('chart_activities');
+			update_activity_timeline(frm);
+			
 			// Save and reload to pick up server-appended activities, then refresh UI
 			frm.save().then(() => {
 				frm.reload_doc().then(() => {
@@ -704,6 +716,7 @@ function add_tooth_condition_for_tooth(frm, selected_tooth) {
 					update_activity_timeline(frm);
 				});
 			});
+
 			d.hide();
 		}
 	});
@@ -818,7 +831,7 @@ function add_tooth_procedure_for_tooth(frm, selected_tooth) {
 		primary_action: function(values) {
 			let procedure_row = frm.add_child('tooth_procedures');
 			procedure_row.tooth_number = selected_tooth;
-			procedure_row.tooth_name = selected_tooth; // Set tooth_name since we removed the link
+			procedure_row.tooth_name = selected_tooth;
 			procedure_row.procedure_code = values.procedure_code;
 			procedure_row.surface = values.surface;
 			procedure_row.status = values.status;
@@ -834,6 +847,20 @@ function add_tooth_procedure_for_tooth(frm, selected_tooth) {
 			procedure_row.duration_minutes = values.duration_minutes || 0;
 			
 			frm.refresh_field('tooth_procedures');
+			// Immediately log this addition client-side
+			let act_proc = frm.add_child('chart_activities');
+			let cost = values.actual_fee || values.standard_fee || 0;
+			act_proc.activity_type = 'Procedure Added';
+			act_proc.activity_description = __('Added procedure {0} to tooth {1}', [values.procedure_code, selected_tooth]);
+			act_proc.tooth_number = selected_tooth;
+			act_proc.procedure_code = values.procedure_code;
+			act_proc.new_value = `${values.procedure_code} (${values.status}) on ${values.surface}`;
+			act_proc.cost_impact = cost;
+			act_proc.activity_datetime = frappe.datetime.now();
+			act_proc.performed_by = frappe.session.user;
+			frm.refresh_field('chart_activities');
+			update_activity_timeline(frm);
+			
 			// Save and reload to pick up server-appended activities, then refresh UI
 			frm.save().then(() => {
 				frm.reload_doc().then(() => {
@@ -845,6 +872,7 @@ function add_tooth_procedure_for_tooth(frm, selected_tooth) {
 					update_activity_timeline(frm);
 				});
 			});
+
 			d.hide();
 		}
 	});
