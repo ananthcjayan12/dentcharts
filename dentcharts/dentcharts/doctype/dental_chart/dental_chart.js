@@ -697,13 +697,14 @@ function add_tooth_condition_for_tooth(frm, selected_tooth) {
 			condition_row.identified_by = frappe.session.user;
 			
 			frm.refresh_field('tooth_conditions');
-			frm.save();
+			// Save and reload to pick up server-appended activities, then refresh UI
+			frm.save().then(() => {
+				frm.reload_doc().then(() => {
+					create_interactive_dental_chart(frm);
+					update_activity_timeline(frm);
+				});
+			});
 			d.hide();
-			
-			// Refresh the interactive chart
-			setTimeout(() => {
-				create_interactive_dental_chart(frm);
-			}, 500);
 		}
 	});
 	d.show();
@@ -833,24 +834,17 @@ function add_tooth_procedure_for_tooth(frm, selected_tooth) {
 			procedure_row.duration_minutes = values.duration_minutes || 0;
 			
 			frm.refresh_field('tooth_procedures');
-			
-			// Save and refresh summary fields
+			// Save and reload to pick up server-appended activities, then refresh UI
 			frm.save().then(() => {
-				// Refresh the form to update calculated fields like estimated_cost
-				frm.reload_doc();
-				
-				// Show success message with cost summary
-				frappe.show_alert({
-					message: __(`Procedure added: ${values.procedure_code} - Fee: ${format_currency(values.actual_fee || 0)}`),
-					indicator: 'green'
-				});
-				
-				// Refresh the interactive chart
-				setTimeout(() => {
+				frm.reload_doc().then(() => {
+					frappe.show_alert({
+						message: __(`Procedure added: ${values.procedure_code} - Fee: ${format_currency(values.actual_fee || 0)}`),
+						indicator: 'green'
+					});
 					create_interactive_dental_chart(frm);
-				}, 500);
+					update_activity_timeline(frm);
+				});
 			});
-			
 			d.hide();
 		}
 	});
