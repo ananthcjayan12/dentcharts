@@ -2700,7 +2700,7 @@ frappe.ui.form.on('Tooth Condition', {
 // Payment section: fetch and display payment cards, with New Payment action
 function render_payment_section(frm) {
     frappe.call({
-        method: 'dentcharts.dentcharts.doctype.dental_payment_entry.payment_entry.get_payments_for_patient',
+        method: 'dentcharts.dentcharts.doctype.dental_payment_entry.dental_payment_entry.get_payments_for_patient',
         args: { patient: frm.doc.patient },
         callback: function(r) {
             if (r.message) {
