@@ -706,4 +706,21 @@ def record_visit(chart_name, visit_data):
 	
 	chart.save()
 	
-	return {"success": True, "message": "Visit recorded successfully"} 
+	return {"success": True, "message": "Visit recorded successfully"}
+
+@frappe.whitelist()
+def record_payment(chart_name, invoice, payment_amount, payment_method, reference_number=None, notes=None):
+	"""Record a payment entry for this chart and submit it."""
+	chart = frappe.get_doc("Dental Chart", chart_name)
+	payment = frappe.get_doc({
+		"doctype": "Dental Payment Entry",
+		"invoice": invoice,
+		"patient": chart.patient,
+		"payment_amount": payment_amount,
+		"payment_method": payment_method,
+		"reference_number": reference_number,
+		"notes": notes
+	})
+	payment.insert()
+	payment.submit()
+	return payment.name 

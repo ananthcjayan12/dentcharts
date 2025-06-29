@@ -201,21 +201,18 @@ function create_interactive_dental_chart(frm) {
 				let chart_data = r.message;
 				let chart_html = build_interactive_chart_html(frm, chart_data);
 				
-				// Clear any existing chart sections before adding new one
+				// Clear any existing chart and payment sections before adding new ones
 				$('.dental-chart-container').remove();
+				$('.dental-payment-container').remove();
 				
-				// Add chart directly to the form's layout container instead of dashboard
-				let form_layout = frm.page.main.find('.frappe-control[data-fieldname="tooth_conditions_section"]').parent();
-				if (form_layout.length) {
-					form_layout.before(chart_html);
-				} else {
-					// Fallback to dashboard if section not found
-					frm.dashboard.add_section(chart_html, __('Interactive Dental Chart'));
-				}
+				// Insert chart directly into form layout before Tooth Conditions table
+				let wrapper = frm.fields_dict.tooth_conditions.$wrapper.closest('.form-section');
+				wrapper.before(chart_html);
 				
-				// Attach click handlers after DOM is ready
+				// Attach click handlers and render payments after DOM is ready
 				setTimeout(() => {
 					attach_tooth_click_handlers(frm);
+					render_payment_section(frm);
 				}, 200);
 			}
 		}
@@ -2694,3 +2691,83 @@ frappe.ui.form.on('Tooth Condition', {
     severity: log_condition_change,
     notes: log_condition_change
 });
+
+// Add payment summary and recording UI below the chart
+function render_payment_section(frm) {
+    // Remove any existing payment section
+    $('.dental-payment-container').remove();
+    if (!frm.doc.patient) return;
+    // Fetch payments for this patient
+    frappe.call({
+        method: 'dentcharts.dentcharts.doctype.dental_payment_entry.payment_entry.get_payments_for_patient',
+        args: { patient: frm.doc.patient },
+        callback: function(r) {
+            let payments = r.message || [];
+            let totalPaid = payments.reduce((sum, p) => sum + (parseFloat(p.payment_amount) || 0), 0);
+            // Fetch outstanding invoices
+            frappe.call({
+                method: 'frappe.client.get_list',
+                args: {
+                    doctype: 'Invoice',
+                    filters: { patient: frm.doc.patient, outstanding_amount: ['>', 0], docstatus: 1 },
+                    fields: ['name', 'outstanding_amount']
+                },
+                callback: function(res) {
+                    let invoices = res.message || [];
+                    let totalOutstanding = invoices.reduce((sum, inv) => sum + (parseFloat(inv.outstanding_amount) || 0), 0);
+                    // Build payment summary HTML
+                    let html = `<div class="dental-payment-container" style="background: white; padding: 20px; border: 1px solid #d1d8dd; border-radius: 6px; margin: 10px 0;">`;
+                    html += `<h5>💳 ${__('Payment Summary')}</h5>`;
+                    html += `<div style="display: flex; gap: 30px; margin-bottom: 15px;"><div><strong>${__('Total Paid')}:</strong> ${frappe.format_value(totalPaid, {fieldtype:'Currency'})}</div><div><strong>${__('Outstanding')}:</strong> ${frappe.format_value(totalOutstanding, {fieldtype:'Currency'})}</div></div>`;
+                    html += `<h6>${__('Recent Payments')}</h6><div style="margin-bottom: 15px;">`;
+                    payments.slice(0,5).forEach(p => {
+                        html += `<div>${frappe.datetime.str_to_user(p.payment_date)} - ${p.payment_method} - ${frappe.format_value(p.payment_amount, {fieldtype:'Currency'})}</div>`;
+                    });
+                    html += `</div><button class="btn btn-sm btn-primary" id="btn-record-payment">${__('Record Payment')}</button></div>`;
+                    // Append after chart
+                    $('.dental-chart-container').append(html);
+                    // Attach event
+                    $('#btn-record-payment').on('click', function() {
+                        show_record_payment_dialog(frm);
+                    });
+                }
+            });
+        }
+    });
+}
+
+function show_record_payment_dialog(frm) {
+    let d = new frappe.ui.Dialog({
+        title: __('Record Payment'),
+        fields: [
+            { fieldtype: 'Link', fieldname: 'invoice', label: __('Invoice'), options: 'Invoice', reqd: 1, get_query: () => ({ filters: { patient: frm.doc.patient } }) },
+            { fieldtype: 'Currency', fieldname: 'payment_amount', label: __('Payment Amount'), reqd: 1 },
+            { fieldtype: 'Select', fieldname: 'payment_method', label: __('Payment Method'), options: 'Cash\nCheck\nBank Transfer\nOnline Payment', reqd: 1 },
+            { fieldtype: 'Data', fieldname: 'reference_number', label: __('Reference Number') },
+            { fieldtype: 'Small Text', fieldname: 'notes', label: __('Notes') }
+        ],
+        primary_action_label: __('Submit'),
+        primary_action: function(values) {
+            frappe.call({
+                method: 'dentcharts.dentcharts.doctype.dental_chart.dental_chart.record_payment',
+                args: {
+                    chart_name: frm.doc.name,
+                    invoice: values.invoice,
+                    payment_amount: values.payment_amount,
+                    payment_method: values.payment_method,
+                    reference_number: values.reference_number,
+                    notes: values.notes
+                },
+                callback: function(r) {
+                    frappe.show_alert({ message: __('Payment recorded'), indicator: 'green' });
+                    d.hide();
+                    frm.reload_doc().then(() => {
+                        create_interactive_dental_chart(frm);
+                        update_activity_timeline(frm);
+                    });
+                }
+            });
+        }
+    });
+    d.show();
+}
