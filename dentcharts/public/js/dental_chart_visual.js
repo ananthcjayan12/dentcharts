@@ -22,11 +22,12 @@ frappe.ui.form.on('Dental Chart', {
 				`);
 			}
 			
-			// Clear any existing chart sections
-			$('.dental-chart-container').remove();
-			
-			// Create interactive dental chart
-			create_interactive_dental_chart(frm);
+			// Clear any existing chart and payment containers and dashboard sections
+			$('.dental-chart-container, .dental-payment-container').remove();
+			// Remove previous interactive chart sections from dashboard
+			frm.dashboard.wrapper.find('.dashboard-section').remove();
+			// Add chart at the top in dashboard
+			frm.dashboard.add_section(chart_html, __('Interactive Dental Chart'));
 			
 			// Add visit management buttons
 			frm.add_custom_button(__('Record Visit'), function() {
@@ -201,13 +202,12 @@ function create_interactive_dental_chart(frm) {
 				let chart_data = r.message;
 				let chart_html = build_interactive_chart_html(frm, chart_data);
 				
-				// Clear any existing chart and payment sections before adding new ones
-				$('.dental-chart-container').remove();
-				$('.dental-payment-container').remove();
-				
-				// Insert chart directly into form layout before Tooth Conditions table
-				let wrapper = frm.fields_dict.tooth_conditions.$wrapper.closest('.form-section');
-				wrapper.before(chart_html);
+				// Clear any existing chart and payment containers and dashboard sections
+				$('.dental-chart-container, .dental-payment-container').remove();
+				// Remove previous interactive chart sections from dashboard
+				frm.dashboard.wrapper.find('.dashboard-section').remove();
+				// Add chart at the top in dashboard
+				frm.dashboard.add_section(chart_html, __('Interactive Dental Chart'));
 				
 				// Attach click handlers and render payments after DOM is ready
 				setTimeout(() => {
