@@ -22,12 +22,18 @@ frappe.ui.form.on('Dental Chart', {
 				`);
 			}
 			
-			// Clear any existing chart and payment containers and dashboard sections
+			// Clear any existing chart and payment containers
 			$('.dental-chart-container, .dental-payment-container').remove();
-			// Remove previous interactive chart sections from dashboard
-			frm.dashboard.wrapper.find('.dashboard-section').remove();
-			// Add chart at the top in dashboard
+			// Remove previous interactive chart sections from dashboard, if available
+			if (frm.dashboard && frm.dashboard.wrapper) {
+				frm.dashboard.wrapper.find('.dashboard-section').remove();
+			}
+			// Add new chart at the top in dashboard
 			frm.dashboard.add_section(chart_html, __('Interactive Dental Chart'));
+			
+			// Render the interactive chart and activity timeline
+			create_interactive_dental_chart(frm);
+			update_activity_timeline(frm);
 			
 			// Add visit management buttons
 			frm.add_custom_button(__('Record Visit'), function() {
@@ -202,11 +208,13 @@ function create_interactive_dental_chart(frm) {
 				let chart_data = r.message;
 				let chart_html = build_interactive_chart_html(frm, chart_data);
 				
-				// Clear any existing chart and payment containers and dashboard sections
+				// Clear any existing chart and payment containers
 				$('.dental-chart-container, .dental-payment-container').remove();
-				// Remove previous interactive chart sections from dashboard
-				frm.dashboard.wrapper.find('.dashboard-section').remove();
-				// Add chart at the top in dashboard
+				// Remove previous interactive chart sections from dashboard, if available
+				if (frm.dashboard && frm.dashboard.wrapper) {
+					frm.dashboard.wrapper.find('.dashboard-section').remove();
+				}
+				// Add new chart at the top in dashboard
 				frm.dashboard.add_section(chart_html, __('Interactive Dental Chart'));
 				
 				// Attach click handlers and render payments after DOM is ready
@@ -2697,10 +2705,16 @@ function render_payment_section(frm) {
     // Remove any existing payment section
     $('.dental-payment-container').remove();
     if (!frm.doc.patient) return;
-    // Fetch payments for this patient
+    // Fetch payments for this patient using frappe.client.get_list
     frappe.call({
-        method: 'dentcharts.dentcharts.doctype.dental_payment_entry.payment_entry.get_payments_for_patient',
-        args: { patient: frm.doc.patient },
+        method: 'frappe.client.get_list',
+        args: {
+            doctype: 'Dental Payment Entry',
+            filters: { patient: frm.doc.patient, docstatus: 1 },
+            fields: ['name', 'payment_date', 'payment_amount', 'payment_method', 'payment_status'],
+            order_by: 'payment_date desc',
+            limit_page_length: 5
+        },
         callback: function(r) {
             let payments = r.message || [];
             let totalPaid = payments.reduce((sum, p) => sum + (parseFloat(p.payment_amount) || 0), 0);
