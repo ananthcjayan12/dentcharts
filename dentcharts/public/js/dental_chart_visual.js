@@ -1239,6 +1239,9 @@ window.add_procedure_to_selected = function() {
 }
 
 function save_tooth_changes(frm, tooth_number, existing_conditions, existing_procedures, values) {
+	// Set flag to prevent duplicate status change logging
+	window.saving_from_enhanced_dialog = true;
+	
 	// Update existing conditions using frappe.model.set_value for reliable persistence
 	existing_conditions.forEach((condition, index) => {
 		const name = condition.name;
@@ -1257,17 +1260,39 @@ function save_tooth_changes(frm, tooth_number, existing_conditions, existing_pro
 	// Update existing procedures using frappe.model.set_value for reliable persistence
 	existing_procedures.forEach((procedure, index) => {
 		const name = procedure.name;
+		const oldStatus = procedure.status;
 		const newProcCode = values[`procedure_code_${index}`]   || procedure.procedure_code;
 		const newSurface = values[`procedure_surface_${index}`] || procedure.surface;
 		const newStatus = values[`procedure_status_${index}`]  || procedure.status;
 		const newNotes = values[`procedure_notes_${index}`]    || procedure.notes;
 		const newPlannedDate = values[`procedure_planned_date_${index}`] || procedure.planned_date;
 		const newCompletedDate = values[`procedure_completed_date_${index}`] || procedure.completed_date;
+		
 		frappe.model.set_value('Tooth Procedure', name, 'procedure_code', newProcCode);
 		frappe.model.set_value('Tooth Procedure', name, 'surface', newSurface);
-		frappe.model.set_value('Tooth Procedure', name, 'status', newStatus);
 		frappe.model.set_value('Tooth Procedure', name, 'notes', newNotes);
 		frappe.model.set_value('Tooth Procedure', name, 'planned_date', newPlannedDate);
+		
+		// Handle status change with manual activity logging
+		if (oldStatus !== newStatus) {
+			frappe.model.set_value('Tooth Procedure', name, 'status', newStatus);
+			
+			// Log the status change manually with user-provided date
+			let act = frm.add_child('chart_activities');
+			act.activity_type = 'Procedure Status Changed';
+			act.activity_description = __('Changed status of {0} on tooth {1} to {2}', [newProcCode, tooth_number, newStatus]);
+			act.tooth_number = tooth_number;
+			act.procedure_code = newProcCode;
+			act.new_value = `Status: ${newStatus}`;
+			// Use completed date if status is completed, otherwise use planned date
+			let activityDate = (newStatus === 'Completed' && newCompletedDate) ? newCompletedDate : newPlannedDate;
+			act.activity_datetime = activityDate + ' ' + frappe.datetime.now_time();
+			act.performed_by = frappe.session.user;
+		} else {
+			// No status change, just update normally
+			frappe.model.set_value('Tooth Procedure', name, 'status', newStatus);
+		}
+		
 		if (newStatus === 'Completed') {
 			// Use user-provided completed date or set to today if not provided
 			frappe.model.set_value('Tooth Procedure', name, 'completed_date', newCompletedDate || frappe.datetime.nowdate());
@@ -1280,6 +1305,13 @@ function save_tooth_changes(frm, tooth_number, existing_conditions, existing_pro
 	// Update fields and save
 	frm.refresh_field('tooth_conditions');
 	frm.refresh_field('tooth_procedures');
+	frm.refresh_field('chart_activities');
+	
+	// Clear the flag after a short delay to allow all events to process
+	setTimeout(() => {
+		window.saving_from_enhanced_dialog = false;
+	}, 1000);
+	
 	// Save and reload to pick up server-side logged status changes, then refresh UI
 	frm.save().then(() => {
 		frm.reload_doc().then(() => {
@@ -2754,6 +2786,11 @@ window.edit_activity_from_timeline = function(activity_name) {
 // Catch status changes in the Tooth Procedure table and log them immediately
 frappe.ui.form.on('Tooth Procedure', {
 	status: function(frm, cdt, cdn) {
+		// Skip if this change is coming from the enhanced dialog to prevent duplicates
+		if (window.saving_from_enhanced_dialog) {
+			return;
+		}
+		
 		let proc = locals[cdt][cdn];
 		let newStatus = proc.status;
 		// Prompt user for status date
