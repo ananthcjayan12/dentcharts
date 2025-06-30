@@ -3455,7 +3455,7 @@ frappe.ui.form.on('Tooth Condition', {
     notes: log_condition_change
 });
 
-// Payment section: fetch and display payment cards, with New Payment action
+// Payment section: fetch and display payment cards with enhanced functionality
 function render_payment_section(frm) {
     // Remove existing payments section to avoid duplicates
     $('.dental-payments-section').remove();
@@ -3465,27 +3465,93 @@ function render_payment_section(frm) {
         callback: function(r) {
             if (r.message) {
                 let payments = r.message;
+                
+                // Calculate payment statistics
+                let total_payments = payments.reduce((sum, p) => sum + (p.payment_amount || 0), 0);
+                let recent_payments = payments.filter(p => {
+                    let payment_date = new Date(p.payment_date);
+                    let thirty_days_ago = new Date();
+                    thirty_days_ago.setDate(thirty_days_ago.getDate() - 30);
+                    return payment_date >= thirty_days_ago;
+                });
+                let recent_total = recent_payments.reduce((sum, p) => sum + (p.payment_amount || 0), 0);
+                
+                // Create summary card
+                let summary_html = `
+                    <div style="display:flex; gap:15px; margin-bottom:20px; flex-wrap:wrap;">
+                        <div class="summary-card" style="background:linear-gradient(135deg, #74b9ff 0%, #0984e3 100%); color:white; padding:20px; border-radius:12px; min-width:200px; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,0.1);">
+                            <div style="font-size:24px; font-weight:bold; margin-bottom:5px;">${format_currency(total_payments)}</div>
+                            <div style="opacity:0.9;">💳 Total Payments</div>
+                            <div style="font-size:12px; margin-top:5px; opacity:0.8;">${payments.length} payment${payments.length !== 1 ? 's' : ''}</div>
+                        </div>
+                        
+                        <div class="summary-card" style="background:linear-gradient(135deg, #00cec9 0%, #00b894 100%); color:white; padding:20px; border-radius:12px; min-width:200px; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,0.1);">
+                            <div style="font-size:24px; font-weight:bold; margin-bottom:5px;">${format_currency(recent_total)}</div>
+                            <div style="opacity:0.9;">📅 Last 30 Days</div>
+                            <div style="font-size:12px; margin-top:5px; opacity:0.8;">${recent_payments.length} recent</div>
+                        </div>
+                    </div>
+                `;
+                
                 let cards = payments.map(p => {
+                    let method_color = get_payment_method_color(p.payment_method);
+                    let status_color = get_payment_status_color(p.payment_status);
+                    
                     return `
-                        <div class="payment-card" style="background:white; padding:15px; border:1px solid #dee2e6; border-radius:6px; min-width:180px;">  
-                            <div><strong>${frappe.datetime.str_to_user(p.payment_date)}</strong></div>
-                            <div>Invoice: ${p.invoice || ''}</div>
-                            <div>Amount: ${format_currency(p.payment_amount)}</div>
-                            <div>Method: ${p.payment_method}</div>
-                            <div>Status: ${p.payment_status}</div>
+                        <div class="payment-card" onclick="edit_payment_quick('${p.name}')" style="
+                            background:${status_color.bg}; 
+                            border:2px solid ${status_color.border}; 
+                            padding:18px; 
+                            border-radius:12px; 
+                            min-width:260px; 
+                            cursor:pointer; 
+                            transition:all 0.3s ease;
+                            box-shadow:0 3px 10px rgba(0,0,0,0.1);
+                        " onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.15)'" 
+                           onmouseout="this.style.transform='translateY(0px)'; this.style.boxShadow='0 3px 10px rgba(0,0,0,0.1)'">
+                            
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                <div style="font-weight:bold; font-size:16px; color:${status_color.text};">💳 ${frappe.datetime.str_to_user(p.payment_date)}</div>
+                                <div style="background:${status_color.badge}; color:white; padding:4px 8px; border-radius:20px; font-size:11px; font-weight:bold;">
+                                    ${p.payment_status}
+                                </div>
+                            </div>
+                            
+                            <div style="margin-bottom:12px;">
+                                <div style="font-size:24px; font-weight:bold; color:${status_color.text};">
+                                    ${format_currency(p.payment_amount)}
+                                </div>
+                                ${p.invoice ? `<div style="font-size:12px; color:${status_color.text}; opacity:0.8;">Invoice: ${p.invoice}</div>` : ''}
+                            </div>
+                            
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+                                <div style="background:${method_color}; color:white; padding:4px 12px; border-radius:20px; font-size:12px; font-weight:bold;">
+                                    ${p.payment_method}
+                                </div>
+                                ${p.reference_number ? `<div style="font-size:11px; color:${status_color.text}; opacity:0.7;">Ref: ${p.reference_number}</div>` : ''}
+                            </div>
+                            
+                            ${p.notes ? `
+                                <div style="background:rgba(0,0,0,0.05); padding:8px; border-radius:6px; margin-top:8px;">
+                                    <div style="font-size:11px; color:${status_color.text}; opacity:0.8;">${p.notes}</div>
+                                </div>
+                            ` : ''}
                         </div>`;
                 }).join('');
 
                 let html = `
                     <div class="dental-payments-section" style="margin-top:30px;">
-                        <h5>🧾 Payments</h5>
+                        <h5 style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
+                            💳 ${__('Payments & Transactions')}
+                            <button class="btn btn-sm btn-success" onclick="record_payment_for_patient()" style="margin-left:auto; border-radius:6px;">
+                                ➕ New Payment
+                            </button>
+                        </h5>
+                        
+                        ${summary_html}
+                        
                         <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:flex-start;">
                             ${cards}
-                            <div style="display:flex; align-items:center;">
-                                <button class="btn btn-primary" onclick="record_payment_for_patient()">
-                                    ➕ New Payment
-                                </button>
-                            </div>
                         </div>
                     </div>
                 `;
@@ -3535,7 +3601,7 @@ window.record_payment_for_patient = function() {
     dialog.show();
 };
 
-// Invoice section: fetch and display invoice cards, with Record Payment action
+// Invoice section: fetch and display invoice cards with enhanced functionality
 function render_invoice_section(frm) {
     // Remove existing invoices section to avoid duplicates
     $('.dental-invoices-section').remove();
@@ -3544,34 +3610,136 @@ function render_invoice_section(frm) {
         args: {
             doctype: 'Invoice',
             filters: { patient: frm.doc.patient },
-            fields: ['name', 'invoice_status', 'payment_status', 'total_amount', 'paid_amount', 'outstanding_amount'],
+            fields: ['name', 'invoice_status', 'payment_status', 'total_amount', 'paid_amount', 'outstanding_amount', 'creation', 'due_date'],
             order_by: 'creation desc'
         },
         callback: function(r) {
             if (r.message) {
                 let invoices = r.message;
+                
+                // Calculate summary statistics
+                let total_invoiced = invoices.reduce((sum, inv) => sum + (inv.total_amount || 0), 0);
+                let total_paid = invoices.reduce((sum, inv) => sum + (inv.paid_amount || 0), 0);
+                let total_outstanding = invoices.reduce((sum, inv) => sum + (inv.outstanding_amount || 0), 0);
+                let pending_invoices = invoices.filter(inv => inv.outstanding_amount > 0);
+                
+                // Create summary cards
+                let summary_html = `
+                    <div style="display:flex; gap:15px; margin-bottom:20px; flex-wrap:wrap;">
+                        <div class="summary-card" style="background:linear-gradient(135deg, #667eea 0%, #764ba2 100%); color:white; padding:20px; border-radius:12px; min-width:200px; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,0.1);">
+                            <div style="font-size:24px; font-weight:bold; margin-bottom:5px;">${format_currency(total_invoiced)}</div>
+                            <div style="opacity:0.9;">💰 Total Invoiced</div>
+                            <div style="font-size:12px; margin-top:5px; opacity:0.8;">${invoices.length} invoice${invoices.length !== 1 ? 's' : ''}</div>
+                        </div>
+                        
+                        <div class="summary-card" style="background:linear-gradient(135deg, #11998e 0%, #38ef7d 100%); color:white; padding:20px; border-radius:12px; min-width:200px; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,0.1);">
+                            <div style="font-size:24px; font-weight:bold; margin-bottom:5px;">${format_currency(total_paid)}</div>
+                            <div style="opacity:0.9;">✅ Total Paid</div>
+                            <div style="font-size:12px; margin-top:5px; opacity:0.8;">${((total_paid/total_invoiced)*100 || 0).toFixed(1)}% collected</div>
+                        </div>
+                        
+                        <div class="summary-card" style="background:linear-gradient(135deg, #ff6b6b 0%, #ffa500 100%); color:white; padding:20px; border-radius:12px; min-width:200px; text-align:center; box-shadow:0 4px 15px rgba(0,0,0,0.1);">
+                            <div style="font-size:24px; font-weight:bold; margin-bottom:5px;">${format_currency(total_outstanding)}</div>
+                            <div style="opacity:0.9;">⏰ Outstanding</div>
+                            <div style="font-size:12px; margin-top:5px; opacity:0.8;">${pending_invoices.length} pending</div>
+                        </div>
+                    </div>
+                `;
+                
+                // Create individual invoice cards with color coding
                 let cards = invoices.map(inv => {
+                    let status_color = get_invoice_status_color(inv.payment_status, inv.outstanding_amount);
+                    let is_overdue = inv.due_date && new Date(inv.due_date) < new Date() && inv.outstanding_amount > 0;
+                    
                     return `
-                        <div class="invoice-card" style="background:white; padding:15px; border:1px solid #dee2e6; border-radius:6px; min-width:220px;">
-                            <div><strong>${inv.name}</strong></div>
-                            <div>Status: ${inv.invoice_status}</div>
-                            <div>Payment: ${inv.payment_status}</div>
-                            <div>Total: ${format_currency(inv.total_amount)}</div>
-                            <div>Paid: ${format_currency(inv.paid_amount)}</div>
-                            <div>Due: ${format_currency(inv.outstanding_amount)}</div>
-                            <div style="margin-top:8px;">
-                                <button class="btn btn-xs btn-primary" onclick="record_payment_for_invoice('${inv.name}', ${inv.outstanding_amount})">
-                                    ${__('Record Payment')}
+                        <div class="invoice-card" onclick="edit_invoice_quick('${inv.name}')" style="
+                            background:${status_color.bg}; 
+                            border:2px solid ${status_color.border}; 
+                            padding:18px; 
+                            border-radius:12px; 
+                            min-width:280px; 
+                            cursor:pointer; 
+                            transition:all 0.3s ease;
+                            box-shadow:0 3px 10px rgba(0,0,0,0.1);
+                            position:relative;
+                            ${is_overdue ? 'animation: pulse-red 2s infinite;' : ''}
+                        " onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 6px 20px rgba(0,0,0,0.15)'" 
+                           onmouseout="this.style.transform='translateY(0px)'; this.style.boxShadow='0 3px 10px rgba(0,0,0,0.1)'">
+                            
+                            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+                                <div style="font-weight:bold; font-size:16px; color:${status_color.text};">📄 ${inv.name}</div>
+                                <div style="background:${status_color.badge}; color:white; padding:4px 8px; border-radius:20px; font-size:11px; font-weight:bold;">
+                                    ${inv.payment_status}
+                                </div>
+                            </div>
+                            
+                            <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:12px;">
+                                <div style="color:${status_color.text};">
+                                    <div style="font-size:12px; opacity:0.8;">Total Amount</div>
+                                    <div style="font-weight:bold;">${format_currency(inv.total_amount)}</div>
+                                </div>
+                                <div style="color:${status_color.text};">
+                                    <div style="font-size:12px; opacity:0.8;">Paid Amount</div>
+                                    <div style="font-weight:bold;">${format_currency(inv.paid_amount)}</div>
+                                </div>
+                            </div>
+                            
+                            ${inv.outstanding_amount > 0 ? `
+                                <div style="background:rgba(255,107,107,0.1); border:1px solid #ff6b6b; padding:8px; border-radius:6px; margin-bottom:12px;">
+                                    <div style="color:#d63031; font-weight:bold; font-size:14px;">
+                                        💸 Due: ${format_currency(inv.outstanding_amount)}
+                                    </div>
+                                    ${inv.due_date ? `<div style="font-size:11px; color:#636e72; margin-top:2px;">Due: ${frappe.datetime.str_to_user(inv.due_date)}</div>` : ''}
+                                </div>
+                            ` : `
+                                <div style="background:rgba(0,184,148,0.1); border:1px solid #00b894; padding:8px; border-radius:6px; margin-bottom:12px;">
+                                    <div style="color:#00b894; font-weight:bold; font-size:14px;">
+                                        ✅ Fully Paid
+                                    </div>
+                                </div>
+                            `}
+                            
+                            <div style="display:flex; gap:8px; margin-top:12px;">
+                                <button class="btn btn-xs btn-primary" onclick="event.stopPropagation(); record_payment_for_invoice('${inv.name}', ${inv.outstanding_amount})" 
+                                        style="flex:1; border-radius:6px;">
+                                    💳 Payment
+                                </button>
+                                <button class="btn btn-xs btn-secondary" onclick="event.stopPropagation(); print_invoice('${inv.name}')" 
+                                        style="border-radius:6px;">
+                                    🖨️ Print
                                 </button>
                             </div>
+                            
+                            ${is_overdue ? `
+                                <div style="position:absolute; top:-5px; right:-5px; background:#ff3838; color:white; border-radius:50%; width:20px; height:20px; display:flex; align-items:center; justify-content:center; font-size:10px; font-weight:bold;">
+                                    !
+                                </div>
+                            ` : ''}
                         </div>`;
                 }).join('');
+                
                 let html = `
                     <div class="dental-invoices-section" style="margin-top:30px;">
-                        <h5>🧾 ${__('Invoices')}</h5>
+                        <h5 style="display:flex; align-items:center; gap:10px; margin-bottom:20px;">
+                            🧾 ${__('Invoices & Billing')} 
+                            <button class="btn btn-sm btn-success" onclick="show_invoice_generation_dialog(cur_frm)" style="margin-left:auto; border-radius:6px;">
+                                ➕ New Invoice
+                            </button>
+                        </h5>
+                        
+                        ${summary_html}
+                        
                         <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:flex-start;">
                             ${cards}
                         </div>
+                        
+                        <style>
+                            @keyframes pulse-red {
+                                0% { box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
+                                50% { box-shadow: 0 3px 15px rgba(255,107,107,0.4); }
+                                100% { box-shadow: 0 3px 10px rgba(0,0,0,0.1); }
+                            }
+                        </style>
                     </div>`;
                 // Append below chart
                 $('.dental-chart-container').append(html);
@@ -3630,6 +3798,444 @@ function print_invoice(invoice_name) {
 		null, // letterhead
 		null  // language
 	);
+}
+
+// Helper function to get invoice status colors
+function get_invoice_status_color(payment_status, outstanding_amount) {
+	if (payment_status === 'Paid' || outstanding_amount <= 0) {
+		return {
+			bg: 'linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%)',
+			border: '#28a745',
+			text: '#155724',
+			badge: '#28a745'
+		};
+	} else if (payment_status === 'Partially Paid') {
+		return {
+			bg: 'linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%)',
+			border: '#ffc107',
+			text: '#856404',
+			badge: '#ffc107'
+		};
+	} else if (payment_status === 'Unpaid' || payment_status === 'Overdue') {
+		return {
+			bg: 'linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%)',
+			border: '#dc3545',
+			text: '#721c24',
+			badge: '#dc3545'
+		};
+	} else {
+		return {
+			bg: 'linear-gradient(135deg, #e2e3e5 0%, #d6d8db 100%)',
+			border: '#6c757d',
+			text: '#495057',
+			badge: '#6c757d'
+		};
+	}
+}
+
+// Quick edit invoice function
+function edit_invoice_quick(invoice_name) {
+	frappe.call({
+		method: 'frappe.client.get',
+		args: {
+			doctype: 'Invoice',
+			name: invoice_name
+		},
+		callback: function(r) {
+			if (r.message) {
+				let invoice = r.message;
+				show_invoice_edit_dialog(invoice);
+			}
+		}
+	});
+}
+
+// Show invoice edit dialog
+function show_invoice_edit_dialog(invoice) {
+	let d = new frappe.ui.Dialog({
+		title: `📄 Edit Invoice: ${invoice.name}`,
+		fields: [
+			{
+				fieldtype: 'Section Break',
+				label: '📋 Basic Information'
+			},
+			{
+				fieldtype: 'Data',
+				fieldname: 'title',
+				label: 'Title',
+				default: invoice.title
+			},
+			{
+				fieldtype: 'Column Break'
+			},
+			{
+				fieldtype: 'Select',
+				fieldname: 'invoice_status',
+				label: 'Invoice Status',
+				options: 'Draft\nSent\nPaid\nCancelled',
+				default: invoice.invoice_status,
+				reqd: 1
+			},
+			{
+				fieldtype: 'Section Break',
+				label: '💰 Financial Details'
+			},
+			{
+				fieldtype: 'Currency',
+				fieldname: 'total_amount',
+				label: 'Total Amount',
+				default: invoice.total_amount,
+				reqd: 1
+			},
+			{
+				fieldtype: 'Column Break'
+			},
+			{
+				fieldtype: 'Currency',
+				fieldname: 'paid_amount',
+				label: 'Paid Amount',
+				default: invoice.paid_amount || 0
+			},
+			{
+				fieldtype: 'Section Break',
+				label: '📅 Dates'
+			},
+			{
+				fieldtype: 'Date',
+				fieldname: 'invoice_date',
+				label: 'Invoice Date',
+				default: invoice.invoice_date
+			},
+			{
+				fieldtype: 'Column Break'
+			},
+			{
+				fieldtype: 'Date',
+				fieldname: 'due_date',
+				label: 'Due Date',
+				default: invoice.due_date
+			},
+			{
+				fieldtype: 'Section Break',
+				label: '📝 Additional Information'
+			},
+			{
+				fieldtype: 'Small Text',
+				fieldname: 'notes',
+				label: 'Notes',
+				default: invoice.notes
+			},
+			{
+				fieldtype: 'HTML',
+				fieldname: 'summary',
+				options: `
+					<div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-top:15px;">
+						<h6>📊 Invoice Summary</h6>
+						<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+							<div><strong>Outstanding:</strong> <span id="outstanding-amount">${format_currency((invoice.total_amount || 0) - (invoice.paid_amount || 0))}</span></div>
+							<div><strong>Payment Status:</strong> <span id="payment-status">${invoice.payment_status || 'Unpaid'}</span></div>
+						</div>
+					</div>
+				`
+			}
+		],
+		size: 'large',
+		primary_action_label: '💾 Save Changes',
+		primary_action: function(values) {
+			// Calculate outstanding amount
+			let outstanding = (values.total_amount || 0) - (values.paid_amount || 0);
+			
+			// Determine payment status
+			let payment_status = 'Unpaid';
+			if (values.paid_amount >= values.total_amount) {
+				payment_status = 'Paid';
+			} else if (values.paid_amount > 0) {
+				payment_status = 'Partially Paid';
+			}
+			
+			// Update invoice
+			frappe.call({
+				method: 'frappe.client.set_value',
+				args: {
+					doctype: 'Invoice',
+					name: invoice.name,
+					fieldname: {
+						'title': values.title,
+						'invoice_status': values.invoice_status,
+						'total_amount': values.total_amount,
+						'paid_amount': values.paid_amount,
+						'outstanding_amount': outstanding,
+						'payment_status': payment_status,
+						'invoice_date': values.invoice_date,
+						'due_date': values.due_date,
+						'notes': values.notes
+					}
+				},
+				callback: function(r) {
+					if (r.message) {
+						d.hide();
+						frappe.show_alert({
+							message: `Invoice ${invoice.name} updated successfully`,
+							indicator: 'green'
+						});
+						
+						// Refresh the invoice section
+						render_invoice_section(cur_frm);
+					}
+				}
+			});
+		},
+		secondary_action_label: '🖨️ Print Invoice',
+		secondary_action: function() {
+			print_invoice(invoice.name);
+		}
+	});
+	
+	// Add real-time calculation
+	d.fields_dict.total_amount.$input.on('change', update_invoice_summary);
+	d.fields_dict.paid_amount.$input.on('change', update_invoice_summary);
+	
+	function update_invoice_summary() {
+		let total = parseFloat(d.get_value('total_amount') || 0);
+		let paid = parseFloat(d.get_value('paid_amount') || 0);
+		let outstanding = total - paid;
+		
+		let payment_status = 'Unpaid';
+		if (paid >= total) {
+			payment_status = 'Paid';
+		} else if (paid > 0) {
+			payment_status = 'Partially Paid';
+		}
+		
+		$('#outstanding-amount').text(format_currency(outstanding));
+		$('#payment-status').text(payment_status);
+	}
+	
+	d.show();
+}
+
+// Helper function to get payment method colors
+function get_payment_method_color(method) {
+	switch(method) {
+		case 'Cash': return '#27ae60';
+		case 'Credit Card': return '#3498db';
+		case 'Debit Card': return '#9b59b6';
+		case 'Check': return '#f39c12';
+		case 'Bank Transfer': return '#34495e';
+		case 'Online Payment': return '#e74c3c';
+		default: return '#95a5a6';
+	}
+}
+
+// Helper function to get payment status colors
+function get_payment_status_color(status) {
+	switch(status) {
+		case 'Completed':
+		case 'Success':
+			return {
+				bg: 'linear-gradient(135deg, #d4edda 0%, #c3e6cb 100%)',
+				border: '#28a745',
+				text: '#155724',
+				badge: '#28a745'
+			};
+		case 'Pending':
+			return {
+				bg: 'linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%)',
+				border: '#ffc107',
+				text: '#856404',
+				badge: '#ffc107'
+			};
+		case 'Failed':
+		case 'Cancelled':
+			return {
+				bg: 'linear-gradient(135deg, #f8d7da 0%, #f5c6cb 100%)',
+				border: '#dc3545',
+				text: '#721c24',
+				badge: '#dc3545'
+			};
+		default:
+			return {
+				bg: 'linear-gradient(135deg, #e2e3e5 0%, #d6d8db 100%)',
+				border: '#6c757d',
+				text: '#495057',
+				badge: '#6c757d'
+			};
+	}
+}
+
+// Quick edit payment function
+function edit_payment_quick(payment_name) {
+	frappe.call({
+		method: 'frappe.client.get',
+		args: {
+			doctype: 'Dental Payment Entry',
+			name: payment_name
+		},
+		callback: function(r) {
+			if (r.message) {
+				let payment = r.message;
+				show_payment_edit_dialog(payment);
+			}
+		}
+	});
+}
+
+// Show payment edit dialog
+function show_payment_edit_dialog(payment) {
+	let d = new frappe.ui.Dialog({
+		title: `💳 Edit Payment: ${payment.name}`,
+		fields: [
+			{
+				fieldtype: 'Section Break',
+				label: '📋 Payment Information'
+			},
+			{
+				fieldtype: 'Link',
+				fieldname: 'invoice',
+				label: 'Invoice',
+				options: 'Invoice',
+				default: payment.invoice
+			},
+			{
+				fieldtype: 'Column Break'
+			},
+			{
+				fieldtype: 'Select',
+				fieldname: 'payment_status',
+				label: 'Payment Status',
+				options: 'Pending\nCompleted\nFailed\nCancelled',
+				default: payment.payment_status || 'Completed',
+				reqd: 1
+			},
+			{
+				fieldtype: 'Section Break',
+				label: '💰 Amount & Method'
+			},
+			{
+				fieldtype: 'Currency',
+				fieldname: 'payment_amount',
+				label: 'Payment Amount',
+				default: payment.payment_amount,
+				reqd: 1
+			},
+			{
+				fieldtype: 'Column Break'
+			},
+			{
+				fieldtype: 'Select',
+				fieldname: 'payment_method',
+				label: 'Payment Method',
+				options: 'Cash\nCredit Card\nDebit Card\nCheck\nBank Transfer\nOnline Payment',
+				default: payment.payment_method,
+				reqd: 1
+			},
+			{
+				fieldtype: 'Section Break',
+				label: '📅 Date & Reference'
+			},
+			{
+				fieldtype: 'Date',
+				fieldname: 'payment_date',
+				label: 'Payment Date',
+				default: payment.payment_date,
+				reqd: 1
+			},
+			{
+				fieldtype: 'Column Break'
+			},
+			{
+				fieldtype: 'Data',
+				fieldname: 'reference_number',
+				label: 'Reference Number',
+				default: payment.reference_number
+			},
+			{
+				fieldtype: 'Section Break',
+				label: '📝 Additional Information'
+			},
+			{
+				fieldtype: 'Small Text',
+				fieldname: 'notes',
+				label: 'Notes',
+				default: payment.notes
+			},
+			{
+				fieldtype: 'HTML',
+				fieldname: 'payment_summary',
+				options: `
+					<div style="background:#f8f9fa; padding:15px; border-radius:8px; margin-top:15px;">
+						<h6>📊 Payment Summary</h6>
+						<div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:10px;">
+							<div><strong>Patient:</strong> ${payment.patient}</div>
+							<div><strong>Created:</strong> ${frappe.datetime.str_to_user(payment.creation)}</div>
+						</div>
+					</div>
+				`
+			}
+		],
+		size: 'large',
+		primary_action_label: '💾 Save Changes',
+		primary_action: function(values) {
+			// Update payment
+			frappe.call({
+				method: 'frappe.client.set_value',
+				args: {
+					doctype: 'Dental Payment Entry',
+					name: payment.name,
+					fieldname: {
+						'invoice': values.invoice,
+						'payment_status': values.payment_status,
+						'payment_amount': values.payment_amount,
+						'payment_method': values.payment_method,
+						'payment_date': values.payment_date,
+						'reference_number': values.reference_number,
+						'notes': values.notes
+					}
+				},
+				callback: function(r) {
+					if (r.message) {
+						d.hide();
+						frappe.show_alert({
+							message: `Payment ${payment.name} updated successfully`,
+							indicator: 'green'
+						});
+						
+						// Refresh both payment and invoice sections
+						render_payment_section(cur_frm);
+						render_invoice_section(cur_frm);
+					}
+				}
+			});
+		},
+		secondary_action_label: '🗑️ Delete Payment',
+		secondary_action: function() {
+			frappe.confirm(
+				`Are you sure you want to delete payment ${payment.name}?`,
+				function() {
+					frappe.call({
+						method: 'frappe.client.delete',
+						args: {
+							doctype: 'Dental Payment Entry',
+							name: payment.name
+						},
+						callback: function(r) {
+							d.hide();
+							frappe.show_alert({
+								message: `Payment ${payment.name} deleted successfully`,
+								indicator: 'red'
+							});
+							
+							// Refresh both sections
+							render_payment_section(cur_frm);
+							render_invoice_section(cur_frm);
+						}
+					});
+				}
+			);
+		}
+	});
+	
+	d.show();
 }
 
 // Helper function to show invoice action buttons
