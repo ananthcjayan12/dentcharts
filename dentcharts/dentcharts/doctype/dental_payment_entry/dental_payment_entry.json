@@ -100,8 +100,7 @@
    "fieldname": "company",
    "fieldtype": "Link",
    "label": "Company",
-   "options": "Company",
-   "default": "Company"
+   "options": "Company"
   },
   {
    "fieldname": "section_break_8",
