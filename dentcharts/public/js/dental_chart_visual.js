@@ -710,6 +710,13 @@ function add_tooth_condition_for_tooth(frm, selected_tooth) {
 				fieldtype: 'Small Text',
 				fieldname: 'notes',
 				label: __('Notes')
+			},
+			{
+				fieldtype: 'Date',
+				fieldname: 'date_identified',
+				label: __('Date'),
+				default: frappe.datetime.get_today(),
+				reqd: 1
 			}
 		],
 		primary_action_label: __('Add Condition'),
@@ -720,7 +727,7 @@ function add_tooth_condition_for_tooth(frm, selected_tooth) {
 			condition_row.condition_code = values.condition_code;
 			condition_row.surface = values.surface;
 			condition_row.notes = values.notes;
-			condition_row.date_identified = frappe.datetime.nowdate();
+			condition_row.date_identified = values.date_identified;
 			condition_row.identified_by = frappe.session.user;
 			
 			frm.refresh_field('tooth_conditions');
@@ -852,6 +859,13 @@ function add_tooth_procedure_for_tooth(frm, selected_tooth) {
 				fieldtype: 'Small Text',
 				fieldname: 'notes',
 				label: __('Procedure Notes')
+			},
+			{
+				fieldtype: 'Date',
+				fieldname: 'planned_date',
+				label: __('Date'),
+				default: frappe.datetime.get_today(),
+				reqd: 1
 			}
 		],
 		primary_action_label: __('Add Procedure'),
@@ -863,7 +877,7 @@ function add_tooth_procedure_for_tooth(frm, selected_tooth) {
 			procedure_row.surface = values.surface;
 			procedure_row.status = values.status;
 			procedure_row.notes = values.notes;
-			procedure_row.planned_date = frappe.datetime.nowdate();
+			procedure_row.planned_date = values.planned_date;
 			procedure_row.planned_by = frappe.session.user;
 			
 			// Add cost information
@@ -1132,7 +1146,7 @@ window.add_procedure_to_selected = function() {
 				procedure_row.surface = values.surface;
 				procedure_row.status = values.status;
 				procedure_row.notes = values.notes;
-				procedure_row.planned_date = frappe.datetime.nowdate();
+				procedure_row.planned_date = values.planned_date;
 				procedure_row.planned_by = frappe.session.user;
 				procedure_row.standard_fee = values.standard_fee || 0;
 				procedure_row.actual_fee = values.actual_fee || 0;
