@@ -30,7 +30,10 @@
   "notes_section",
   "notes",
   "follow_up_required",
-  "follow_up_date"
+  "follow_up_date",
+  "billing_section",
+  "invoiced",
+  "invoice_reference"
  ],
  "fields": [
   {
@@ -180,6 +183,24 @@
    "fieldname": "follow_up_date",
    "fieldtype": "Date",
    "label": "Follow-up Date"
+  },
+  {
+   "fieldname": "billing_section",
+   "fieldtype": "Section Break",
+   "label": "Billing Information"
+  },
+  {
+   "default": "0",
+   "fieldname": "invoiced",
+   "fieldtype": "Check",
+   "label": "Invoiced"
+  },
+  {
+   "fieldname": "invoice_reference",
+   "fieldtype": "Link",
+   "label": "Invoice Reference",
+   "options": "Invoice",
+   "read_only": 1
   }
  ],
  "index_web_pages_for_search": 1,

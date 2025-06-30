@@ -60,23 +60,7 @@ frappe.ui.form.on('Dental Chart', {
 			// Add Generate Invoice button if any procedures exist (planned/in-progress/completed)
 			if ((frm.doc.tooth_procedures || []).length) {
 				frm.add_custom_button(__('Generate Invoice'), function() {
-					let items = frm.doc.tooth_procedures
-						.filter(proc => proc.status !== 'Cancelled')
-						.map(proc => ({
-							procedure_code: proc.procedure_code,
-							description: proc.procedure_name,
-							tooth_number: proc.tooth_number,
-							surface: proc.surface,
-							quantity: 1,
-							amount: proc.actual_fee || proc.standard_fee
-						}));
-					frappe.route_options = {
-						patient: frm.doc.patient,
-						practitioner: frm.doc.dentist,
-						dental_clinic: frm.doc.clinic,
-						invoice_items: items
-					};
-					frappe.new_doc('Invoice');
+					show_invoice_generation_dialog(frm);
 				}, __('Actions'));
 			}
 		}
@@ -1492,6 +1476,337 @@ function remove_general_procedure(frm, procedure) {
 			message: __('General procedure removed successfully'),
 			indicator: 'green'
 		});
+	});
+}
+
+// Function to show invoice generation dialog with procedure selection
+function show_invoice_generation_dialog(frm) {
+	// Get all non-cancelled procedures
+	let available_procedures = frm.doc.tooth_procedures.filter(proc => proc.status !== 'Cancelled');
+	
+	if (available_procedures.length === 0) {
+		frappe.msgprint('No procedures available for invoicing');
+		return;
+	}
+	
+	// Check if any procedures have already been invoiced
+	let uninvoiced_procedures = available_procedures.filter(proc => !proc.invoiced);
+	
+	let dialog_fields = [
+		{
+			fieldtype: 'HTML',
+			options: `
+				<div style="background: linear-gradient(135deg, #28a745, #20c997); color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+					<h4 style="margin: 0 0 8px 0;">🧾 Generate Invoice</h4>
+					<p style="margin: 0; opacity: 0.9;">Select procedures to include in the new invoice for <strong>${frm.doc.patient}</strong></p>
+				</div>
+			`
+		},
+		{
+			fieldtype: 'Section Break',
+			label: '📋 Invoice Details'
+		},
+		{
+			fieldtype: 'Date',
+			fieldname: 'invoice_date',
+			label: 'Invoice Date',
+			default: frappe.datetime.get_today(),
+			reqd: 1
+		},
+		{
+			fieldtype: 'Select',
+			fieldname: 'payment_terms',
+			label: 'Payment Terms',
+			options: 'Immediate\nNet 15\nNet 30\nNet 60',
+			default: 'Net 30'
+		},
+		{
+			fieldtype: 'Column Break'
+		},
+		{
+			fieldtype: 'Link',
+			fieldname: 'practitioner',
+			label: 'Practitioner',
+			options: 'Healthcare Practitioner',
+			default: frm.doc.dentist,
+			reqd: 1
+		},
+		{
+			fieldtype: 'Link',
+			fieldname: 'dental_clinic',
+			label: 'Dental Clinic',
+			options: 'Dental Clinic',
+			default: frm.doc.clinic
+		},
+		{
+			fieldtype: 'Section Break',
+			label: '🔧 Select Procedures to Invoice'
+		},
+		{
+			fieldtype: 'HTML',
+			fieldname: 'procedures_selection',
+			options: generate_procedure_selection_html(available_procedures)
+		},
+		{
+			fieldtype: 'Section Break',
+			label: '💰 Invoice Summary'
+		},
+		{
+			fieldtype: 'HTML',
+			fieldname: 'invoice_summary',
+			options: '<div id="invoice-summary">Select procedures to see summary</div>'
+		}
+	];
+	
+	let d = new frappe.ui.Dialog({
+		title: __('Generate Invoice'),
+		fields: dialog_fields,
+		size: 'large',
+		primary_action_label: __('Create Invoice'),
+		primary_action: function(values) {
+			create_invoice_from_selection(frm, values, d);
+		}
+	});
+	
+	// Add event listeners for procedure checkboxes
+	setTimeout(() => {
+		attach_procedure_selection_handlers(d);
+	}, 500);
+	
+	d.show();
+}
+
+function generate_procedure_selection_html(procedures) {
+	let html = `
+		<div style="max-height: 400px; overflow-y: auto;">
+			<div style="margin-bottom: 15px;">
+				<button type="button" class="btn btn-sm btn-primary" onclick="select_all_procedures()">Select All</button>
+				<button type="button" class="btn btn-sm btn-secondary" onclick="clear_all_procedures()">Clear All</button>
+				<button type="button" class="btn btn-sm btn-info" onclick="select_uninvoiced_only()">Uninvoiced Only</button>
+			</div>
+			<table class="table table-bordered" style="margin: 0;">
+				<thead style="background: #f8f9fa;">
+					<tr>
+						<th width="5%">Select</th>
+						<th width="15%">Procedure</th>
+						<th width="10%">Tooth</th>
+						<th width="10%">Surface</th>
+						<th width="10%">Status</th>
+						<th width="12%">Date</th>
+						<th width="12%">Amount</th>
+						<th width="8%">Invoiced</th>
+						<th width="18%">Notes</th>
+					</tr>
+				</thead>
+				<tbody>
+	`;
+	
+	procedures.forEach((proc, index) => {
+		let amount = proc.actual_fee || proc.standard_fee || 0;
+		let status_color = proc.status === 'Completed' ? '#28a745' : 
+						  proc.status === 'In Progress' ? '#17a2b8' : '#ffc107';
+		let tooth_display = proc.tooth_number === 'General' ? 'General' : `Tooth ${proc.tooth_number}`;
+		let invoiced_status = proc.invoiced ? '✅ Yes' : '❌ No';
+		let invoiced_color = proc.invoiced ? '#28a745' : '#dc3545';
+		
+		html += `
+			<tr data-procedure-index="${index}">
+				<td style="text-align: center;">
+					<input type="checkbox" class="procedure-checkbox" data-index="${index}" 
+						   ${!proc.invoiced ? 'checked' : ''} />
+				</td>
+				<td><strong>${proc.procedure_code}</strong></td>
+				<td>${tooth_display}</td>
+				<td>${proc.surface}</td>
+				<td>
+					<span style="background: ${status_color}; color: white; padding: 2px 6px; border-radius: 10px; font-size: 11px;">
+						${proc.status}
+					</span>
+				</td>
+				<td>${frappe.datetime.str_to_user(proc.planned_date)}</td>
+				<td><strong>${format_currency(amount)}</strong></td>
+				<td style="color: ${invoiced_color}; font-weight: bold;">${invoiced_status}</td>
+				<td style="font-size: 12px;">${proc.notes || '-'}</td>
+			</tr>
+		`;
+	});
+	
+	html += `
+				</tbody>
+			</table>
+		</div>
+	`;
+	
+	return html;
+}
+
+function attach_procedure_selection_handlers(dialog) {
+	// Store procedures data in dialog for easy access
+	dialog.procedures_data = window.current_frm.doc.tooth_procedures.filter(proc => proc.status !== 'Cancelled');
+	
+	// Add change handlers for checkboxes
+	$(dialog.$wrapper).find('.procedure-checkbox').on('change', function() {
+		update_invoice_summary(dialog);
+	});
+	
+	// Initial summary update
+	update_invoice_summary(dialog);
+}
+
+function update_invoice_summary(dialog) {
+	let selected_procedures = [];
+	let total_amount = 0;
+	
+	$(dialog.$wrapper).find('.procedure-checkbox:checked').each(function() {
+		let index = parseInt($(this).data('index'));
+		let procedure = dialog.procedures_data[index];
+		selected_procedures.push(procedure);
+		total_amount += procedure.actual_fee || procedure.standard_fee || 0;
+	});
+	
+	let summary_html = `
+		<div style="background: #f8f9fa; padding: 15px; border-radius: 6px;">
+			<h6 style="margin: 0 0 10px 0; color: #495057;">📊 Invoice Summary</h6>
+			<div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+				<div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+					<div style="font-size: 12px; color: #666;">PROCEDURES</div>
+					<div style="font-size: 18px; font-weight: bold; color: #007bff;">${selected_procedures.length}</div>
+				</div>
+				<div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+					<div style="font-size: 12px; color: #666;">SUBTOTAL</div>
+					<div style="font-size: 18px; font-weight: bold; color: #28a745;">${format_currency(total_amount)}</div>
+				</div>
+				<div style="background: white; padding: 10px; border-radius: 4px; text-align: center;">
+					<div style="font-size: 12px; color: #666;">EST. TOTAL</div>
+					<div style="font-size: 18px; font-weight: bold; color: #333;">${format_currency(total_amount * 1.08)}</div>
+					<div style="font-size: 10px; color: #666;">Including 8% tax</div>
+				</div>
+			</div>
+			${selected_procedures.length === 0 ? 
+				'<div style="color: #dc3545; text-align: center; font-style: italic;">No procedures selected</div>' : 
+				`<div style="font-size: 13px; color: #666;">
+					Selected: ${selected_procedures.map(p => `${p.procedure_code} (${p.tooth_number === 'General' ? 'General' : 'Tooth ' + p.tooth_number})`).join(', ')}
+				</div>`
+			}
+		</div>
+	`;
+	
+	dialog.get_field('invoice_summary').$wrapper.html(summary_html);
+}
+
+// Global functions for procedure selection buttons
+window.select_all_procedures = function() {
+	$('.procedure-checkbox').prop('checked', true).trigger('change');
+}
+
+window.clear_all_procedures = function() {
+	$('.procedure-checkbox').prop('checked', false).trigger('change');
+}
+
+window.select_uninvoiced_only = function() {
+	$('.procedure-checkbox').each(function() {
+		let index = parseInt($(this).data('index'));
+		let procedure = window.current_frm.doc.tooth_procedures.filter(proc => proc.status !== 'Cancelled')[index];
+		$(this).prop('checked', !procedure.invoiced).trigger('change');
+	});
+}
+
+function create_invoice_from_selection(frm, values, dialog) {
+	// Get selected procedures
+	let selected_procedures = [];
+	$(dialog.$wrapper).find('.procedure-checkbox:checked').each(function() {
+		let index = parseInt($(this).data('index'));
+		let procedure = dialog.procedures_data[index];
+		selected_procedures.push(procedure);
+	});
+	
+	if (selected_procedures.length === 0) {
+		frappe.msgprint('Please select at least one procedure');
+		return;
+	}
+	
+	// Calculate due date based on payment terms
+	let due_date = values.invoice_date;
+	if (values.payment_terms === 'Net 15') {
+		due_date = frappe.datetime.add_days(values.invoice_date, 15);
+	} else if (values.payment_terms === 'Net 30') {
+		due_date = frappe.datetime.add_days(values.invoice_date, 30);
+	} else if (values.payment_terms === 'Net 60') {
+		due_date = frappe.datetime.add_days(values.invoice_date, 60);
+	}
+	
+	// Create invoice document
+	let invoice_doc = {
+		doctype: 'Invoice',
+		patient: frm.doc.patient,
+		practitioner: values.practitioner,
+		dental_clinic: values.dental_clinic,
+		invoice_date: values.invoice_date,
+		due_date: due_date,
+		payment_terms: values.payment_terms,
+		invoice_status: 'Draft',
+		invoice_items: []
+	};
+	
+	// Add selected procedures as invoice items
+	selected_procedures.forEach(procedure => {
+		// Get procedure name for description
+		frappe.call({
+			method: 'frappe.client.get',
+			args: {
+				doctype: 'Dental Procedure Master',
+				name: procedure.procedure_code
+			},
+			async: false,
+			callback: function(r) {
+				if (r.message) {
+					let description = r.message.procedure_name;
+					let tooth_info = procedure.tooth_number === 'General' ? 'General Treatment' : `Tooth ${procedure.tooth_number} (${procedure.surface})`;
+					
+					invoice_doc.invoice_items.push({
+						procedure_code: procedure.procedure_code,
+						description: `${description} - ${tooth_info}`,
+						tooth_number: procedure.tooth_number,
+						surface: procedure.surface,
+						quantity: 1,
+						amount: procedure.actual_fee || procedure.standard_fee || 0
+					});
+				}
+			}
+		});
+	});
+	
+	// Create the invoice
+	frappe.call({
+		method: 'frappe.client.insert',
+		args: {
+			doc: invoice_doc
+		},
+		callback: function(r) {
+			if (r.message) {
+				let invoice_name = r.message.name;
+				
+				// Mark selected procedures as invoiced
+				selected_procedures.forEach(procedure => {
+					frappe.model.set_value('Tooth Procedure', procedure.name, 'invoiced', 1);
+					frappe.model.set_value('Tooth Procedure', procedure.name, 'invoice_reference', invoice_name);
+				});
+				
+				// Save the dental chart to persist the invoiced flags
+				frm.save().then(() => {
+					dialog.hide();
+					
+					// Show success message and open the new invoice
+					frappe.show_alert({
+						message: __('Invoice {0} created successfully with {1} procedures', [invoice_name, selected_procedures.length]),
+						indicator: 'green'
+					});
+					
+					// Open the new invoice
+					frappe.set_route('Form', 'Invoice', invoice_name);
+				});
+			}
+		}
 	});
 }
 
