@@ -588,6 +588,12 @@ function show_enhanced_tooth_dialog(frm, tooth_number) {
 				default: condition.severity
 			});
 			dialog_fields.push({
+				fieldtype: 'Date',
+				fieldname: `condition_date_${index}`,
+				label: 'Date Identified',
+				default: condition.date_identified
+			});
+			dialog_fields.push({
 				fieldtype: 'Small Text',
 				fieldname: `condition_notes_${index}`,
 				label: 'Notes',
@@ -639,6 +645,19 @@ function show_enhanced_tooth_dialog(frm, tooth_number) {
 						frappe.db.set_value('Tooth Procedure', procedure.name, 'completed_date', frappe.datetime.nowdate());
 					}
 				}
+			});
+			dialog_fields.push({
+				fieldtype: 'Date',
+				fieldname: `procedure_planned_date_${index}`,
+				label: 'Planned Date',
+				default: procedure.planned_date
+			});
+			dialog_fields.push({
+				fieldtype: 'Date',
+				fieldname: `procedure_completed_date_${index}`,
+				label: 'Completed Date',
+				default: procedure.completed_date,
+				depends_on: `eval:doc.procedure_status_${index} === 'Completed'`
 			});
 			dialog_fields.push({
 				fieldtype: 'Small Text',
@@ -1227,10 +1246,12 @@ function save_tooth_changes(frm, tooth_number, existing_conditions, existing_pro
 		const newSurface = values[`condition_surface_${index}`] || condition.surface;
 		const newSeverity = values[`condition_severity_${index}`]|| condition.severity;
 		const newNotes = values[`condition_notes_${index}`]   || condition.notes;
+		const newDate = values[`condition_date_${index}`]    || condition.date_identified;
 		frappe.model.set_value('Tooth Condition', name, 'condition_code', newCode);
 		frappe.model.set_value('Tooth Condition', name, 'surface', newSurface);
 		frappe.model.set_value('Tooth Condition', name, 'severity', newSeverity);
 		frappe.model.set_value('Tooth Condition', name, 'notes', newNotes);
+		frappe.model.set_value('Tooth Condition', name, 'date_identified', newDate);
 	});
 
 	// Update existing procedures using frappe.model.set_value for reliable persistence
@@ -1240,12 +1261,19 @@ function save_tooth_changes(frm, tooth_number, existing_conditions, existing_pro
 		const newSurface = values[`procedure_surface_${index}`] || procedure.surface;
 		const newStatus = values[`procedure_status_${index}`]  || procedure.status;
 		const newNotes = values[`procedure_notes_${index}`]    || procedure.notes;
+		const newPlannedDate = values[`procedure_planned_date_${index}`] || procedure.planned_date;
+		const newCompletedDate = values[`procedure_completed_date_${index}`] || procedure.completed_date;
 		frappe.model.set_value('Tooth Procedure', name, 'procedure_code', newProcCode);
 		frappe.model.set_value('Tooth Procedure', name, 'surface', newSurface);
 		frappe.model.set_value('Tooth Procedure', name, 'status', newStatus);
 		frappe.model.set_value('Tooth Procedure', name, 'notes', newNotes);
+		frappe.model.set_value('Tooth Procedure', name, 'planned_date', newPlannedDate);
 		if (newStatus === 'Completed') {
-			frappe.model.set_value('Tooth Procedure', name, 'completed_date', frappe.datetime.nowdate());
+			// Use user-provided completed date or set to today if not provided
+			frappe.model.set_value('Tooth Procedure', name, 'completed_date', newCompletedDate || frappe.datetime.nowdate());
+		} else {
+			// Clear completed date if status is not completed
+			frappe.model.set_value('Tooth Procedure', name, 'completed_date', '');
 		}
 	});
 	
