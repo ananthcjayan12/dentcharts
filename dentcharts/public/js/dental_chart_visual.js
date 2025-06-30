@@ -240,6 +240,8 @@ function create_interactive_dental_chart(frm) {
 				setTimeout(() => {
 					attach_tooth_click_handlers(frm);
 				}, 200);
+				// Render invoice cards section for this patient
+				render_invoice_section(frm);
 				// Render payment cards section for this patient
 				render_payment_section(frm);
 			}
@@ -2763,4 +2765,64 @@ function render_payment_section(frm) {
 window.record_payment_for_patient = function() {
     let frm = window.current_frm;
     frappe.new_doc('Dental Payment Entry', { patient: frm.doc.patient });
+};
+
+// Invoice section: fetch and display invoice cards, with Record Payment action
+function render_invoice_section(frm) {
+    frappe.call({
+        method: 'frappe.client.get_list',
+        args: {
+            doctype: 'Invoice',
+            filters: { patient: frm.doc.patient },
+            fields: ['name', 'invoice_status', 'payment_status', 'total_amount', 'paid_amount', 'outstanding_amount'],
+            order_by: 'creation desc'
+        },
+        callback: function(r) {
+            if (r.message) {
+                let invoices = r.message;
+                let cards = invoices.map(inv => {
+                    return `
+                        <div class="invoice-card" style="background:white; padding:15px; border:1px solid #dee2e6; border-radius:6px; min-width:220px;">
+                            <div><strong>${inv.name}</strong></div>
+                            <div>Status: ${inv.invoice_status}</div>
+                            <div>Payment: ${inv.payment_status}</div>
+                            <div>Total: ${format_currency(inv.total_amount)}</div>
+                            <div>Paid: ${format_currency(inv.paid_amount)}</div>
+                            <div>Due: ${format_currency(inv.outstanding_amount)}</div>
+                            <div style="margin-top:8px;">
+                                <button class="btn btn-xs btn-primary" onclick="record_payment_for_invoice('${inv.name}', ${inv.outstanding_amount})">
+                                    ${__('Record Payment')}
+                                </button>
+                            </div>
+                        </div>`;
+                }).join('');
+                let html = `
+                    <div class="dental-invoices-section" style="margin-top:30px;">
+                        <h5>🧾 ${__('Invoices')}</h5>
+                        <div style="display:flex; gap:15px; flex-wrap:wrap; align-items:flex-start;">
+                            ${cards}
+                        </div>
+                    </div>`;
+                // Append below chart
+                $('.dental-chart-container').append(html);
+            }
+        }
+    });
+}
+
+// Open Quick Entry for Dental Payment Entry for a specific invoice
+window.record_payment_for_invoice = function(invoice, amount) {
+    let frm = window.current_frm;
+    frappe.quick_entry('Dental Payment Entry', function(doc) {
+        render_payment_section(frm);
+        render_invoice_section(frm);
+    }, null, { invoice: invoice, patient: frm.doc.patient, payment_amount: amount });
+};
+// Override new payment for patient to use Quick Entry
+window.record_payment_for_patient = function() {
+    let frm = window.current_frm;
+    frappe.quick_entry('Dental Payment Entry', function(doc) {
+        render_payment_section(frm);
+        render_invoice_section(frm);
+    }, null, { patient: frm.doc.patient });
 };
