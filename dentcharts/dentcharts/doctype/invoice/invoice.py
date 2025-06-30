@@ -330,6 +330,7 @@ class Invoice(Document):
 			fields=["name", "patient", "patient_name", "due_date", "outstanding_amount"]
 		)
 	
+	@frappe.whitelist()
 	def get_payment_history(self):
 		"""Get payment history for this invoice"""
 		return frappe.get_all("Payment Entry",
