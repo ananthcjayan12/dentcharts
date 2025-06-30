@@ -7,3 +7,4 @@ node_modules
 __pycache__
 marley-version-15-hotfix
 *.md
+other_apps/

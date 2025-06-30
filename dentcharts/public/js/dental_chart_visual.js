@@ -2769,11 +2769,13 @@ window.record_payment_for_patient = function() {
         render_payment_section(frm);
         render_invoice_section(frm);
     };
-    if (frappe.quick_entry) {
-        frappe.quick_entry('Dental Payment Entry', callback, null, args);
+    let open_quick = function() {
+        frappe.ui.form.make_quick_entry('Dental Payment Entry', callback, null, args);
+    };
+    if (typeof frappe.ui.form.make_quick_entry !== 'function') {
+        frappe.require('/assets/frappe/js/frappe/form/quick_entry.js', open_quick);
     } else {
-        frappe.route_options = args;
-        frappe.new_doc('Dental Payment Entry');
+        open_quick();
     }
 };
 
@@ -2828,10 +2830,12 @@ window.record_payment_for_invoice = function(invoice, amount) {
         render_payment_section(frm);
         render_invoice_section(frm);
     };
-    if (frappe.quick_entry) {
-        frappe.quick_entry('Dental Payment Entry', callback, null, args);
+    let open_quick = function() {
+        frappe.ui.form.make_quick_entry('Dental Payment Entry', callback, null, args);
+    };
+    if (typeof frappe.ui.form.make_quick_entry !== 'function') {
+        frappe.require('/assets/frappe/js/frappe/form/quick_entry.js', open_quick);
     } else {
-        frappe.route_options = args;
-        frappe.new_doc('Dental Payment Entry');
+        open_quick();
     }
 };
