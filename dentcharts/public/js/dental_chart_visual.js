@@ -1763,11 +1763,15 @@ function create_invoice_from_selection(frm, values, dialog) {
 					let description = r.message.procedure_name;
 					let tooth_info = procedure.tooth_number === 'General' ? 'General Treatment' : `Tooth ${procedure.tooth_number} (${procedure.surface})`;
 					
+					// For general procedures, ensure surface is "General Treatment" and tooth_number is empty
+					let invoice_surface = procedure.tooth_number === 'General' ? 'General Treatment' : procedure.surface;
+					let invoice_tooth_number = procedure.tooth_number === 'General' ? '' : procedure.tooth_number;
+					
 					invoice_doc.invoice_items.push({
 						procedure_code: procedure.procedure_code,
 						description: `${description} - ${tooth_info}`,
-						tooth_number: procedure.tooth_number,
-						surface: procedure.surface,
+						tooth_number: invoice_tooth_number,
+						surface: invoice_surface,
 						quantity: 1,
 						amount: procedure.actual_fee || procedure.standard_fee || 0
 					});

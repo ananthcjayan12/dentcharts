@@ -58,7 +58,7 @@
    "fieldname": "surface",
    "fieldtype": "Select",
    "label": "Surface",
-   "options": "Whole Tooth\nOcclusal\nMesial\nDistal\nBuccal\nLingual\nIncisal\nCervical"
+   "options": "Whole Tooth\nOcclusal\nMesial\nDistal\nBuccal\nLingual\nIncisal\nCervical\nGeneral Treatment"
   },
   {
    "fieldname": "column_break_5",
