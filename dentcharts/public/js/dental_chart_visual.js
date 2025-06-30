@@ -1239,9 +1239,14 @@ window.add_procedure_to_selected = function() {
 }
 
 function save_tooth_changes(frm, tooth_number, existing_conditions, existing_procedures, values) {
-	// Set flag to prevent duplicate status change logging
+	// Set multiple flags to prevent duplicate logging from various sources
 	window.saving_from_enhanced_dialog = true;
 	frm._saving_from_enhanced_dialog = true;
+	window._bulk_saving = true;
+	frm._bulk_saving = true;
+	
+	// Also set a flag to prevent server-side automatic logging
+	frm._skip_server_activity_logging = true;
 	
 	// Update existing conditions using frappe.model.set_value for reliable persistence
 	existing_conditions.forEach((condition, index) => {
@@ -1304,15 +1309,24 @@ function save_tooth_changes(frm, tooth_number, existing_conditions, existing_pro
 	frm.refresh_field('tooth_procedures');
 	frm.refresh_field('chart_activities');
 	
-	// Clear the flag after a short delay to allow all events to process
+	// Clear all flags after a short delay to allow all events to process
 	setTimeout(() => {
 		window.saving_from_enhanced_dialog = false;
 		frm._saving_from_enhanced_dialog = false;
-	}, 2000);
+		window._bulk_saving = false;
+		frm._bulk_saving = false;
+		frm._skip_server_activity_logging = false;
+	}, 3000);
 	
-	// Save without triggering reload to avoid server-side duplicate logging
+	// Set a flag to prevent server-side duplicate logging
+	frm.doc._skip_activity_logging = 1;
+	
+	// Save the document
 	frm.save().then(() => {
-		// Don't reload, just refresh the UI components
+		// Clear the flag after saving
+		frm.doc._skip_activity_logging = 0;
+		
+		// Refresh the UI components without reloading
 		create_interactive_dental_chart(frm);
 		update_activity_timeline(frm);
 		frappe.show_alert({
@@ -2785,6 +2799,11 @@ frappe.ui.form.on('Tooth Procedure', {
 	status: function(frm, cdt, cdn) {
 		// Skip if this change is coming from the enhanced dialog to prevent duplicates
 		if (window.saving_from_enhanced_dialog || frm._saving_from_enhanced_dialog) {
+			return;
+		}
+		
+		// Also skip if we're in the middle of a batch save operation
+		if (frm._bulk_saving || window._bulk_saving) {
 			return;
 		}
 		

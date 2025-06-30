@@ -371,6 +371,10 @@ class DentalChart(Document):
 	
 	def track_condition_changes(self, old_doc):
 		"""Track changes in tooth conditions"""
+		# Skip automatic logging if client-side flag is set
+		if getattr(self, '_skip_activity_logging', 0):
+			return
+			
 		old_conditions = {f"{c.tooth_number}_{c.condition_code}_{c.surface}": c for c in (old_doc.tooth_conditions or [])}
 		new_conditions = {f"{c.tooth_number}_{c.condition_code}_{c.surface}": c for c in (self.tooth_conditions or [])}
 		
@@ -398,6 +402,10 @@ class DentalChart(Document):
 	
 	def track_procedure_changes(self, old_doc):
 		"""Track changes in tooth procedures with grouping for multi-tooth procedures"""
+		# Skip automatic logging if client-side flag is set
+		if getattr(self, '_skip_activity_logging', 0):
+			return
+			
 		old_procedures = {f"{p.tooth_number}_{p.procedure_code}_{p.surface}": p for p in (old_doc.tooth_procedures or [])}
 		new_procedures = {f"{p.tooth_number}_{p.procedure_code}_{p.surface}": p for p in (self.tooth_procedures or [])}
 		
