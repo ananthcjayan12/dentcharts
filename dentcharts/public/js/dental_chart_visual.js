@@ -1564,7 +1564,11 @@ function show_invoice_generation_dialog(frm) {
 		size: 'large',
 		primary_action_label: __('Create Invoice'),
 		primary_action: function(values) {
-			create_invoice_from_selection(frm, values, d);
+			create_invoice_from_selection(frm, values, d, false);
+		},
+		secondary_action_label: __('Create & Print'),
+		secondary_action: function(values) {
+			create_invoice_from_selection(frm, values, d, true);
 		}
 	});
 	
@@ -1711,7 +1715,7 @@ window.select_uninvoiced_only = function() {
 	});
 }
 
-function create_invoice_from_selection(frm, values, dialog) {
+function create_invoice_from_selection(frm, values, dialog, should_print) {
 	// Get selected procedures
 	let selected_procedures = [];
 	$(dialog.$wrapper).find('.procedure-checkbox:checked').each(function() {
@@ -1800,14 +1804,24 @@ function create_invoice_from_selection(frm, values, dialog) {
 				frm.save().then(() => {
 					dialog.hide();
 					
-					// Show success message and open the new invoice
+					// Show success message
 					frappe.show_alert({
 						message: __('Invoice {0} created successfully with {1} procedures', [invoice_name, selected_procedures.length]),
 						indicator: 'green'
 					});
 					
-					// Open the new invoice
-					frappe.set_route('Form', 'Invoice', invoice_name);
+					// Refresh the dental chart to show updated invoicing status
+					create_interactive_dental_chart(frm);
+					render_invoice_section(frm);
+					
+					// Handle printing if requested
+					if (should_print) {
+						// Print the invoice
+						print_invoice(invoice_name);
+					}
+					
+					// Show action buttons for the created invoice
+					show_invoice_actions(invoice_name, frm);
 				});
 			}
 		}
@@ -3605,3 +3619,60 @@ window.record_payment_for_invoice = function(invoice, amount) {
     });
     dialog.show();
 };
+
+// Helper function to print invoice
+function print_invoice(invoice_name) {
+	// Use Frappe's print functionality
+	frappe.utils.print(
+		'Invoice',
+		invoice_name,
+		null, // print_format (use default)
+		null, // letterhead
+		null  // language
+	);
+}
+
+// Helper function to show invoice action buttons
+function show_invoice_actions(invoice_name, frm) {
+	// Create a temporary dialog with action buttons
+	let action_dialog = new frappe.ui.Dialog({
+		title: __('Invoice Created'),
+		fields: [
+			{
+				fieldname: 'message',
+				fieldtype: 'HTML',
+				options: `
+					<div class="text-center" style="padding: 20px;">
+						<p><strong>Invoice ${invoice_name} has been created successfully!</strong></p>
+						<p>What would you like to do next?</p>
+					</div>
+				`
+			}
+		],
+		primary_action_label: __('View Invoice'),
+		primary_action: function() {
+			action_dialog.hide();
+			frappe.set_route('Form', 'Invoice', invoice_name);
+		},
+		secondary_action_label: __('Print Invoice'),
+		secondary_action: function() {
+			print_invoice(invoice_name);
+		}
+	});
+	
+	// Add a "Stay Here" button
+	action_dialog.$wrapper.find('.modal-footer').prepend(`
+		<button class="btn btn-default btn-sm" onclick="$('.modal').modal('hide')">
+			${__('Stay on Dental Chart')}
+		</button>
+	`);
+	
+	action_dialog.show();
+	
+	// Auto-hide after 10 seconds if user doesn't interact
+	setTimeout(() => {
+		if (action_dialog.display) {
+			action_dialog.hide();
+		}
+	}, 10000);
+}
