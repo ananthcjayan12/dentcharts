@@ -2764,7 +2764,17 @@ function render_payment_section(frm) {
 // Open a new Dental Payment Entry form for this patient
 window.record_payment_for_patient = function() {
     let frm = window.current_frm;
-    frappe.new_doc('Dental Payment Entry', { patient: frm.doc.patient });
+    let args = { patient: frm.doc.patient };
+    let callback = function(doc) {
+        render_payment_section(frm);
+        render_invoice_section(frm);
+    };
+    if (frappe.quick_entry) {
+        frappe.quick_entry('Dental Payment Entry', callback, null, args);
+    } else {
+        frappe.route_options = args;
+        frappe.new_doc('Dental Payment Entry');
+    }
 };
 
 // Invoice section: fetch and display invoice cards, with Record Payment action
@@ -2813,16 +2823,15 @@ function render_invoice_section(frm) {
 // Open Quick Entry for Dental Payment Entry for a specific invoice
 window.record_payment_for_invoice = function(invoice, amount) {
     let frm = window.current_frm;
-    frappe.quick_entry('Dental Payment Entry', function(doc) {
+    let args = { invoice: invoice, patient: frm.doc.patient, payment_amount: amount };
+    let callback = function(doc) {
         render_payment_section(frm);
         render_invoice_section(frm);
-    }, null, { invoice: invoice, patient: frm.doc.patient, payment_amount: amount });
-};
-// Override new payment for patient to use Quick Entry
-window.record_payment_for_patient = function() {
-    let frm = window.current_frm;
-    frappe.quick_entry('Dental Payment Entry', function(doc) {
-        render_payment_section(frm);
-        render_invoice_section(frm);
-    }, null, { patient: frm.doc.patient });
+    };
+    if (frappe.quick_entry) {
+        frappe.quick_entry('Dental Payment Entry', callback, null, args);
+    } else {
+        frappe.route_options = args;
+        frappe.new_doc('Dental Payment Entry');
+    }
 };
