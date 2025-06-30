@@ -2764,13 +2764,15 @@ function render_payment_section(frm) {
 // Open a new Dental Payment Entry form for this patient
 window.record_payment_for_patient = function() {
     let frm = window.current_frm;
-    let args = { patient: frm.doc.patient };
     let callback = function(doc) {
         render_payment_section(frm);
         render_invoice_section(frm);
     };
+    let init_cb = function(dialog) {
+        dialog.set_value('patient', frm.doc.patient);
+    };
     let open_quick = function() {
-        frappe.ui.form.make_quick_entry('Dental Payment Entry', callback, null, args);
+        frappe.ui.form.make_quick_entry('Dental Payment Entry', callback, init_cb);
     };
     if (typeof frappe.ui.form.make_quick_entry !== 'function') {
         frappe.require('/assets/frappe/js/frappe/form/quick_entry.js', open_quick);
@@ -2825,13 +2827,17 @@ function render_invoice_section(frm) {
 // Open Quick Entry for Dental Payment Entry for a specific invoice
 window.record_payment_for_invoice = function(invoice, amount) {
     let frm = window.current_frm;
-    let args = { invoice: invoice, patient: frm.doc.patient, payment_amount: amount };
     let callback = function(doc) {
         render_payment_section(frm);
         render_invoice_section(frm);
     };
+    let init_cb = function(dialog) {
+        dialog.set_value('invoice', invoice);
+        dialog.set_value('patient', frm.doc.patient);
+        dialog.set_value('payment_amount', amount);
+    };
     let open_quick = function() {
-        frappe.ui.form.make_quick_entry('Dental Payment Entry', callback, null, args);
+        frappe.ui.form.make_quick_entry('Dental Payment Entry', callback, init_cb);
     };
     if (typeof frappe.ui.form.make_quick_entry !== 'function') {
         frappe.require('/assets/frappe/js/frappe/form/quick_entry.js', open_quick);
