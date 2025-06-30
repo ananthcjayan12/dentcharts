@@ -965,6 +965,16 @@ window.add_condition_to_selected = function() {
 				options: '\nMild\nModerate\nSevere'
 			},
 			{
+				fieldtype: 'Column Break'
+			},
+			{
+				fieldtype: 'Date',
+				fieldname: 'date_identified',
+				label: __('Date'),
+				default: frappe.datetime.get_today(),
+				reqd: 1
+			},
+			{
 				fieldtype: 'Small Text',
 				fieldname: 'notes',
 				label: __('Notes')
@@ -982,7 +992,7 @@ window.add_condition_to_selected = function() {
 				condition_row.surface = values.surface;
 				condition_row.severity = values.severity;
 				condition_row.notes = values.notes;
-				condition_row.date_identified = frappe.datetime.nowdate();
+				condition_row.date_identified = values.date_identified;
 				condition_row.identified_by = frappe.session.user;
 			});
 			
@@ -998,7 +1008,7 @@ window.add_condition_to_selected = function() {
 			actCond.tooth_number = `Multiple (${condCount})`;
 			actCond.condition_code = condCode;
 			actCond.new_value = `${condCode} on ${condSurf}`;
-			actCond.activity_datetime = frappe.datetime.now_datetime();
+			actCond.activity_datetime = values.date_identified + ' 00:00:00';
 			actCond.performed_by = frappe.session.user;
 			frm.refresh_field('chart_activities');
 			update_activity_timeline(frm);
@@ -1131,6 +1141,13 @@ window.add_procedure_to_selected = function() {
 				fieldtype: 'Small Text',
 				fieldname: 'notes',
 				label: __('Procedure Notes')
+			},
+			{
+				fieldtype: 'Date',
+				fieldname: 'planned_date',
+				label: __('Date'),
+				default: frappe.datetime.get_today(),
+				reqd: 1
 			}
 		],
 		primary_action_label: __('Add to All Selected'),
@@ -1170,7 +1187,7 @@ window.add_procedure_to_selected = function() {
 			actProc.procedure_code = procCode;
 			actProc.new_value = `${procCode} (${procStatus}) on ${procSurf}`;
 			actProc.cost_impact = procTotalCost;
-			actProc.activity_datetime = frappe.datetime.now_datetime();
+			actProc.activity_datetime = values.planned_date + ' 00:00:00';
 			actProc.performed_by = frappe.session.user;
 			frm.refresh_field('chart_activities');
 			update_activity_timeline(frm);
@@ -1392,6 +1409,13 @@ function add_tooth_condition(frm) {
 							default: 'Whole Tooth'
 						},
 						{
+							fieldtype: 'Date',
+							fieldname: 'date_identified',
+							label: __('Date'),
+							default: frappe.datetime.get_today(),
+							reqd: 1
+						},
+						{
 							fieldtype: 'Small Text',
 							fieldname: 'notes',
 							label: __('Notes')
@@ -1404,7 +1428,7 @@ function add_tooth_condition(frm) {
 						condition_row.condition_code = values.condition_code;
 						condition_row.surface = values.surface;
 						condition_row.notes = values.notes;
-						condition_row.date_identified = frappe.datetime.nowdate();
+						condition_row.date_identified = values.date_identified;
 						condition_row.identified_by = frappe.session.user;
 						
 						frm.refresh_field('tooth_conditions');
@@ -1458,6 +1482,13 @@ function add_tooth_procedure(frm) {
 							default: 'Planned'
 						},
 						{
+							fieldtype: 'Date',
+							fieldname: 'planned_date',
+							label: __('Date'),
+							default: frappe.datetime.get_today(),
+							reqd: 1
+						},
+						{
 							fieldtype: 'Small Text',
 							fieldname: 'notes',
 							label: __('Notes')
@@ -1471,7 +1502,7 @@ function add_tooth_procedure(frm) {
 						procedure_row.surface = values.surface;
 						procedure_row.status = values.status;
 						procedure_row.notes = values.notes;
-						procedure_row.planned_date = frappe.datetime.nowdate();
+						procedure_row.planned_date = values.planned_date;
 						procedure_row.planned_by = frappe.session.user;
 						
 						frm.refresh_field('tooth_procedures');
