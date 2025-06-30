@@ -2724,6 +2724,8 @@ frappe.ui.form.on('Tooth Condition', {
 
 // Payment section: fetch and display payment cards, with New Payment action
 function render_payment_section(frm) {
+    // Remove existing payments section to avoid duplicates
+    $('.dental-payments-section').remove();
     frappe.call({
         method: 'dentcharts.dentcharts.doctype.dental_payment_entry.dental_payment_entry.get_payments_for_patient',
         args: { patient: frm.doc.patient },
@@ -2761,28 +2763,49 @@ function render_payment_section(frm) {
     });
 }
 
-// Open a new Dental Payment Entry form for this patient
+// Custom dialog to record a general payment (not against an invoice)
 window.record_payment_for_patient = function() {
     let frm = window.current_frm;
-    let callback = function(doc) {
-        render_payment_section(frm);
-        render_invoice_section(frm);
-    };
-    let init_cb = function(dialog) {
-        dialog.set_value('patient', frm.doc.patient);
-    };
-    let open_quick = function() {
-        frappe.ui.form.make_quick_entry('Dental Payment Entry', callback, init_cb);
-    };
-    if (typeof frappe.ui.form.make_quick_entry !== 'function') {
-        frappe.require('/assets/frappe/js/frappe/form/quick_entry.js', open_quick);
-    } else {
-        open_quick();
-    }
+    let dialog = new frappe.ui.Dialog({
+        title: __('Record Payment'),
+        fields: [
+            {fieldtype:'Link', fieldname:'invoice', label:__('Invoice'), options:'Invoice', reqd:1},
+            {fieldtype:'Currency', fieldname:'payment_amount', label:__('Payment Amount'), reqd:1},
+            {fieldtype:'Select', fieldname:'payment_method', label:__('Payment Method'), options:'Cash\nCredit Card\nDebit Card\nCheck\nBank Transfer\nOnline Payment', default:'Cash', reqd:1},
+            {fieldtype:'Date', fieldname:'payment_date', label:__('Payment Date'), default: frappe.datetime.get_today(), reqd:1},
+            {fieldtype:'Data', fieldname:'reference_number', label:__('Reference Number')},
+            {fieldtype:'Text', fieldname:'notes', label:__('Notes')}
+        ],
+        primary_action_label: __('Submit'),
+        primary_action: function(values) {
+            let doc = {
+                doctype: 'Dental Payment Entry',
+                invoice: values.invoice,
+                patient: frm.doc.patient,
+                payment_amount: values.payment_amount,
+                payment_method: values.payment_method,
+                payment_date: values.payment_date,
+                reference_number: values.reference_number,
+                notes: values.notes
+            };
+            frappe.call({method:'frappe.client.insert', args:{doc:doc}, callback:function(r) {
+                frappe.call({method:'frappe.client.submit', args:{doc:r.message}, callback:function(){
+                    dialog.hide();
+                    frappe.show_alert({message:__('Payment recorded'), indicator:'green'});
+                    render_payment_section(frm);
+                    render_invoice_section(frm);
+                }});
+            }});
+        }
+    });
+    dialog.set_value('invoice', '');
+    dialog.show();
 };
 
 // Invoice section: fetch and display invoice cards, with Record Payment action
 function render_invoice_section(frm) {
+    // Remove existing invoices section to avoid duplicates
+    $('.dental-invoices-section').remove();
     frappe.call({
         method: 'frappe.client.get_list',
         args: {
@@ -2824,24 +2847,42 @@ function render_invoice_section(frm) {
     });
 }
 
-// Open Quick Entry for Dental Payment Entry for a specific invoice
+// Custom dialog to record a payment in one step (insert + submit)
 window.record_payment_for_invoice = function(invoice, amount) {
     let frm = window.current_frm;
-    let callback = function(doc) {
-        render_payment_section(frm);
-        render_invoice_section(frm);
-    };
-    let init_cb = function(dialog) {
-        dialog.set_value('invoice', invoice);
-        dialog.set_value('patient', frm.doc.patient);
-        dialog.set_value('payment_amount', amount);
-    };
-    let open_quick = function() {
-        frappe.ui.form.make_quick_entry('Dental Payment Entry', callback, init_cb);
-    };
-    if (typeof frappe.ui.form.make_quick_entry !== 'function') {
-        frappe.require('/assets/frappe/js/frappe/form/quick_entry.js', open_quick);
-    } else {
-        open_quick();
-    }
+    let dialog = new frappe.ui.Dialog({
+        title: __('Record Payment for {0}', [invoice]),
+        fields: [
+            {fieldtype:'Currency', fieldname:'payment_amount', label:__('Payment Amount'), reqd:1, default: amount},
+            {fieldtype:'Select', fieldname:'payment_method', label:__('Payment Method'), options:'Cash\nCredit Card\nDebit Card\nCheck\nBank Transfer\nOnline Payment', default:'Cash', reqd:1},
+            {fieldtype:'Date', fieldname:'payment_date', label:__('Payment Date'), default: frappe.datetime.get_today(), reqd:1},
+            {fieldtype:'Data', fieldname:'reference_number', label:__('Reference Number')},
+            {fieldtype:'Text', fieldname:'notes', label:__('Notes')}
+        ],
+        primary_action_label: __('Submit'),
+        primary_action: function(values) {
+            let doc = {
+                doctype: 'Dental Payment Entry',
+                invoice: invoice,
+                patient: frm.doc.patient,
+                payment_amount: values.payment_amount,
+                payment_method: values.payment_method,
+                payment_date: values.payment_date,
+                reference_number: values.reference_number,
+                notes: values.notes
+            };
+            frappe.call({
+                method: 'frappe.client.insert', args: {doc: doc}, callback: function(r) {
+                    let name = r.message.name;
+                    frappe.call({method: 'frappe.client.submit', args: {doc: r.message}, callback: function() {
+                        dialog.hide();
+                        frappe.show_alert({message: __('Payment recorded'), indicator:'green'});
+                        render_payment_section(frm);
+                        render_invoice_section(frm);
+                    }});
+                }
+            });
+        }
+    });
+    dialog.show();
 };
