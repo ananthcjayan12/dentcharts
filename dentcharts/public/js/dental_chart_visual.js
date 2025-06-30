@@ -654,10 +654,10 @@ function show_enhanced_tooth_dialog(frm, tooth_number) {
 			});
 			dialog_fields.push({
 				fieldtype: 'Date',
-				fieldname: `procedure_completed_date_${index}`,
-				label: 'Completed Date',
-				default: procedure.completed_date,
-				depends_on: `eval:doc.procedure_status_${index} === 'Completed'`
+				fieldname: `procedure_status_date_${index}`,
+				label: 'Status Change Date',
+				default: procedure.completed_date || procedure.planned_date || frappe.datetime.get_today(),
+				description: 'Date when this status change occurred'
 			});
 			dialog_fields.push({
 				fieldtype: 'Small Text',
@@ -1266,7 +1266,7 @@ function save_tooth_changes(frm, tooth_number, existing_conditions, existing_pro
 		const newStatus = values[`procedure_status_${index}`]  || procedure.status;
 		const newNotes = values[`procedure_notes_${index}`]    || procedure.notes;
 		const newPlannedDate = values[`procedure_planned_date_${index}`] || procedure.planned_date;
-		const newCompletedDate = values[`procedure_completed_date_${index}`] || procedure.completed_date;
+		const statusChangeDate = values[`procedure_status_date_${index}`] || frappe.datetime.get_today();
 		
 		frappe.model.set_value('Tooth Procedure', name, 'procedure_code', newProcCode);
 		frappe.model.set_value('Tooth Procedure', name, 'surface', newSurface);
@@ -1277,28 +1277,26 @@ function save_tooth_changes(frm, tooth_number, existing_conditions, existing_pro
 		if (oldStatus !== newStatus) {
 			frappe.model.set_value('Tooth Procedure', name, 'status', newStatus);
 			
-			// Log the status change manually with user-provided date
+			// Log the status change manually with user-provided status change date
 			let act = frm.add_child('chart_activities');
 			act.activity_type = 'Procedure Status Changed';
 			act.activity_description = __('Changed status of {0} on tooth {1} to {2}', [newProcCode, tooth_number, newStatus]);
 			act.tooth_number = tooth_number;
 			act.procedure_code = newProcCode;
 			act.new_value = `Status: ${newStatus}`;
-			// Use completed date if status is completed, otherwise use planned date
-			let activityDate = (newStatus === 'Completed' && newCompletedDate) ? newCompletedDate : newPlannedDate;
-			act.activity_datetime = activityDate + ' ' + frappe.datetime.now_time();
+			act.activity_datetime = statusChangeDate + ' ' + frappe.datetime.now_time();
 			act.performed_by = frappe.session.user;
+			
+			// Update completed_date only if status is completed
+			if (newStatus === 'Completed') {
+				frappe.model.set_value('Tooth Procedure', name, 'completed_date', statusChangeDate);
+			} else {
+				// Clear completed date if status is not completed
+				frappe.model.set_value('Tooth Procedure', name, 'completed_date', '');
+			}
 		} else {
 			// No status change, just update normally
 			frappe.model.set_value('Tooth Procedure', name, 'status', newStatus);
-		}
-		
-		if (newStatus === 'Completed') {
-			// Use user-provided completed date or set to today if not provided
-			frappe.model.set_value('Tooth Procedure', name, 'completed_date', newCompletedDate || frappe.datetime.nowdate());
-		} else {
-			// Clear completed date if status is not completed
-			frappe.model.set_value('Tooth Procedure', name, 'completed_date', '');
 		}
 	});
 	
