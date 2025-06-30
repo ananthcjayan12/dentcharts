@@ -306,11 +306,16 @@ function build_interactive_chart_html(frm, chart_data) {
 				<h5 style="margin: 0 0 15px 0; color: #0c5460;">🔧 General Procedures</h5>
 				<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 10px;">`;
 		
-		chart_data.general_procedures.forEach(procedure => {
+		chart_data.general_procedures.forEach((procedure, index) => {
 			let status_color = procedure.status === 'Completed' ? '#28a745' : 
 							  procedure.status === 'In Progress' ? '#17a2b8' : '#ffc107';
 			html += `
-				<div style="background: white; padding: 12px; border-radius: 6px; border-left: 4px solid ${status_color};">
+				<div class="general-procedure-card" data-procedure-code="${procedure.code}" data-procedure-index="${index}" 
+					 style="background: white; padding: 12px; border-radius: 6px; border-left: 4px solid ${status_color}; cursor: pointer; transition: all 0.2s ease;"
+					 onmouseover="this.style.transform='scale(1.02)'; this.style.boxShadow='0 4px 8px rgba(0,0,0,0.1)';"
+					 onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none';"
+					 onclick="show_general_procedure_dialog('${procedure.code}', ${index})"
+					 title="Click to edit this general procedure">
 					<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
 						<strong style="color: #333;">${procedure.code}</strong>
 						<span style="background: ${status_color}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 12px;">
@@ -329,6 +334,9 @@ function build_interactive_chart_html(frm, chart_data) {
 					${procedure.notes ? `<div style="font-size: 12px; color: #666; margin-top: 8px; font-style: italic;">
 						${procedure.notes}
 					</div>` : ''}
+					<div style="font-size: 11px; color: #999; margin-top: 8px; text-align: center;">
+						🖱️ Click to edit
+					</div>
 				</div>
 			`;
 		});
@@ -1236,6 +1244,255 @@ window.add_procedure_to_selected = function() {
 	});
 	
 	d.show();
+}
+
+// Function to show general procedure edit dialog
+window.show_general_procedure_dialog = function(procedure_code, procedure_index) {
+	let frm = window.current_frm;
+	
+	// Find the general procedure in the tooth_procedures table
+	let general_procedures = frm.doc.tooth_procedures.filter(proc => proc.tooth_number === 'General');
+	let procedure = general_procedures[procedure_index];
+	
+	if (!procedure) {
+		frappe.msgprint('Procedure not found');
+		return;
+	}
+	
+	let dialog_fields = [
+		{
+			fieldtype: 'HTML',
+			options: `
+				<div style="background: linear-gradient(135deg, #007bff, #0056b3); color: white; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+					<h4 style="margin: 0 0 8px 0;">🔧 General Procedure Management</h4>
+					<p style="margin: 0; opacity: 0.9;">Edit details for general procedure: <strong>${procedure.procedure_code}</strong></p>
+				</div>
+			`
+		},
+		{
+			fieldtype: 'Section Break',
+			label: '📋 Procedure Details'
+		},
+		{
+			fieldtype: 'Link',
+			fieldname: 'procedure_code',
+			label: 'Procedure',
+			options: 'Dental Procedure Master',
+			default: procedure.procedure_code,
+			read_only: 1
+		},
+		{
+			fieldtype: 'Select',
+			fieldname: 'status',
+			label: 'Status',
+			options: 'Planned\nIn Progress\nCompleted\nCancelled',
+			default: procedure.status,
+			reqd: 1
+		},
+		{
+			fieldtype: 'Column Break'
+		},
+		{
+			fieldtype: 'Date',
+			fieldname: 'planned_date',
+			label: 'Planned Date',
+			default: procedure.planned_date
+		},
+		{
+			fieldtype: 'Date',
+			fieldname: 'status_change_date',
+			label: 'Status Change Date',
+			default: procedure.completed_date || procedure.planned_date || frappe.datetime.get_today(),
+			description: 'Date when this status change occurred'
+		},
+		{
+			fieldtype: 'Section Break',
+			label: '💰 Cost Information'
+		},
+		{
+			fieldtype: 'Currency',
+			fieldname: 'standard_fee',
+			label: 'Standard Fee',
+			default: procedure.standard_fee,
+			read_only: 1
+		},
+		{
+			fieldtype: 'Currency',
+			fieldname: 'actual_fee',
+			label: 'Actual Fee',
+			default: procedure.actual_fee
+		},
+		{
+			fieldtype: 'Column Break'
+		},
+		{
+			fieldtype: 'Currency',
+			fieldname: 'insurance_covered',
+			label: 'Insurance Covered',
+			default: procedure.insurance_covered
+		},
+		{
+			fieldtype: 'Currency',
+			fieldname: 'patient_portion',
+			label: 'Patient Portion',
+			default: procedure.patient_portion,
+			read_only: 1
+		},
+		{
+			fieldtype: 'Section Break',
+			label: '📝 Notes'
+		},
+		{
+			fieldtype: 'Small Text',
+			fieldname: 'notes',
+			label: 'Notes',
+			default: procedure.notes
+		},
+		{
+			fieldtype: 'Small Text',
+			fieldname: 'treatment_plan_notes',
+			label: 'Treatment Plan Notes',
+			default: procedure.treatment_plan_notes
+		}
+	];
+	
+	let d = new frappe.ui.Dialog({
+		title: __('General Procedure - ') + procedure.procedure_code,
+		fields: dialog_fields,
+		size: 'large',
+		primary_action_label: __('Save Changes'),
+		primary_action: function(values) {
+			save_general_procedure_changes(frm, procedure, values);
+			d.hide();
+		},
+		secondary_action_label: __('Remove Procedure'),
+		secondary_action: function() {
+			frappe.confirm(
+				'Are you sure you want to remove this general procedure?',
+				function() {
+					remove_general_procedure(frm, procedure);
+					d.hide();
+				}
+			);
+		}
+	});
+	
+	// Add change handlers for cost calculation
+	d.fields_dict.actual_fee.$input.on('change', function() {
+		let actual_fee = parseFloat(d.get_value('actual_fee')) || 0;
+		let insurance_covered = parseFloat(d.get_value('insurance_covered')) || 0;
+		let patient_portion = actual_fee - insurance_covered;
+		d.set_value('patient_portion', patient_portion);
+	});
+	
+	d.fields_dict.insurance_covered.$input.on('change', function() {
+		let actual_fee = parseFloat(d.get_value('actual_fee')) || 0;
+		let insurance_covered = parseFloat(d.get_value('insurance_covered')) || 0;
+		let patient_portion = actual_fee - insurance_covered;
+		d.set_value('patient_portion', patient_portion);
+	});
+	
+	d.show();
+}
+
+function save_general_procedure_changes(frm, procedure, values) {
+	// Set multiple flags to prevent duplicate logging from various sources
+	window.saving_from_enhanced_dialog = true;
+	frm._saving_from_enhanced_dialog = true;
+	window._bulk_saving = true;
+	frm._bulk_saving = true;
+	
+	// Also set a flag to prevent server-side automatic logging
+	frm._skip_server_activity_logging = true;
+	
+	const oldStatus = procedure.status;
+	const newStatus = values.status;
+	const statusChangeDate = values.status_change_date || frappe.datetime.get_today();
+	
+	// Update the procedure using frappe.model.set_value for reliable persistence
+	frappe.model.set_value('Tooth Procedure', procedure.name, 'status', newStatus);
+	frappe.model.set_value('Tooth Procedure', procedure.name, 'planned_date', values.planned_date);
+	frappe.model.set_value('Tooth Procedure', procedure.name, 'actual_fee', values.actual_fee);
+	frappe.model.set_value('Tooth Procedure', procedure.name, 'insurance_covered', values.insurance_covered);
+	frappe.model.set_value('Tooth Procedure', procedure.name, 'patient_portion', values.patient_portion);
+	frappe.model.set_value('Tooth Procedure', procedure.name, 'notes', values.notes);
+	frappe.model.set_value('Tooth Procedure', procedure.name, 'treatment_plan_notes', values.treatment_plan_notes);
+	
+	// Handle status change with manual activity logging
+	if (oldStatus !== newStatus) {
+		// Log the status change manually with user-provided status change date
+		let act = frm.add_child('chart_activities');
+		act.activity_type = 'Procedure Status Changed';
+		act.activity_description = __('Changed status of general procedure {0} to {1}', [procedure.procedure_code, newStatus]);
+		act.tooth_number = 'General';
+		act.procedure_code = procedure.procedure_code;
+		act.new_value = `Status: ${newStatus}`;
+		act.activity_datetime = statusChangeDate + ' ' + frappe.datetime.now_time();
+		act.performed_by = frappe.session.user;
+		
+		// Update completed_date only if status is completed
+		if (newStatus === 'Completed') {
+			frappe.model.set_value('Tooth Procedure', procedure.name, 'completed_date', statusChangeDate);
+		} else {
+			// Clear completed date if status is not completed
+			frappe.model.set_value('Tooth Procedure', procedure.name, 'completed_date', '');
+		}
+	}
+	
+	// Update fields and save
+	frm.refresh_field('tooth_procedures');
+	frm.refresh_field('chart_activities');
+	
+	// Clear all flags after a short delay to allow all events to process
+	setTimeout(() => {
+		window.saving_from_enhanced_dialog = false;
+		frm._saving_from_enhanced_dialog = false;
+		window._bulk_saving = false;
+		frm._bulk_saving = false;
+		frm._skip_server_activity_logging = false;
+	}, 3000);
+	
+	// Set a flag to prevent server-side duplicate logging
+	frm.doc._skip_activity_logging = 1;
+	
+	// Save the document
+	frm.save().then(() => {
+		// Clear the flag after saving
+		frm.doc._skip_activity_logging = 0;
+		
+		// Refresh the UI components without reloading
+		create_interactive_dental_chart(frm);
+		update_activity_timeline(frm);
+		frappe.show_alert({
+			message: __('General procedure updated successfully'),
+			indicator: 'green'
+		});
+	});
+}
+
+function remove_general_procedure(frm, procedure) {
+	// Find and remove the procedure from the child table
+	let procedures_to_remove = [];
+	frm.doc.tooth_procedures.forEach((proc, index) => {
+		if (proc.name === procedure.name) {
+			procedures_to_remove.push(index);
+		}
+	});
+	
+	// Remove in reverse order to maintain indices
+	procedures_to_remove.reverse().forEach(index => {
+		frm.get_field('tooth_procedures').grid.grid_rows[index].remove();
+	});
+	
+	frm.refresh_field('tooth_procedures');
+	frm.save().then(() => {
+		create_interactive_dental_chart(frm);
+		update_activity_timeline(frm);
+		frappe.show_alert({
+			message: __('General procedure removed successfully'),
+			indicator: 'green'
+		});
+	});
 }
 
 function save_tooth_changes(frm, tooth_number, existing_conditions, existing_procedures, values) {
