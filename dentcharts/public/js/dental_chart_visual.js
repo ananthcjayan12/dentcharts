@@ -2696,18 +2696,35 @@ window.edit_activity_from_timeline = function(activity_name) {
 frappe.ui.form.on('Tooth Procedure', {
 	status: function(frm, cdt, cdn) {
 		let proc = locals[cdt][cdn];
-		let act = frm.add_child('chart_activities');
-		act.activity_type = 'Procedure Status Changed';
-		act.activity_description = __('Changed status of {0} on tooth {1} to {2}', [proc.procedure_code, proc.tooth_number, proc.status]);
-		act.tooth_number = proc.tooth_number;
-		act.procedure_code = proc.procedure_code;
-		act.new_value = `Status: ${proc.status}`;
-		act.activity_datetime = frappe.datetime.now_datetime();
-		act.performed_by = frappe.session.user;
-		
-		frm.refresh_field('chart_activities');
-		update_activity_timeline(frm);
-		frm.save();
+		let newStatus = proc.status;
+		// Prompt user for status date
+		let d = new frappe.ui.Dialog({
+			title: __('Set status date'),
+			fields: [
+				{fieldtype:'Date', fieldname:'status_date', label:__('Date'), default: frappe.datetime.nowdate(), reqd:1}
+			],
+			primary_action_label: __('Save'),
+			primary_action: function(values) {
+				// Update completed_date if applicable
+				if (newStatus === 'Completed') {
+					frappe.model.set_value(cdt, cdn, 'completed_date', values.status_date);
+				}
+				// Log activity with chosen date
+				let act = frm.add_child('chart_activities');
+				act.activity_type = 'Procedure Status Changed';
+				act.activity_description = __('Changed status of {0} on tooth {1} to {2}', [proc.procedure_code, proc.tooth_number, newStatus]);
+				act.tooth_number = proc.tooth_number;
+				act.procedure_code = proc.procedure_code;
+				act.new_value = `Status: ${newStatus}`;
+				act.activity_datetime = values.status_date + ' ' + frappe.datetime.now_time();
+				act.performed_by = frappe.session.user;
+				frm.refresh_field('chart_activities');
+				update_activity_timeline(frm);
+				frm.save();
+				d.hide();
+			}
+		});
+		d.show();
 	}
 });
 
