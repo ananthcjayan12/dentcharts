@@ -1241,6 +1241,7 @@ window.add_procedure_to_selected = function() {
 function save_tooth_changes(frm, tooth_number, existing_conditions, existing_procedures, values) {
 	// Set flag to prevent duplicate status change logging
 	window.saving_from_enhanced_dialog = true;
+	frm._saving_from_enhanced_dialog = true;
 	
 	// Update existing conditions using frappe.model.set_value for reliable persistence
 	existing_conditions.forEach((condition, index) => {
@@ -1273,10 +1274,11 @@ function save_tooth_changes(frm, tooth_number, existing_conditions, existing_pro
 		frappe.model.set_value('Tooth Procedure', name, 'notes', newNotes);
 		frappe.model.set_value('Tooth Procedure', name, 'planned_date', newPlannedDate);
 		
+		// Always update the status (we'll handle logging separately)
+		frappe.model.set_value('Tooth Procedure', name, 'status', newStatus);
+		
 		// Handle status change with manual activity logging
 		if (oldStatus !== newStatus) {
-			frappe.model.set_value('Tooth Procedure', name, 'status', newStatus);
-			
 			// Log the status change manually with user-provided status change date
 			let act = frm.add_child('chart_activities');
 			act.activity_type = 'Procedure Status Changed';
@@ -1294,9 +1296,6 @@ function save_tooth_changes(frm, tooth_number, existing_conditions, existing_pro
 				// Clear completed date if status is not completed
 				frappe.model.set_value('Tooth Procedure', name, 'completed_date', '');
 			}
-		} else {
-			// No status change, just update normally
-			frappe.model.set_value('Tooth Procedure', name, 'status', newStatus);
 		}
 	});
 	
@@ -1308,17 +1307,17 @@ function save_tooth_changes(frm, tooth_number, existing_conditions, existing_pro
 	// Clear the flag after a short delay to allow all events to process
 	setTimeout(() => {
 		window.saving_from_enhanced_dialog = false;
-	}, 1000);
+		frm._saving_from_enhanced_dialog = false;
+	}, 2000);
 	
-	// Save and reload to pick up server-side logged status changes, then refresh UI
+	// Save without triggering reload to avoid server-side duplicate logging
 	frm.save().then(() => {
-		frm.reload_doc().then(() => {
-			create_interactive_dental_chart(frm);
-			update_activity_timeline(frm);
-			frappe.show_alert({
-				message: __('Tooth changes saved successfully'),
-				indicator: 'green'
-			});
+		// Don't reload, just refresh the UI components
+		create_interactive_dental_chart(frm);
+		update_activity_timeline(frm);
+		frappe.show_alert({
+			message: __('Tooth changes saved successfully'),
+			indicator: 'green'
 		});
 	});
 }
@@ -2785,7 +2784,7 @@ window.edit_activity_from_timeline = function(activity_name) {
 frappe.ui.form.on('Tooth Procedure', {
 	status: function(frm, cdt, cdn) {
 		// Skip if this change is coming from the enhanced dialog to prevent duplicates
-		if (window.saving_from_enhanced_dialog) {
+		if (window.saving_from_enhanced_dialog || frm._saving_from_enhanced_dialog) {
 			return;
 		}
 		
