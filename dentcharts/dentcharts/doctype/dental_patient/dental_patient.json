@@ -9,6 +9,7 @@
  "field_order": [
   "healthcare_patient",
   "patient_name",
+  "age",
   "section_break_3",
   "dental_history",
   "dental_allergies",
@@ -38,6 +39,12 @@
    "label": "Patient Name",
    "read_only": 1,
    "fetch_from": "healthcare_patient.patient_name"
+  },
+  {
+   "fieldname": "age",
+   "fieldtype": "Int",
+   "label": "Age",
+   "default": 0
   },
   {
    "fieldname": "section_break_3",
