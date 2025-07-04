@@ -346,7 +346,7 @@ class DentalAppointment(Document):
 		
 		return appointments
 	
-@frappe.whitelist()
+	@frappe.whitelist()
 	def get_available_time_slots(practitioner, date, duration=60):
 		"""Get available time slots for a practitioner on a specific date"""
 		# Business hours: 8 AM to 6 PM
@@ -355,24 +355,24 @@ class DentalAppointment(Document):
 		slot_duration = 30  # 30-minute slots
 		
 		# Get existing appointments
-	existing_appointments = frappe.get_all("Dental Appointment",
-		filters={
-			"practitioner": practitioner,
-			"appointment_date": date,
-			"status": ["not in", ["Cancelled", "No Show"]]
-		},
-		fields=["name", "appointment_time", "duration_minutes"],
-		order_by="appointment_time"
-	)
+		existing_appointments = frappe.get_all("Dental Appointment",
+			filters={
+				"practitioner": practitioner,
+				"appointment_date": date,
+				"status": ["not in", ["Cancelled", "No Show"]]
+			},
+			fields=["name", "appointment_time", "duration_minutes"],
+			order_by="appointment_time"
+		)
 		
 		# Generate all possible slots
 		available_slots = []
 		current_time = business_start * 60  # Convert to minutes
 		end_time = business_end * 60
 		
-	while current_time + int(duration) <= end_time:
+		while current_time + int(duration) <= end_time:
 			slot_start = f"{current_time // 60:02d}:{current_time % 60:02d}:00"
-		slot_end_minutes = current_time + int(duration)
+			slot_end_minutes = current_time + int(duration)
 			slot_end = f"{slot_end_minutes // 60:02d}:{slot_end_minutes % 60:02d}:00"
 			
 			# Check if slot conflicts with existing appointments
@@ -395,7 +395,7 @@ class DentalAppointment(Document):
 				available_slots.append({
 					"start_time": slot_start,
 					"end_time": slot_end,
-				"duration": int(duration)
+					"duration": int(duration)
 				})
 			
 			current_time += slot_duration
