@@ -12,12 +12,11 @@ class DentalPatient(Document):
 		self.set_patient_name()
 	
 	def validate_healthcare_patient(self):
-		if not self.healthcare_patient:
-			frappe.throw("Healthcare Patient is required")
-		
-		# Check if healthcare patient exists
-		if not frappe.db.exists("Patient", self.healthcare_patient):
-			frappe.throw("Healthcare Patient does not exist")
+		# Allow blank healthcare_patient (will be auto-created on insert)
+		if self.healthcare_patient:
+			# Check if healthcare patient exists
+			if not frappe.db.exists("Patient", self.healthcare_patient):
+				frappe.throw("Healthcare Patient does not exist")
 	
 	def validate_emergency_contact(self):
 		if self.emergency_phone and len(self.emergency_phone) < 10:
@@ -100,3 +99,20 @@ class DentalPatient(Document):
 		
 		# Last resort - return None and let the chart creation handle it
 		return None 
+
+	def before_insert(self):
+		"""Automatically create a Healthcare Patient if not provided"""
+		if not self.healthcare_patient:
+			patient_data = {
+				"doctype": "Patient",
+				"patient_name": self.patient_name
+			}
+			if getattr(self, "dob", None):
+				patient_data["dob"] = self.dob
+			if getattr(self, "mobile", None):
+				patient_data["mobile"] = self.mobile
+			if getattr(self, "email", None):
+				patient_data["email"] = self.email
+			patient_doc = frappe.get_doc(patient_data)
+			patient_doc.insert(ignore_permissions=True)
+			self.healthcare_patient = patient_doc.name 
