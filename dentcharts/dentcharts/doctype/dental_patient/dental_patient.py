@@ -12,11 +12,16 @@ class DentalPatient(Document):
 		self.set_patient_name()
 	
 	def validate_healthcare_patient(self):
-		# Allow blank healthcare_patient (will be auto-created on insert)
+		# If linking to existing Patient, verify it; otherwise ensure required data for new Patient
 		if self.healthcare_patient:
-			# Check if healthcare patient exists
 			if not frappe.db.exists("Patient", self.healthcare_patient):
 				frappe.throw("Healthcare Patient does not exist")
+		else:
+			# New Patient creation: require first_name and gender
+			if not self.first_name:
+				frappe.throw("First Name is required for new Patient")
+			if not self.sex:
+				frappe.throw("Gender is required for new Patient")
 	
 	def validate_emergency_contact(self):
 		if self.emergency_phone and len(self.emergency_phone) < 10:
@@ -101,18 +106,30 @@ class DentalPatient(Document):
 		return None 
 
 	def before_insert(self):
-		"""Automatically create a Healthcare Patient if not provided"""
+		"""Automatically set or create a Healthcare Patient if not provided"""
+		# Use existing Patient if selected via patient_name link
+		if not self.healthcare_patient and self.patient_name:
+			if frappe.db.exists("Patient", self.patient_name):
+				self.healthcare_patient = self.patient_name
+				return
+		# Otherwise create a new Patient record
 		if not self.healthcare_patient:
 			patient_data = {
 				"doctype": "Patient",
-				"patient_name": self.patient_name
+				"first_name": self.first_name,
+				"sex": self.sex,
+				"patient_name": self.patient_name or f"{self.first_name} {self.last_name or ''}".strip()
 			}
+			# Include optional fields
+			if getattr(self, "last_name", None):
+				patient_data["last_name"] = self.last_name
 			if getattr(self, "dob", None):
 				patient_data["dob"] = self.dob
 			if getattr(self, "mobile", None):
 				patient_data["mobile"] = self.mobile
 			if getattr(self, "email", None):
 				patient_data["email"] = self.email
+			# Create the Patient doc
 			patient_doc = frappe.get_doc(patient_data)
 			patient_doc.insert(ignore_permissions=True)
 			self.healthcare_patient = patient_doc.name 

@@ -7,9 +7,15 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "healthcare_patient",
+  "mobile",
+  "email",
+  "first_name",
+  "last_name",
+  "sex",
   "patient_name",
   "age",
+  "dob",
+  "healthcare_patient",
   "section_break_3",
   "dental_history",
   "dental_allergies",
@@ -34,8 +40,27 @@
    "description": "Leave blank to auto-create a new Healthcare Patient based on the information below."
   },
   {
-   "fieldname": "patient_name",
+   "fieldname": "first_name",
    "fieldtype": "Data",
+   "label": "First Name",
+   "reqd": 1
+  },
+  {
+   "fieldname": "last_name",
+   "fieldtype": "Data",
+   "label": "Last Name"
+  },
+  {
+   "fieldname": "sex",
+   "fieldtype": "Link",
+   "label": "Gender",
+   "options": "Gender",
+   "reqd": 1
+  },
+  {
+   "fieldname": "patient_name",
+   "fieldtype": "Link",
+   "options": "Patient",
    "label": "Patient Name"
   },
   {
