@@ -17,6 +17,10 @@
   "dob",
   "healthcare_patient",
   "section_break_3",
+  "date_of_registration",
+  "address",
+  "chief_complaint",
+  "source",
   "dental_history",
   "dental_allergies",
   "previous_dental_work",
@@ -88,6 +92,29 @@
    "fieldname": "section_break_3",
    "fieldtype": "Section Break",
    "label": "Dental Information"
+  },
+  {
+   "default": "Today",
+   "fieldname": "date_of_registration",
+   "fieldtype": "Date",
+   "label": "Date of Registration",
+   "reqd": 1
+  },
+  {
+   "fieldname": "address",
+   "fieldtype": "Small Text",
+   "label": "Address"
+  },
+  {
+   "fieldname": "chief_complaint",
+   "fieldtype": "Small Text",
+   "label": "Chief Complaint"
+  },
+  {
+   "fieldname": "source",
+   "fieldtype": "Data",
+   "label": "Source",
+   "description": "Common sources: Self, Referral, Walk-in, Online Booking, Emergency, Insurance, Corporate, Other"
   },
   {
    "fieldname": "dental_history",

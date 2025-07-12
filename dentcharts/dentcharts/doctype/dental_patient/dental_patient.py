@@ -10,6 +10,8 @@ class DentalPatient(Document):
 		self.validate_healthcare_patient()
 		self.validate_emergency_contact()
 		self.set_patient_name()
+		self.validate_date_of_registration()
+		self.validate_source()
 	
 	def validate_healthcare_patient(self):
 		# If linking to existing Patient, verify it; otherwise ensure required data for new Patient
@@ -26,6 +28,18 @@ class DentalPatient(Document):
 	def validate_emergency_contact(self):
 		if self.emergency_phone and len(self.emergency_phone) < 10:
 			frappe.throw("Please enter a valid emergency phone number")
+	
+	def validate_date_of_registration(self):
+		"""Validate date of registration is not in the future"""
+		if self.date_of_registration:
+			from frappe.utils import today
+			if self.date_of_registration > today():
+				frappe.throw("Date of Registration cannot be in the future")
+	
+	def validate_source(self):
+		"""Validate source field is not empty if provided"""
+		if self.source and len(self.source.strip()) == 0:
+			frappe.throw("Source cannot be empty if provided")
 	
 	def set_patient_name(self):
 		if self.healthcare_patient:
@@ -58,6 +72,10 @@ class DentalPatient(Document):
 				"dentition_type": "Permanent",  # Default to permanent, can be changed
 				"notes": f"Master Dental Chart created for {self.patient_name}\nCreated on: {frappe.utils.now()}\n--- Patient Registration ---"
 			}
+			
+			# Add chief complaint to the chart if available
+			if self.chief_complaint:
+				chart_data["chief_complaint"] = self.chief_complaint
 			
 			# Only add dentist if we found one
 			if default_dentist:
@@ -129,6 +147,8 @@ class DentalPatient(Document):
 				patient_data["mobile"] = self.mobile
 			if getattr(self, "email", None):
 				patient_data["email"] = self.email
+			if getattr(self, "address", None):
+				patient_data["address"] = self.address
 			# Create the Patient doc
 			patient_doc = frappe.get_doc(patient_data)
 			patient_doc.insert(ignore_permissions=True)

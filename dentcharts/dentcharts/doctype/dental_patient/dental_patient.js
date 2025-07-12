@@ -3,102 +3,24 @@
 
 frappe.ui.form.on('Dental Patient', {
 	refresh: function(frm) {
-		// Add custom buttons
-		if (!frm.is_new()) {
-			frm.add_custom_button(__('View Healthcare Patient'), function() {
-				frappe.set_route('Form', 'Patient', frm.doc.healthcare_patient);
-			});
-			
-			frm.add_custom_button(__('Create Appointment'), function() {
-				frappe.new_doc('Patient Appointment', {
-					patient: frm.doc.healthcare_patient,
-					patient_name: frm.doc.patient_name
-				});
-			});
-			
-			// Add dental chart button with master chart functionality
-			frm.add_custom_button(__('Dental Chart'), function() {
-				// Check if patient has existing master dental chart
-				frappe.call({
-					method: 'frappe.client.get_list',
-					args: {
-						doctype: 'Dental Chart',
-						filters: {
-							patient: frm.doc.healthcare_patient
-						},
-						fields: ['name', 'chart_date', 'status', 'dentist_name', 'creation'],
-						order_by: 'creation asc',
-						limit: 1
-					},
-					callback: function(r) {
-						if (r.message && r.message.length > 0) {
-							// Patient has master chart, open it directly
-							frappe.set_route('Form', 'Dental Chart', r.message[0].name);
-						} else {
-							// No existing chart, create master chart
-							frm.create_master_dental_chart();
-						}
-					}
-				});
-			});
-		}
+		// Add custom buttons or actions here if needed
 	},
 	
-	create_master_dental_chart: function(frm) {
-		// Show dialog to choose dentition type for master chart
-		let d = new frappe.ui.Dialog({
-			title: __('Create Master Dental Chart'),
-			fields: [
-				{
-					fieldtype: 'HTML',
-					options: `<div style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
-						<h5 style="margin: 0 0 10px 0; color: #1565c0;">📋 Master Dental Chart</h5>
-						<p style="margin: 0; color: #424242;">This will create a permanent dental chart for ${frm.doc.patient_name}. 
-						All future visits and treatments will be recorded in this single chart.</p>
-					</div>`
-				},
-				{
-					fieldtype: 'Select',
-					fieldname: 'dentition_type',
-					label: __('Patient\'s Dentition Type'),
-					options: ['Permanent', 'Primary', 'Mixed'],
-					default: 'Permanent',
-					reqd: 1,
-					description: __('• Permanent: Adult teeth (32 teeth)<br>• Primary: Children with baby teeth (20 teeth)<br>• Mixed: Children with both baby and adult teeth')
-				}
-			],
-			primary_action_label: __('Create Master Chart'),
-			primary_action: function(values) {
-				// Get default dentist if available
-				frappe.call({
-					method: 'frappe.client.get_list',
-					args: {
-						doctype: 'Healthcare Practitioner',
-						filters: {
-							department: ['like', '%dent%']
-						},
-						fields: ['name', 'practitioner_name'],
-						limit: 1
-					},
-					callback: function(r) {
-						let default_dentist = r.message && r.message.length > 0 ? r.message[0].name : '';
-						
-						// Create master dental chart
-						frappe.new_doc('Dental Chart', {
-							patient: frm.doc.healthcare_patient,
-							patient_name: frm.doc.patient_name,
-							dentist: default_dentist,
-							chart_date: frappe.datetime.nowdate(),
-							status: 'Active',
-							dentition_type: values.dentition_type,
-							chart_type: 'Master Chart'
-						});
-					}
-				});
-				d.hide();
+	validate: function(frm) {
+		// Additional client-side validation
+		if (frm.doc.date_of_registration) {
+			let today = new Date();
+			let registration_date = new Date(frm.doc.date_of_registration);
+			if (registration_date > today) {
+				frappe.msgprint(__('Date of Registration cannot be in the future'));
+				return false;
 			}
-		});
-		d.show();
+		}
+		
+		if (frm.doc.source && frm.doc.source.trim() === '') {
+			frappe.msgprint(__('Source cannot be empty if provided'));
+			return false;
+		}
 	},
 	
 	healthcare_patient: function(frm) {
@@ -117,6 +39,33 @@ frappe.ui.form.on('Dental Patient', {
 		// Validate emergency phone number
 		if (frm.doc.emergency_phone && frm.doc.emergency_phone.length < 10) {
 			frappe.msgprint(__('Please enter a valid emergency phone number'));
+		}
+	},
+	
+	date_of_registration: function(frm) {
+		// Validate date of registration
+		if (frm.doc.date_of_registration) {
+			let today = new Date();
+			let registration_date = new Date(frm.doc.date_of_registration);
+			if (registration_date > today) {
+				frappe.msgprint(__('Date of Registration cannot be in the future'));
+				frm.set_value('date_of_registration', '');
+			}
+		}
+	},
+	
+	source: function(frm) {
+		// Validate source field is not empty
+		if (frm.doc.source && frm.doc.source.trim() === '') {
+			frappe.msgprint(__('Source cannot be empty if provided'));
+			frm.set_value('source', '');
+		}
+	},
+	
+	chief_complaint: function(frm) {
+		// Auto-save chief complaint to linked dental chart if available
+		if (frm.doc.chief_complaint && frm.doc.healthcare_patient) {
+			// This will be handled server-side when the chart is created
 		}
 	}
 }); 
