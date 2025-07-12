@@ -29,12 +29,7 @@ class DentalPatient(Document):
 		if self.emergency_phone and len(self.emergency_phone) < 10:
 			frappe.throw("Please enter a valid emergency phone number")
 	
-	def validate_date_of_registration(self):
-		"""Validate date of registration is not in the future"""
-		if self.date_of_registration:
-			from frappe.utils import today
-			if self.date_of_registration > today():
-				frappe.throw("Date of Registration cannot be in the future")
+
 	
 	def validate_source(self):
 		"""Validate source field is not empty if provided"""
