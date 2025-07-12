@@ -107,7 +107,7 @@ frappe.ui.form.on('Dental Patient', {
 	refresh: function(frm) {
 		// Attach custom functions to the form object
 		frm.open_dental_chart = function() {
-			// Check if patient has existing dental charts
+			// Check if patient has existing dental chart
 			frappe.call({
 				method: 'frappe.client.get_list',
 				args: {
@@ -117,65 +117,18 @@ frappe.ui.form.on('Dental Patient', {
 					},
 					fields: ['name', 'chart_date', 'status', 'chart_type', 'dentist_name'],
 					order_by: 'creation desc',
-					limit: 10
+					limit: 1
 				},
 				callback: function(r) {
 					if (r.message && r.message.length > 0) {
-						// Show chart selection dialog
-						frm.show_chart_selection_dialog(r.message);
+						// Go directly to the existing chart
+						frappe.set_route('Form', 'Dental Chart', r.message[0].name);
 					} else {
-						// No charts exist, create master chart
+						// No chart exists, create master chart
 						frm.create_master_dental_chart();
 					}
 				}
 			});
-		};
-		
-		frm.show_chart_selection_dialog = function(charts) {
-			let d = new frappe.ui.Dialog({
-				title: __('Select Dental Chart'),
-				fields: [
-					{
-						fieldtype: 'HTML',
-						options: `<div style="background: #e3f2fd; padding: 15px; border-radius: 5px; margin-bottom: 15px;">
-							<h5 style="margin: 0 0 10px 0; color: #1565c0;">🦷 Dental Charts for ${frm.doc.patient_name}</h5>
-							<p style="margin: 0; color: #424242;">Select a chart to view or create a new one.</p>
-						</div>`
-					},
-					{
-						fieldtype: 'Select',
-						fieldname: 'selected_chart',
-						label: __('Existing Charts'),
-						options: charts.map(chart => chart.name).join('\n'),
-						description: __('Choose an existing chart to view')
-					},
-					{
-						fieldtype: 'Button',
-						fieldname: 'create_new',
-						label: __('Create New Chart'),
-						description: __('Create a new dental chart')
-					}
-				],
-				primary_action_label: __('Open Chart'),
-				primary_action: function(values) {
-					if (values.selected_chart) {
-						frappe.set_route('Form', 'Dental Chart', values.selected_chart);
-					}
-					d.hide();
-				},
-				secondary_action_label: __('Cancel'),
-				secondary_action: function() {
-					d.hide();
-				}
-			});
-			
-			// Handle create new button
-			d.fields_dict.create_new.$wrapper.on('click', function() {
-				d.hide();
-				frm.create_master_dental_chart();
-			});
-			
-			d.show();
 		};
 		
 		frm.create_master_dental_chart = function() {
@@ -217,19 +170,19 @@ frappe.ui.form.on('Dental Patient', {
 						fieldname: 'chief_complaint',
 						label: __('Chief Complaint'),
 						default: frm.doc.chief_complaint || '',
-						description: __('Patient\'s main complaint')
+						description: __('Patient\'s main complaint (auto-filled from patient record)')
 					}
 				],
 				primary_action_label: __('Create Chart'),
 				primary_action: function(values) {
-					// Create the dental chart
+					// Create the dental chart with chief complaint from patient record
 					frappe.new_doc('Dental Chart', {
 						patient: frm.doc.healthcare_patient,
 						patient_name: frm.doc.patient_name,
 						chart_type: values.chart_type,
 						dentition_type: values.dentition_type,
 						dentist: values.dentist,
-						chief_complaint: values.chief_complaint,
+						chief_complaint: values.chief_complaint || frm.doc.chief_complaint || '',
 						status: 'Active',
 						chart_date: frappe.datetime.nowdate()
 					});

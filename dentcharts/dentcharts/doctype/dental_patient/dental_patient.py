@@ -12,6 +12,7 @@ class DentalPatient(Document):
 		self.set_patient_name()
 		self.validate_date_of_registration()
 		self.validate_source()
+		self.update_dental_chart_chief_complaint()
 	
 	def validate_healthcare_patient(self):
 		# If linking to existing Patient, verify it; otherwise ensure required data for new Patient
@@ -40,6 +41,19 @@ class DentalPatient(Document):
 		"""Validate source field is not empty if provided"""
 		if self.source and len(self.source.strip()) == 0:
 			frappe.throw("Source cannot be empty if provided")
+	
+	def update_dental_chart_chief_complaint(self):
+		"""Update the dental chart's chief complaint when patient's chief complaint changes"""
+		if self.healthcare_patient and self.chief_complaint:
+			# Find the master dental chart for this patient
+			master_chart = frappe.db.exists("Dental Chart", {
+				"patient": self.healthcare_patient,
+				"chart_type": "Master Chart"
+			})
+			
+			if master_chart:
+				# Update the chief complaint in the dental chart
+				frappe.db.set_value("Dental Chart", master_chart, "chief_complaint", self.chief_complaint)
 	
 	def set_patient_name(self):
 		if self.healthcare_patient:
@@ -73,7 +87,7 @@ class DentalPatient(Document):
 				"notes": f"Master Dental Chart created for {self.patient_name}\nCreated on: {frappe.utils.now()}\n--- Patient Registration ---"
 			}
 			
-			# Add chief complaint to the chart if available
+			# Add chief complaint from patient record to the chart
 			if self.chief_complaint:
 				chart_data["chief_complaint"] = self.chief_complaint
 			
