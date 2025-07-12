@@ -12,6 +12,7 @@
   "patient_section",
   "patient",
   "patient_name",
+  "dental_patient",
   "chart_date",
   "dentist",
   "dentist_name",
@@ -78,6 +79,13 @@
    "fieldtype": "Data",
    "label": "Patient Name",
    "read_only": 1
+  },
+  {
+   "fieldname": "dental_patient",
+   "fieldtype": "Link",
+   "label": "Dental Patient",
+   "options": "Dental Patient",
+   "description": "Auto-linked to dental patient record"
   },
   {
    "default": "Today",
@@ -154,9 +162,12 @@
    "label": "Chart Details"
   },
   {
+   "fetch_from": "dental_patient.chief_complaint",
+   "fetch_if_empty": 1,
    "fieldname": "chief_complaint",
    "fieldtype": "Small Text",
-   "label": "Chief Complaint"
+   "label": "Chief Complaint",
+   "description": "Auto-fetched from dental patient record"
   },
   {
    "fieldname": "medical_history",

@@ -95,10 +95,8 @@ frappe.ui.form.on('Dental Patient', {
 	},
 	
 	chief_complaint: function(frm) {
-		// Auto-save chief complaint to linked dental chart if available
-		if (frm.doc.chief_complaint && frm.doc.healthcare_patient) {
-			// This will be handled server-side when the chart is created
-		}
+		// Chief complaint is now automatically synced via field linking
+		// No additional action needed - Frappe handles the sync automatically
 	}
 });
 
