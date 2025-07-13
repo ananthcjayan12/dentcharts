@@ -10,7 +10,6 @@ class DentalPatient(Document):
 		self.validate_healthcare_patient()
 		self.validate_emergency_contact()
 		self.set_patient_name()
-		self.validate_date_of_registration()
 		self.validate_source()
 	
 	def validate_healthcare_patient(self):
