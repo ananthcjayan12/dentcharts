@@ -1,0 +1,307 @@
+{% extends "templates/web.html" %}
+
+{% block page_content %}
+<div class="patient-dashboard-container">
+    <!-- Header Section -->
+    <div class="dashboard-header">
+        <h1 class="dashboard-title">Patient Dashboard</h1>
+        <div class="dashboard-actions">
+            <button class="btn btn-primary" onclick="createNewPatient()">
+                <i class="fa fa-plus"></i> New Patient
+            </button>
+            <button class="btn btn-secondary" onclick="refreshDashboard()">
+                <i class="fa fa-refresh"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Dashboard Stats Cards -->
+    <div class="dashboard-stats">
+        <div class="stat-card" id="patients-card">
+            <div class="stat-icon">
+                <i class="fa fa-users"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Patients</h3>
+                <div class="stat-number" id="total-patients">-</div>
+                <div class="stat-description">Total registered patients</div>
+            </div>
+        </div>
+
+        <div class="stat-card" id="appointments-card">
+            <div class="stat-icon">
+                <i class="fa fa-calendar"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Appointments</h3>
+                <div class="stat-number" id="today-appointments">-</div>
+                <div class="stat-description">Today's appointments</div>
+            </div>
+        </div>
+
+        <div class="stat-card" id="accounts-card">
+            <div class="stat-icon">
+                <i class="fa fa-dollar"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Outstanding</h3>
+                <div class="stat-number" id="total-outstanding">-</div>
+                <div class="stat-description">Total outstanding amount</div>
+            </div>
+        </div>
+
+        <div class="stat-card" id="activity-card">
+            <div class="stat-icon">
+                <i class="fa fa-chart-line"></i>
+            </div>
+            <div class="stat-content">
+                <h3>Activity</h3>
+                <div class="stat-number" id="recent-activity">-</div>
+                <div class="stat-description">Recent activities</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Patient Search and List Section -->
+    <div class="patient-section">
+        <div class="section-header">
+            <h2>Patient Management</h2>
+            <div class="search-container">
+                <input type="text" id="patient-search" placeholder="Search patients by name, ID, or phone..." class="form-control">
+                <button class="btn btn-primary" onclick="searchPatients()">
+                    <i class="fa fa-search"></i>
+                </button>
+            </div>
+        </div>
+
+        <div class="patient-list-container">
+            <div class="patient-list" id="patient-list">
+                <!-- Patient list will be loaded here -->
+                <div class="loading">Loading patients...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Individual Patient Dashboard (Hidden by default) -->
+    <div class="individual-patient-dashboard" id="individual-patient-dashboard" style="display: none;">
+        <!-- Patient Header -->
+        <div class="patient-header">
+            <div class="patient-info">
+                <h2 id="patient-name">Patient Name</h2>
+                <div class="patient-details">
+                    <span id="patient-age">Age: -</span> |
+                    <span id="patient-sex">Sex: -</span> |
+                    <span id="patient-id">ID: -</span> |
+                    <span id="patient-date">Date: -</span>
+                </div>
+            </div>
+            <div class="patient-actions">
+                <button class="btn btn-primary" onclick="recordVisit()">
+                    <i class="fa fa-plus"></i> Record Visit
+                </button>
+                <button class="btn btn-secondary" onclick="editPatient()">
+                    <i class="fa fa-edit"></i> Edit Patient
+                </button>
+                <button class="btn btn-default" onclick="backToDashboard()">
+                    <i class="fa fa-arrow-left"></i> Back to Dashboard
+                </button>
+            </div>
+        </div>
+
+        <!-- Patient Content Tabs -->
+        <div class="patient-content">
+            <div class="tab-navigation">
+                <button class="tab-btn active" onclick="showTab('overview')">Overview</button>
+                <button class="tab-btn" onclick="showTab('chart')">Dental Chart</button>
+                <button class="tab-btn" onclick="showTab('payments')">Payments</button>
+                <button class="tab-btn" onclick="showTab('summary')">Summary</button>
+            </div>
+
+            <!-- Overview Tab -->
+            <div class="tab-content active" id="overview-tab">
+                <div class="overview-grid">
+                    <!-- Medical History -->
+                    <div class="overview-section">
+                        <h3>Medical History</h3>
+                        <div class="section-content" id="medical-history">
+                            <div class="loading">Loading medical history...</div>
+                        </div>
+                    </div>
+
+                    <!-- Dental History -->
+                    <div class="overview-section">
+                        <h3>Dental History</h3>
+                        <div class="section-content" id="dental-history">
+                            <div class="loading">Loading dental history...</div>
+                        </div>
+                    </div>
+
+                    <!-- Recent Appointments -->
+                    <div class="overview-section">
+                        <h3>Recent Appointments</h3>
+                        <div class="section-content" id="recent-appointments">
+                            <div class="loading">Loading appointments...</div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="overview-section">
+                        <h3>Quick Actions</h3>
+                        <div class="section-content">
+                            <button class="btn btn-primary btn-block" onclick="openAppointmentForm()">
+                                <i class="fa fa-calendar-plus"></i> New Appointment
+                            </button>
+                            <button class="btn btn-success btn-block" onclick="openPaymentForm()">
+                                <i class="fa fa-credit-card"></i> Record Payment
+                            </button>
+                            <button class="btn btn-info btn-block" onclick="openChartForm()">
+                                <i class="fa fa-tooth"></i> Update Chart
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dental Chart Tab -->
+            <div class="tab-content" id="chart-tab">
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3>Dental Chart</h3>
+                        <div class="chart-actions">
+                            <button class="btn btn-primary" onclick="saveChart()">
+                                <i class="fa fa-save"></i> Save Chart
+                            </button>
+                            <button class="btn btn-secondary" onclick="resetChart()">
+                                <i class="fa fa-undo"></i> Reset
+                            </button>
+                        </div>
+                    </div>
+                    <div class="chart-content" id="dental-chart-container">
+                        <!-- Existing dental chart will be embedded here -->
+                        <div class="loading">Loading dental chart...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Payments Tab -->
+            <div class="tab-content" id="payments-tab">
+                <div class="payments-container">
+                    <div class="payments-header">
+                        <h3>Payment History</h3>
+                        <div class="payment-summary">
+                            <div class="payment-stat">
+                                <span class="label">Total Paid:</span>
+                                <span class="value" id="total-paid">$0.00</span>
+                            </div>
+                            <div class="payment-stat">
+                                <span class="label">Outstanding:</span>
+                                <span class="value" id="total-outstanding-patient">$0.00</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="payments-content" id="payments-content">
+                        <div class="loading">Loading payment history...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Summary Tab -->
+            <div class="tab-content" id="summary-tab">
+                <div class="summary-container">
+                    <div class="summary-header">
+                        <h3>Patient Summary</h3>
+                        <div class="summary-actions">
+                            <button class="btn btn-primary" onclick="printSummary()">
+                                <i class="fa fa-print"></i> Print Summary
+                            </button>
+                            <button class="btn btn-secondary" onclick="exportSummary()">
+                                <i class="fa fa-download"></i> Export
+                            </button>
+                        </div>
+                    </div>
+                    <div class="summary-content" id="summary-content">
+                        <div class="loading">Loading patient summary...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loading-overlay" style="display: none;">
+        <div class="loading-spinner">
+            <i class="fa fa-spinner fa-spin"></i>
+            <div class="loading-text">Loading...</div>
+        </div>
+    </div>
+</div>
+
+<!-- Visit Recording Modal -->
+<div class="modal" id="visit-modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Record Visit</h3>
+            <button class="modal-close" onclick="closeVisitModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <form id="visit-form">
+                <div class="form-group">
+                    <label for="chief-complaint">Chief Complaint</label>
+                    <textarea id="chief-complaint" class="form-control" rows="3" placeholder="Patient's main complaint..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="visit-notes">Notes</label>
+                    <textarea id="visit-notes" class="form-control" rows="5" placeholder="Doctor's notes and findings..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label for="visit-type">Visit Type</label>
+                    <select id="visit-type" class="form-control">
+                        <option value="Regular">Regular Checkup</option>
+                        <option value="Emergency">Emergency</option>
+                        <option value="Follow-up">Follow-up</option>
+                        <option value="Treatment">Treatment</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="prescription">Prescription (Optional)</label>
+                    <input type="file" id="prescription" class="form-control" accept=".pdf,.doc,.docx,image/*">
+                </div>
+            </form>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeVisitModal()">Cancel</button>
+            <button class="btn btn-primary" onclick="saveVisit()">Save Visit</button>
+        </div>
+    </div>
+</div>
+
+<!-- Error Modal -->
+<div class="modal" id="error-modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Error</h3>
+            <button class="modal-close" onclick="closeErrorModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div id="error-message">An error occurred.</div>
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-primary" onclick="closeErrorModal()">OK</button>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block style %}
+<link rel="stylesheet" href="/assets/dentcharts/css/patient_dashboard.css">
+{% endblock %}
+
+{% block script %}
+<script src="/assets/dentcharts/js/patient_dashboard.js"></script>
+<script>
+    // Initialize dashboard when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+        PatientDashboard.init();
+    });
+</script>
+{% endblock %} 

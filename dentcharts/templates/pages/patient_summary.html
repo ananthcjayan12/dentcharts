@@ -1,0 +1,238 @@
+<!-- Patient Summary Component -->
+<div class="patient-summary-component" id="patient-summary-component">
+    <!-- Summary Header -->
+    <div class="summary-header">
+        <div class="summary-title">
+            <h3>Patient Summary</h3>
+            <span class="summary-subtitle">Chronological medical record</span>
+        </div>
+        <div class="summary-actions">
+            <button class="btn btn-sm btn-primary" onclick="printSummary()">
+                <i class="fa fa-print"></i> Print
+            </button>
+            <button class="btn btn-sm btn-secondary" onclick="exportSummary()">
+                <i class="fa fa-download"></i> Export
+            </button>
+        </div>
+    </div>
+
+    <!-- Summary Content -->
+    <div class="summary-content" id="summary-content">
+        <div class="loading">Loading patient summary...</div>
+    </div>
+
+    <!-- Summary Template for Date Entries -->
+    <template id="summary-date-template">
+        <div class="summary-date-entry">
+            <div class="date-header">
+                <div class="date-info">
+                    <span class="date-icon">📅</span>
+                    <span class="date-text"></span>
+                    <span class="doctor-name"></span>
+                </div>
+                <div class="date-actions">
+                    <button class="btn btn-sm btn-outline" onclick="editDateEntry(this)">
+                        <i class="fa fa-edit"></i>
+                    </button>
+                </div>
+            </div>
+            <div class="date-content">
+                <!-- Chief Complaint -->
+                <div class="summary-section complaint-section" style="display: none;">
+                    <div class="section-icon">🏥</div>
+                    <div class="section-content">
+                        <div class="section-title">Chief Complaint</div>
+                        <div class="section-text complaint-text"></div>
+                    </div>
+                </div>
+
+                <!-- Notes -->
+                <div class="summary-section notes-section" style="display: none;">
+                    <div class="section-icon">📝</div>
+                    <div class="section-content">
+                        <div class="section-title">Notes</div>
+                        <div class="section-text notes-text"></div>
+                    </div>
+                </div>
+
+                <!-- Findings -->
+                <div class="summary-section findings-section" style="display: none;">
+                    <div class="section-icon">🔍</div>
+                    <div class="section-content">
+                        <div class="section-title">Findings</div>
+                        <div class="section-list findings-list"></div>
+                    </div>
+                </div>
+
+                <!-- Procedures -->
+                <div class="summary-section procedures-section" style="display: none;">
+                    <div class="section-icon">🦷</div>
+                    <div class="section-content">
+                        <div class="section-title">Procedures</div>
+                        <div class="section-list procedures-list"></div>
+                    </div>
+                </div>
+
+                <!-- Conditions -->
+                <div class="summary-section conditions-section" style="display: none;">
+                    <div class="section-icon">⚠️</div>
+                    <div class="section-content">
+                        <div class="section-title">Conditions</div>
+                        <div class="section-list conditions-list"></div>
+                    </div>
+                </div>
+
+                <!-- Payments -->
+                <div class="summary-section payments-section" style="display: none;">
+                    <div class="section-icon">💰</div>
+                    <div class="section-content">
+                        <div class="section-title">Payments</div>
+                        <div class="section-list payments-list"></div>
+                    </div>
+                </div>
+
+                <!-- Manual Notes -->
+                <div class="summary-section manual-notes-section" style="display: none;">
+                    <div class="section-icon">✏️</div>
+                    <div class="section-content">
+                        <div class="section-title">Manual Notes</div>
+                        <div class="section-text manual-notes-text"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <!-- Summary Item Templates -->
+    <template id="summary-item-template">
+        <div class="summary-item">
+            <div class="item-content"></div>
+            <div class="item-status"></div>
+        </div>
+    </template>
+
+    <!-- Procedure Item Template -->
+    <template id="procedure-item-template">
+        <div class="summary-item procedure-item">
+            <div class="item-content">
+                <span class="tooth-number"></span>
+                <span class="procedure-name"></span>
+                <span class="procedure-status"></span>
+                <span class="procedure-cost"></span>
+            </div>
+            <div class="item-status">
+                <span class="status-badge"></span>
+            </div>
+        </div>
+    </template>
+
+    <!-- Condition Item Template -->
+    <template id="condition-item-template">
+        <div class="summary-item condition-item">
+            <div class="item-content">
+                <span class="tooth-number"></span>
+                <span class="condition-name"></span>
+                <span class="condition-severity"></span>
+            </div>
+            <div class="item-status">
+                <span class="severity-badge"></span>
+            </div>
+        </div>
+    </template>
+
+    <!-- Payment Item Template -->
+    <template id="payment-item-template">
+        <div class="summary-item payment-item">
+            <div class="item-content">
+                <span class="payment-amount"></span>
+                <span class="payment-method"></span>
+                <span class="payment-reference"></span>
+            </div>
+            <div class="item-status">
+                <span class="payment-status">Paid</span>
+            </div>
+        </div>
+    </template>
+
+    <!-- Empty State -->
+    <div class="summary-empty-state" id="summary-empty-state" style="display: none;">
+        <div class="empty-icon">📋</div>
+        <div class="empty-title">No Summary Data</div>
+        <div class="empty-description">
+            This patient doesn't have any recorded visits or activities yet.
+            <br>Start by recording a visit or updating the dental chart.
+        </div>
+        <div class="empty-actions">
+            <button class="btn btn-primary" onclick="recordVisit()">
+                <i class="fa fa-plus"></i> Record First Visit
+            </button>
+            <button class="btn btn-secondary" onclick="openChartForm()">
+                <i class="fa fa-tooth"></i> Update Chart
+            </button>
+        </div>
+    </div>
+
+    <!-- Loading State -->
+    <div class="summary-loading-state" id="summary-loading-state">
+        <div class="loading-spinner">
+            <i class="fa fa-spinner fa-spin"></i>
+        </div>
+        <div class="loading-text">Loading patient summary...</div>
+    </div>
+
+    <!-- Error State -->
+    <div class="summary-error-state" id="summary-error-state" style="display: none;">
+        <div class="error-icon">⚠️</div>
+        <div class="error-title">Error Loading Summary</div>
+        <div class="error-description" id="summary-error-message">
+            There was an error loading the patient summary.
+        </div>
+        <div class="error-actions">
+            <button class="btn btn-primary" onclick="retryLoadSummary()">
+                <i class="fa fa-refresh"></i> Retry
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- Summary Print Styles (Hidden by default) -->
+<style id="summary-print-styles" media="print">
+    @media print {
+        .patient-summary-component {
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            line-height: 1.4;
+        }
+        
+        .summary-date-entry {
+            page-break-inside: avoid;
+            margin-bottom: 20px;
+            border: 1px solid #000;
+            padding: 10px;
+        }
+        
+        .date-header {
+            border-bottom: 1px solid #000;
+            margin-bottom: 10px;
+            padding-bottom: 5px;
+        }
+        
+        .summary-section {
+            margin-bottom: 10px;
+        }
+        
+        .section-title {
+            font-weight: bold;
+            text-decoration: underline;
+        }
+        
+        .summary-item {
+            margin-left: 20px;
+            margin-bottom: 5px;
+        }
+        
+        .btn, .summary-actions, .date-actions {
+            display: none !important;
+        }
+    }
+</style> 
