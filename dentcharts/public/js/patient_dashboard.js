@@ -20,28 +20,36 @@ const PatientDashboard = {
             frappe.call({
                 method: 'dentcharts.templates.pages.patient_dashboard.get_dashboard_data',
                 callback: (response) => {
-                    console.log('API Response:', response);
-                    if (response.message && response.message.success) {
-                        console.log('Successfully loaded real data:', response.message.data);
-                        this.updateDashboardCards(response.message.data);
-                        this.loadPatientList();
-                        this.loadRecentActivity(response.message.data.recent_activity);
-                    } else {
-                        console.warn('API returned unsuccessful response, using sample data');
+                    console.log('Full API Response:', response);
+                    
+                    // Check if we have a proper response
+                    if (response && response.message) {
                         console.log('Response message:', response.message);
+                        
+                        // Check if it's a successful response with data
+                        if (response.message.success && response.message.data) {
+                            console.log('Successfully loaded real data:', response.message.data);
+                            this.updateDashboardCards(response.message.data);
+                            this.loadPatientList();
+                            this.loadRecentActivity(response.message.data.recent_activity);
+                        } else {
+                            console.warn('API returned unsuccessful response or no data:', response.message);
+                            this.loadSampleData();
+                        }
+                    } else {
+                        console.warn('Invalid API response structure:', response);
                         this.loadSampleData();
                     }
                     this.hideLoading();
                 },
                 error: (error) => {
-                    console.error('API call failed, using sample data:', error);
+                    console.error('API call failed:', error);
                     this.loadSampleData();
                     this.hideLoading();
                 }
             });
         } else {
             console.warn('Frappe not available, using sample data');
-            // Load sample data if frappe is not available
             this.loadSampleData();
         }
     },

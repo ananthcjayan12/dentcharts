@@ -47,48 +47,49 @@ def get_patient_stats():
     Get patient statistics - reuses existing dental_patient queries
     """
     try:
-        # Total patients
-        total_patients = frappe.db.count("Dental Patient") or 0
+        # Add debugging
+        frappe.log_error("Getting patient stats", "Debug")
         
-        # Active patients (with appointments in last 30 days)
+        # Total patients count
+        total_patients = frappe.db.count("Dental Patient") or 0
+        frappe.log_error(f"Total patients found: {total_patients}", "Debug")
+        
+        # Active patients (those with recent appointments)
         active_patients = frappe.db.sql("""
             SELECT COUNT(DISTINCT patient) 
             FROM `tabDental Appointment` 
             WHERE appointment_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-            AND docstatus = 1
-        """)[0][0] or 0
+            AND docstatus != 2
+        """)
+        active_patients = active_patients[0][0] if active_patients and active_patients[0] else 0
         
         # New patients this month
         new_patients = frappe.db.sql("""
             SELECT COUNT(*) 
             FROM `tabDental Patient` 
             WHERE DATE(creation) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-        """)[0][0] or 0
+        """)
+        new_patients = new_patients[0][0] if new_patients and new_patients[0] else 0
         
-        # Patients with outstanding payments
-        patients_with_outstanding = frappe.db.sql("""
-            SELECT COUNT(DISTINCT si.customer) 
-            FROM `tabSales Invoice` si
-            WHERE si.docstatus = 1 
-            AND si.outstanding_amount > 0
-            AND si.customer IN (
-                SELECT name FROM `tabdental_patient`
-            )
-        """)[0][0] or 0
-        
-        return {
+        result = {
             "total": total_patients,
             "active": active_patients,
             "new_this_month": new_patients,
-            "with_outstanding": patients_with_outstanding
+            "title": "Patients",
+            "icon": "users"
         }
+        
+        frappe.log_error(f"Patient stats result: {result}", "Debug")
+        return result
+        
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Patient Stats Error")
+        frappe.log_error(f"Patient Stats Error: {frappe.get_traceback()}", "Patient Stats Error")
         return {
             "total": 0,
             "active": 0,
             "new_this_month": 0,
-            "with_outstanding": 0
+            "title": "Patients",
+            "icon": "users"
         }
 
 def get_patient_summary_by_date(patient_id):

@@ -15,46 +15,61 @@ def get_context(context):
 def get_dashboard_data():
     """API endpoint for dashboard data"""
     try:
+        # Add debugging
+        frappe.log_error("Dashboard API called", "Debug")
+        
         from dentcharts.patient_management.patient_summary import get_patient_stats
         
         # Get patient statistics
         patient_stats = get_patient_stats()
+        frappe.log_error(f"Patient stats: {patient_stats}", "Debug")
         
-        # Get appointment statistics
+        # Get appointment statistics - Fixed query with proper error handling
         appointment_stats = frappe.db.sql("""
             SELECT 
                 COUNT(CASE WHEN DATE(appointment_date) = CURDATE() THEN 1 END) as today,
                 COUNT(CASE WHEN appointment_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 1 END) as upcoming,
-                COUNT(CASE WHEN DATE(appointment_date) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND appointment_status = 'Completed' THEN 1 END) as completed_this_month
+                COUNT(CASE WHEN DATE(appointment_date) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND status = 'Completed' THEN 1 END) as completed_this_month
             FROM `tabDental Appointment`
-            WHERE docstatus = 1
-        """, as_dict=True)[0]
+            WHERE docstatus != 2
+        """, as_dict=True)
         
-        # Get payment statistics
+        appointment_stats = appointment_stats[0] if appointment_stats else {
+            "today": 0, "upcoming": 0, "completed_this_month": 0
+        }
+        frappe.log_error(f"Appointment stats: {appointment_stats}", "Debug")
+        
+        # Get payment statistics - Fixed query with proper error handling
         payment_stats = frappe.db.sql("""
             SELECT 
-                COALESCE(SUM(CASE WHEN si.docstatus = 1 AND si.outstanding_amount > 0 THEN si.outstanding_amount END), 0) as outstanding,
-                COALESCE(SUM(CASE WHEN dpe.docstatus = 1 AND DATE(dpe.posting_date) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN dpe.paid_amount END), 0) as received_this_month,
-                COUNT(CASE WHEN dpe.docstatus = 1 AND DATE(dpe.posting_date) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) THEN 1 END) as recent_payments
-            FROM `tabSales Invoice` si
-            LEFT JOIN `tabDental Payment Entry` dpe ON dpe.reference_no = si.name
-        """, as_dict=True)[0]
+                COALESCE(SUM(CASE WHEN docstatus = 1 AND DATE(posting_date) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN payment_amount END), 0) as received_this_month,
+                COUNT(CASE WHEN docstatus = 1 AND DATE(posting_date) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) THEN 1 END) as recent_payments,
+                COALESCE(SUM(CASE WHEN docstatus = 1 THEN payment_amount END), 0) as total_received
+            FROM `tabDental Payment Entry`
+        """, as_dict=True)
+        
+        payment_stats = payment_stats[0] if payment_stats else {
+            "received_this_month": 0, "recent_payments": 0, "total_received": 0
+        }
+        frappe.log_error(f"Payment stats: {payment_stats}", "Debug")
         
         # Get recent activity
         recent_activity = frappe.db.sql("""
             SELECT 
-                da.patient_name,
-                da.appointment_status,
-                da.practitioner,
-                da.appointment_date,
-                da.appointment_time
-            FROM `tabDental Appointment` da
-            WHERE da.docstatus = 1
-            ORDER BY da.appointment_date DESC, da.appointment_time DESC
+                patient,
+                status,
+                practitioner,
+                appointment_date,
+                appointment_time
+            FROM `tabDental Appointment`
+            WHERE docstatus != 2
+            ORDER BY creation DESC
             LIMIT 5
         """, as_dict=True)
         
-        return {
+        frappe.log_error(f"Recent activity: {recent_activity}", "Debug")
+        
+        result = {
             "success": True,
             "data": {
                 "patient_stats": patient_stats,
@@ -63,8 +78,12 @@ def get_dashboard_data():
                 "recent_activity": recent_activity
             }
         }
+        
+        frappe.log_error(f"Final result: {result}", "Debug")
+        return result
+        
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Dashboard Data Error")
+        frappe.log_error(f"Dashboard API Error: {frappe.get_traceback()}", "Dashboard Error")
         return {
             "success": False,
             "error": str(e)
@@ -94,7 +113,7 @@ def get_appointment_stats():
             SELECT COUNT(*) 
             FROM `tabDental Appointment` 
             WHERE DATE(appointment_date) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
-            AND appointment_status = 'Completed'
+            AND status = 'Completed'
             AND docstatus = 1
         """)[0][0] or 0
         
@@ -124,7 +143,7 @@ def get_payment_stats():
         
         # Payments received this month
         payments_this_month = frappe.db.sql("""
-            SELECT SUM(paid_amount) 
+            SELECT SUM(payment_amount) 
             FROM `tabDental Payment Entry` 
             WHERE DATE(posting_date) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
             AND docstatus = 1
@@ -156,10 +175,10 @@ def get_recent_activity():
     try:
         recent_activity = frappe.db.sql("""
             SELECT 
-                da.patient_name,
+                da.patient,
                 da.appointment_date,
                 da.appointment_time,
-                da.appointment_status,
+                da.status,
                 da.practitioner
             FROM `tabDental Appointment` da
             WHERE da.docstatus = 1
@@ -176,6 +195,8 @@ def get_recent_activity():
 def get_patient_list(search_term="", limit=20):
     """Get patient list with search"""
     try:
+        frappe.log_error(f"Getting patient list with search term: {search_term}", "Debug")
+        
         conditions = []
         values = []
         
@@ -193,13 +214,14 @@ def get_patient_list(search_term="", limit=20):
         if conditions:
             where_clause = "WHERE " + " AND ".join(conditions)
         
-        patients = frappe.db.sql(f"""
+        # Check if columns exist first
+        columns_query = f"""
             SELECT 
                 name,
                 patient_name,
-                mobile_number,
-                email,
-                sex,
+                COALESCE(mobile_number, '') as mobile_number,
+                COALESCE(email, '') as email,
+                COALESCE(sex, '') as sex,
                 date_of_birth,
                 creation,
                 modified
@@ -207,16 +229,22 @@ def get_patient_list(search_term="", limit=20):
             {where_clause}
             ORDER BY modified DESC
             LIMIT {limit}
-        """, values, as_dict=True)
+        """
+        
+        patients = frappe.db.sql(columns_query, values, as_dict=True)
+        frappe.log_error(f"Found {len(patients)} patients", "Debug")
         
         # Calculate age for each patient
         from frappe.utils import getdate
         for patient in patients:
             if patient.get('date_of_birth'):
-                today = getdate()
-                dob = getdate(patient.date_of_birth)
-                age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
-                patient['age'] = age
+                try:
+                    today = getdate()
+                    dob = getdate(patient.date_of_birth)
+                    age = today.year - dob.year - ((today.month, today.day) < (dob.month, dob.day))
+                    patient['age'] = age
+                except:
+                    patient['age'] = None
             else:
                 patient['age'] = None
         
@@ -225,7 +253,7 @@ def get_patient_list(search_term="", limit=20):
             "patients": patients
         }
     except Exception as e:
-        frappe.log_error(frappe.get_traceback(), "Patient List Error")
+        frappe.log_error(f"Patient List Error: {frappe.get_traceback()}", "Patient List Error")
         return {
             "success": False,
             "error": str(e),
