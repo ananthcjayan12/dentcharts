@@ -20,26 +20,22 @@ def get_dashboard_data():
         # Get patient statistics
         patient_stats = get_patient_stats()
         
-        # Get appointment data (sample for now)
-        appointment_data = {
-            "today": 12,
-            "upcoming": 8,
-            "completed_this_month": 45
-        }
+        # Get real appointment data
+        appointment_data = get_appointment_stats()
         
-        # Get payment data (sample for now)
-        payment_data = {
-            "outstanding": 5420,
-            "received_this_month": 12500,
-            "recent_payments": 8
-        }
+        # Get real payment data
+        payment_data = get_payment_stats()
+        
+        # Get recent activity
+        recent_activity = get_recent_activity()
         
         return {
             "success": True,
             "data": {
                 "patient_stats": patient_stats,
                 "appointment_stats": appointment_data,
-                "payment_stats": payment_data
+                "payment_stats": payment_data,
+                "recent_activity": recent_activity
             }
         }
     except Exception as e:
@@ -48,6 +44,108 @@ def get_dashboard_data():
             "success": False,
             "error": str(e)
         }
+
+def get_appointment_stats():
+    """Get real appointment statistics"""
+    try:
+        # Today's appointments
+        today_appointments = frappe.db.sql("""
+            SELECT COUNT(*) 
+            FROM `tabDental Appointment` 
+            WHERE DATE(appointment_date) = CURDATE()
+            AND docstatus = 1
+        """)[0][0] or 0
+        
+        # Upcoming appointments (next 7 days)
+        upcoming_appointments = frappe.db.sql("""
+            SELECT COUNT(*) 
+            FROM `tabDental Appointment` 
+            WHERE appointment_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY)
+            AND docstatus = 1
+        """)[0][0] or 0
+        
+        # Completed appointments this month
+        completed_appointments = frappe.db.sql("""
+            SELECT COUNT(*) 
+            FROM `tabDental Appointment` 
+            WHERE DATE(appointment_date) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            AND appointment_status = 'Completed'
+            AND docstatus = 1
+        """)[0][0] or 0
+        
+        return {
+            "today": today_appointments,
+            "upcoming": upcoming_appointments,
+            "completed_this_month": completed_appointments
+        }
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Appointment Stats Error")
+        return {
+            "today": 0,
+            "upcoming": 0,
+            "completed_this_month": 0
+        }
+
+def get_payment_stats():
+    """Get real payment statistics"""
+    try:
+        # Total outstanding balance
+        outstanding_balance = frappe.db.sql("""
+            SELECT SUM(outstanding_amount) 
+            FROM `tabSales Invoice` 
+            WHERE docstatus = 1 
+            AND outstanding_amount > 0
+        """)[0][0] or 0
+        
+        # Payments received this month
+        payments_this_month = frappe.db.sql("""
+            SELECT SUM(paid_amount) 
+            FROM `tabDental Payment Entry` 
+            WHERE DATE(posting_date) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
+            AND docstatus = 1
+        """)[0][0] or 0
+        
+        # Recent payments count
+        recent_payments = frappe.db.sql("""
+            SELECT COUNT(*) 
+            FROM `tabDental Payment Entry` 
+            WHERE DATE(posting_date) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY)
+            AND docstatus = 1
+        """)[0][0] or 0
+        
+        return {
+            "outstanding": outstanding_balance,
+            "received_this_month": payments_this_month,
+            "recent_payments": recent_payments
+        }
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Payment Stats Error")
+        return {
+            "outstanding": 0,
+            "received_this_month": 0,
+            "recent_payments": 0
+        }
+
+def get_recent_activity():
+    """Get recent activity from appointments"""
+    try:
+        recent_activity = frappe.db.sql("""
+            SELECT 
+                da.patient_name,
+                da.appointment_date,
+                da.appointment_time,
+                da.appointment_status,
+                da.practitioner
+            FROM `tabDental Appointment` da
+            WHERE da.docstatus = 1
+            ORDER BY da.appointment_date DESC, da.appointment_time DESC
+            LIMIT 10
+        """, as_dict=True)
+        
+        return recent_activity
+    except Exception as e:
+        frappe.log_error(frappe.get_traceback(), "Recent Activity Error")
+        return []
 
 @frappe.whitelist()
 def get_patient_list(search_term="", limit=20):
@@ -80,7 +178,7 @@ def get_patient_list(search_term="", limit=20):
                 date_of_birth,
                 creation,
                 modified
-            FROM `tabdental_patient`
+            FROM `tabDental Patient`
             {where_clause}
             ORDER BY modified DESC
             LIMIT {limit}

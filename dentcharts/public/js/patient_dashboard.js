@@ -16,26 +16,31 @@ const PatientDashboard = {
         
         // Use frappe.call to get dashboard data
         if (typeof frappe !== 'undefined') {
+            console.log('Frappe is available, calling API...');
             frappe.call({
-                method: 'dentcharts.patient_management.patient_dashboard.get_dashboard_data',
+                method: 'dentcharts.templates.pages.patient_dashboard.get_dashboard_data',
                 callback: (response) => {
+                    console.log('API Response:', response);
                     if (response.message && response.message.success) {
+                        console.log('Successfully loaded real data:', response.message.data);
                         this.updateDashboardCards(response.message.data);
                         this.loadPatientList();
                         this.loadRecentActivity(response.message.data.recent_activity);
                     } else {
-                        console.error('Failed to load dashboard data:', response.message);
+                        console.warn('API returned unsuccessful response, using sample data');
+                        console.log('Response message:', response.message);
                         this.loadSampleData();
                     }
                     this.hideLoading();
                 },
                 error: (error) => {
-                    console.error('Error loading dashboard data:', error);
+                    console.error('API call failed, using sample data:', error);
                     this.loadSampleData();
                     this.hideLoading();
                 }
             });
         } else {
+            console.warn('Frappe not available, using sample data');
             // Load sample data if frappe is not available
             this.loadSampleData();
         }
@@ -109,26 +114,30 @@ const PatientDashboard = {
     // Load patient list
     loadPatientList: function(searchTerm = '') {
         if (typeof frappe !== 'undefined') {
+            console.log('Loading patient list with search term:', searchTerm);
             frappe.call({
-                method: 'dentcharts.patient_management.patient_dashboard.get_patient_list',
+                method: 'dentcharts.templates.pages.patient_dashboard.get_patient_list',
                 args: {
                     search_term: searchTerm,
                     limit: 20
                 },
                 callback: (response) => {
+                    console.log('Patient list response:', response);
                     if (response.message && response.message.success) {
+                        console.log('Successfully loaded patient list:', response.message.patients);
                         this.displayPatientList(response.message.patients);
                     } else {
-                        console.error('Failed to load patient list');
+                        console.warn('Failed to load patient list, using sample data');
                         this.loadSamplePatientList();
                     }
                 },
                 error: (error) => {
-                    console.error('Error loading patient list:', error);
+                    console.error('Error loading patient list, using sample data:', error);
                     this.loadSamplePatientList();
                 }
             });
         } else {
+            console.warn('Frappe not available for patient list, using sample data');
             this.loadSamplePatientList();
         }
     },
