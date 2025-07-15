@@ -20,21 +20,46 @@ def get_dashboard_data():
         # Get patient statistics
         patient_stats = get_patient_stats()
         
-        # Get real appointment data
-        appointment_data = get_appointment_stats()
+        # Get appointment statistics
+        appointment_stats = frappe.db.sql("""
+            SELECT 
+                COUNT(CASE WHEN DATE(appointment_date) = CURDATE() THEN 1 END) as today,
+                COUNT(CASE WHEN appointment_date BETWEEN CURDATE() AND DATE_ADD(CURDATE(), INTERVAL 7 DAY) THEN 1 END) as upcoming,
+                COUNT(CASE WHEN DATE(appointment_date) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) AND appointment_status = 'Completed' THEN 1 END) as completed_this_month
+            FROM `tabDental Appointment`
+            WHERE docstatus = 1
+        """, as_dict=True)[0]
         
-        # Get real payment data
-        payment_data = get_payment_stats()
+        # Get payment statistics
+        payment_stats = frappe.db.sql("""
+            SELECT 
+                COALESCE(SUM(CASE WHEN si.docstatus = 1 AND si.outstanding_amount > 0 THEN si.outstanding_amount END), 0) as outstanding,
+                COALESCE(SUM(CASE WHEN dpe.docstatus = 1 AND DATE(dpe.posting_date) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY) THEN dpe.paid_amount END), 0) as received_this_month,
+                COUNT(CASE WHEN dpe.docstatus = 1 AND DATE(dpe.posting_date) >= DATE_SUB(CURDATE(), INTERVAL 7 DAY) THEN 1 END) as recent_payments
+            FROM `tabSales Invoice` si
+            LEFT JOIN `tabDental Payment Entry` dpe ON dpe.reference_no = si.name
+        """, as_dict=True)[0]
         
         # Get recent activity
-        recent_activity = get_recent_activity()
+        recent_activity = frappe.db.sql("""
+            SELECT 
+                da.patient_name,
+                da.appointment_status,
+                da.practitioner,
+                da.appointment_date,
+                da.appointment_time
+            FROM `tabDental Appointment` da
+            WHERE da.docstatus = 1
+            ORDER BY da.appointment_date DESC, da.appointment_time DESC
+            LIMIT 5
+        """, as_dict=True)
         
         return {
             "success": True,
             "data": {
                 "patient_stats": patient_stats,
-                "appointment_stats": appointment_data,
-                "payment_stats": payment_data,
+                "appointment_stats": appointment_stats,
+                "payment_stats": payment_stats,
                 "recent_activity": recent_activity
             }
         }
