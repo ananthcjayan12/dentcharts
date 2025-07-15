@@ -1,0 +1,136 @@
+<!-- Reusable Patient Header Component -->
+<!-- Usage: {% include "components/patient_header.html" with patient=patient_data %} -->
+
+<div class="patient-header">
+    <div class="patient-header-content">
+        <div class="patient-info">
+            <div class="patient-name">
+                {{ patient.patient_name or 'Unknown Patient' }}
+            </div>
+            <div class="patient-details">
+                {% if patient.age %}
+                    <span class="patient-detail">Age: {{ patient.age }}</span>
+                {% endif %}
+                {% if patient.sex %}
+                    <span class="patient-detail">Sex: {{ patient.sex }}</span>
+                {% endif %}
+                {% if patient.name %}
+                    <span class="patient-detail">ID: {{ patient.name }}</span>
+                {% endif %}
+                {% if patient.last_visit_date %}
+                    <span class="patient-detail">Last Visit: {{ patient.last_visit_date }}</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="patient-contact">
+            {% if patient.mobile_number %}
+                <div class="contact-item">
+                    <i class="fas fa-phone"></i>
+                    <span>{{ patient.mobile_number }}</span>
+                </div>
+            {% endif %}
+            {% if patient.email %}
+                <div class="contact-item">
+                    <i class="fas fa-envelope"></i>
+                    <span>{{ patient.email }}</span>
+                </div>
+            {% endif %}
+        </div>
+        
+        {% if show_actions %}
+        <div class="patient-actions">
+            <button class="btn btn-primary" onclick="editPatient('{{ patient.name }}')">
+                <i class="fas fa-edit"></i>
+                Edit Patient
+            </button>
+            <button class="btn btn-secondary" onclick="recordVisit('{{ patient.name }}')">
+                <i class="fas fa-plus"></i>
+                Record Visit
+            </button>
+        </div>
+        {% endif %}
+    </div>
+</div>
+
+<style>
+.patient-header {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    border: 1px solid #e1e8ed;
+}
+
+.patient-header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 1rem;
+}
+
+.patient-info {
+    flex: 1;
+}
+
+.patient-name {
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #2c3e50;
+    margin-bottom: 0.5rem;
+}
+
+.patient-details {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+.patient-detail {
+    color: #7f8c8d;
+    font-size: 0.9rem;
+    padding: 0.25rem 0.75rem;
+    background: #f8f9fa;
+    border-radius: 20px;
+    border: 1px solid #e1e8ed;
+}
+
+.patient-contact {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.contact-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+.contact-item i {
+    color: #667eea;
+    width: 16px;
+}
+
+.patient-actions {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+@media (max-width: 768px) {
+    .patient-header-content {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .patient-actions {
+        width: 100%;
+        justify-content: center;
+    }
+}
+</style>

@@ -1,0 +1,44 @@
+<!-- Reusable Dashboard Card Component -->
+<!-- Usage: {% include "components/dashboard_card.html" with card_data=card_data %} -->
+
+<div class="dashboard-card {{ card_data.card_class or '' }}" id="{{ card_data.card_id or '' }}">
+    <div class="card-header">
+        <h3 class="card-title">
+            {% if card_data.icon %}
+                <i class="{{ card_data.icon }}"></i>
+            {% endif %}
+            {{ card_data.title }}
+        </h3>
+    </div>
+    
+    <div class="card-content">
+        <div class="main-stat">
+            <span class="stat-number" id="{{ card_data.main_stat_id or '' }}">
+                {{ card_data.main_stat_value or '--' }}
+            </span>
+            <span class="stat-label">{{ card_data.main_stat_label or '' }}</span>
+        </div>
+        
+        {% if card_data.sub_stats %}
+        <div class="sub-stats">
+            {% for sub_stat in card_data.sub_stats %}
+            <div class="sub-stat">
+                <span class="sub-stat-number" id="{{ sub_stat.id or '' }}">
+                    {{ sub_stat.value or '--' }}
+                </span>
+                <span class="sub-stat-label">{{ sub_stat.label or '' }}</span>
+            </div>
+            {% endfor %}
+        </div>
+        {% endif %}
+    </div>
+    
+    {% if card_data.action_button %}
+    <div class="card-footer">
+        <button class="card-action-btn" onclick="{{ card_data.action_button.onclick or '' }}">
+            {{ card_data.action_button.text or 'View More' }}
+            <i class="fas fa-arrow-right"></i>
+        </button>
+    </div>
+    {% endif %}
+</div>
