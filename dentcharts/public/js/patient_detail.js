@@ -3,6 +3,7 @@
 const PatientDetail = {
     currentPatientId: null,
     patientData: null,
+    billingSummary: null,
     
     // Initialize patient detail dashboard
     init: function(patientId) {
@@ -85,11 +86,42 @@ const PatientDetail = {
             console.log('Successfully loaded patient data:', responseData.data);
             this.patientData = responseData.data;
             this.renderPatientData();
+            this.loadBillingSummary(); // Load billing summary after patient data
         } else {
             console.error('API returned unsuccessful response:', responseData);
             this.showError('Failed to load patient data');
         }
         this.hideLoading();
+    },
+
+    // Load billing summary data
+    loadBillingSummary: function() {
+        fetch(`/api/method/dentcharts.templates.pages.patient_detail.get_patient_billing_summary?patient_id=${this.currentPatientId}`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.message && data.message.success) {
+                    this.billingSummary = data.message.data;
+                    this.renderBillingSummary();
+                }
+            })
+            .catch(error => {
+                console.error('Error loading billing summary:', error);
+            });
+    },
+
+    // Load enhanced notebook summary
+    loadNotebookSummary: function() {
+        fetch(`/api/method/dentcharts.templates.pages.patient_detail.get_patient_notebook_summary?patient_id=${this.patientId}&limit=15`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.message && data.message.success) {
+                    this.notebookData = data.message.data;
+                    this.renderEnhancedNotebook();
+                }
+            })
+            .catch(error => {
+                console.error('Error loading notebook summary:', error);
+            });
     },
 
     // Render all patient data
@@ -101,7 +133,7 @@ const PatientDetail = {
         this.renderRecentActivity();
         this.renderMedicalHistory();
         this.renderPaymentsTable();
-        this.renderNotebookSummary();
+        this.loadNotebookSummary(); // Use enhanced notebook instead of basic one
     },
 
     // Update patient header information
@@ -210,7 +242,7 @@ const PatientDetail = {
         }
     },
 
-    // Render payments table
+    // Render payments table with enhanced details
     renderPaymentsTable: function() {
         const tbody = document.getElementById('payments-table-body');
         if (!tbody) return;
@@ -221,7 +253,7 @@ const PatientDetail = {
         if (payments.length === 0) {
             tbody.innerHTML = `
                 <tr>
-                    <td colspan="6" style="text-align: center; padding: 2rem; color: #7f8c8d;">
+                    <td colspan="8" style="text-align: center; padding: 2rem; color: #7f8c8d;">
                         No payments recorded
                     </td>
                 </tr>
@@ -230,21 +262,49 @@ const PatientDetail = {
         }
         
         payments.forEach(payment => {
+            const statusBadge = this.getPaymentStatusBadge(payment.payment_status);
             const row = document.createElement('tr');
             row.innerHTML = `
                 <td>${this.formatDate(payment.posting_date)}</td>
-                <td>${this.formatCurrency(payment.payment_amount)}</td>
-                <td>${payment.payment_method || 'N/A'}</td>
-                <td>${payment.reference_number || 'N/A'}</td>
-                <td>${payment.notes || 'N/A'}</td>
+                <td class="payment-amount">${this.formatCurrency(payment.payment_amount)}</td>
                 <td>
-                    <button class="action-btn view-small" onclick="viewPayment('${payment.name}')">
+                    <span class="payment-method-badge method-${(payment.payment_method || '').toLowerCase().replace(' ', '-')}">
+                        ${payment.payment_method || 'N/A'}
+                    </span>
+                </td>
+                <td>${statusBadge}</td>
+                <td>${payment.reference_number || 'N/A'}</td>
+                <td>${payment.received_by || 'N/A'}</td>
+                <td class="payment-notes">${this.truncateText(payment.notes || 'N/A', 30)}</td>
+                <td>
+                    <button class="action-btn view-small" onclick="viewPayment('${payment.name}')" title="View Payment">
                         <i class="fas fa-eye"></i>
                     </button>
+                    ${payment.invoice ? `
+                        <button class="action-btn edit-small" onclick="viewInvoice('${payment.invoice}')" title="View Invoice">
+                            <i class="fas fa-file-invoice"></i>
+                        </button>
+                    ` : ''}
                 </td>
             `;
             tbody.appendChild(row);
         });
+        
+        // Load billing summary after payments are rendered
+        this.loadBillingSummary();
+    },
+
+    // Get payment status badge
+    getPaymentStatusBadge: function(status) {
+        const statusClass = (status || '').toLowerCase().replace(' ', '-');
+        const statusText = status || 'Unknown';
+        return `<span class="status-badge status-${statusClass}">${statusText}</span>`;
+    },
+
+    // Truncate text for display
+    truncateText: function(text, maxLength) {
+        if (!text || text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + '...';
     },
 
     // Render notebook-style summary
@@ -325,6 +385,308 @@ const PatientDetail = {
             
             notebookContent.appendChild(entryDiv);
         });
+    },
+
+    // Render enhanced notebook-style summary
+    renderEnhancedNotebook: function() {
+        const notebookContent = document.getElementById('notebook-content');
+        if (!notebookContent || !this.notebookData) return;
+        
+        const entries = this.notebookData.notebook_entries || [];
+        notebookContent.innerHTML = '';
+        
+        if (entries.length === 0) {
+            notebookContent.innerHTML = `
+                <div class="no-data-notebook">
+                    <i class="fas fa-book-open fa-3x"></i>
+                    <h3>No Visit Records</h3>
+                    <p>No visit records found for this patient.</p>
+                </div>
+            `;
+            return;
+        }
+        
+        entries.forEach((entry, index) => {
+            const entryDiv = document.createElement('div');
+            entryDiv.className = 'notebook-entry enhanced';
+            
+            // Visit status indicator
+            const statusIndicator = this.getVisitStatusIndicator(entry.status);
+            
+            // Quick stats
+            const quickStats = this.generateQuickStats(entry);
+            
+            entryDiv.innerHTML = `
+                <div class="entry-header enhanced">
+                    <div class="visit-date-section">
+                        <h3>
+                            <i class="fas fa-calendar-day"></i>
+                            ${this.formatDate(entry.date)}
+                            ${entry.time ? `at ${entry.time}` : ''}
+                        </h3>
+                        <div class="visit-metadata">
+                            ${entry.doctor ? `<span class="doctor-name"><i class="fas fa-user-md"></i> Dr. ${entry.doctor}</span>` : ''}
+                            ${statusIndicator}
+                            ${entry.appointment_type ? `<span class="appointment-type">${entry.appointment_type}</span>` : ''}
+                        </div>
+                    </div>
+                    ${quickStats}
+                </div>
+                
+                <div class="entry-content enhanced">
+                    <!-- Narrative Summary -->
+                    <div class="narrative-section">
+                        <div class="narrative-text">
+                            <i class="fas fa-quote-left"></i>
+                            <p>${entry.narrative_summary || 'Visit completed without specific notes.'}</p>
+                        </div>
+                    </div>
+                    
+                    <!-- Detailed Sections -->
+                    ${this.renderDetailedSections(entry)}
+                    
+                    <!-- Footer with additional info -->
+                    <div class="entry-footer enhanced">
+                        ${entry.estimated_cost ? `<span class="cost-info"><i class="fas fa-dollar-sign"></i> Estimated: $${entry.estimated_cost}</span>` : ''}
+                        ${entry.payment_status ? `<span class="payment-status">Payment: ${entry.payment_status}</span>` : ''}
+                        ${entry.special_instructions ? `<span class="special-note"><i class="fas fa-exclamation-circle"></i> Special Instructions</span>` : ''}
+                    </div>
+                </div>
+            `;
+            
+            notebookContent.appendChild(entryDiv);
+        });
+    },
+
+    // Generate quick stats for entry header
+    generateQuickStats: function(entry) {
+        const stats = [];
+        
+        if (entry.procedure_count > 0) {
+            stats.push(`<span class="quick-stat procedures"><i class="fas fa-tools"></i> ${entry.procedure_count} procedure${entry.procedure_count > 1 ? 's' : ''}</span>`);
+        }
+        
+        if (entry.finding_count > 0) {
+            stats.push(`<span class="quick-stat findings"><i class="fas fa-search"></i> ${entry.finding_count} finding${entry.finding_count > 1 ? 's' : ''}</span>`);
+        }
+        
+        if (entry.payment_total > 0) {
+            stats.push(`<span class="quick-stat payment"><i class="fas fa-credit-card"></i> $${entry.payment_total.toFixed(2)}</span>`);
+        }
+        
+        if (stats.length === 0) {
+            stats.push(`<span class="quick-stat consultation"><i class="fas fa-comments"></i> Consultation</span>`);
+        }
+        
+        return `<div class="quick-stats">${stats.join('')}</div>`;
+    },
+
+    // Get visit status indicator
+    getVisitStatusIndicator: function(status) {
+        const statusClass = (status || 'completed').toLowerCase().replace(' ', '-');
+        const statusIcon = {
+            'completed': 'fas fa-check-circle',
+            'scheduled': 'fas fa-clock',
+            'cancelled': 'fas fa-times-circle',
+            'no-show': 'fas fa-user-times'
+        }[statusClass] || 'fas fa-circle';
+        
+        return `<span class="status-indicator status-${statusClass}"><i class="${statusIcon}"></i> ${status || 'Completed'}</span>`;
+    },
+
+    // Render detailed sections for entry
+    renderDetailedSections: function(entry) {
+        let sections = [];
+        
+        // Chief complaint section
+        if (entry.chief_complaint) {
+            sections.push(`
+                <div class="detail-section complaint">
+                    <h4><i class="fas fa-user-injured"></i> Chief Complaint</h4>
+                    <p>${entry.chief_complaint}</p>
+                </div>
+            `);
+        }
+        
+        // Procedures section
+        if (entry.procedures && entry.procedures.length > 0) {
+            const proceduresList = entry.procedures.map(proc => `
+                <li class="procedure-item">
+                    <div class="procedure-header">
+                        <span class="tooth-number">Tooth ${proc.tooth_number || 'N/A'}</span>
+                        <span class="procedure-name">${proc.procedure_name}</span>
+                    </div>
+                    <div class="procedure-details">
+                        ${proc.status ? `<span class="procedure-status">${proc.status}</span>` : ''}
+                        ${proc.cost ? `<span class="procedure-cost">$${proc.cost}</span>` : ''}
+                    </div>
+                    ${proc.notes ? `<p class="procedure-notes">${proc.notes}</p>` : ''}
+                </li>
+            `).join('');
+            
+            sections.push(`
+                <div class="detail-section procedures">
+                    <h4><i class="fas fa-tools"></i> Procedures Performed</h4>
+                    <ul class="procedures-list">${proceduresList}</ul>
+                </div>
+            `);
+        }
+        
+        // Findings section
+        if (entry.findings && entry.findings.length > 0) {
+            const findingsList = entry.findings.map(finding => `
+                <li class="finding-item">
+                    <div class="finding-header">
+                        <span class="tooth-number">Tooth ${finding.tooth_number || 'N/A'}</span>
+                        <span class="finding-name">${finding.finding}</span>
+                    </div>
+                    <div class="finding-details">
+                        ${finding.severity ? `<span class="severity severity-${finding.severity.toLowerCase()}">${finding.severity}</span>` : ''}
+                        ${finding.status ? `<span class="finding-status">${finding.status}</span>` : ''}
+                    </div>
+                    ${finding.notes ? `<p class="finding-notes">${finding.notes}</p>` : ''}
+                </li>
+            `).join('');
+            
+            sections.push(`
+                <div class="detail-section findings">
+                    <h4><i class="fas fa-search"></i> Clinical Findings</h4>
+                    <ul class="findings-list">${findingsList}</ul>
+                </div>
+            `);
+        }
+        
+        // Treatment plan section
+        if (entry.treatment_plan) {
+            sections.push(`
+                <div class="detail-section treatment-plan">
+                    <h4><i class="fas fa-clipboard-list"></i> Treatment Plan</h4>
+                    <p>${entry.treatment_plan}</p>
+                </div>
+            `);
+        }
+        
+        // Notes sections
+        const noteSections = [];
+        if (entry.notes) {
+            noteSections.push(`<div class="note-item"><strong>Practitioner Notes:</strong> ${entry.notes}</div>`);
+        }
+        if (entry.patient_notes) {
+            noteSections.push(`<div class="note-item"><strong>Patient Notes:</strong> ${entry.patient_notes}</div>`);
+        }
+        if (entry.special_instructions) {
+            noteSections.push(`<div class="note-item special"><strong>Special Instructions:</strong> ${entry.special_instructions}</div>`);
+        }
+        
+        if (noteSections.length > 0) {
+            sections.push(`
+                <div class="detail-section notes">
+                    <h4><i class="fas fa-sticky-note"></i> Notes</h4>
+                    <div class="notes-container">${noteSections.join('')}</div>
+                </div>
+            `);
+        }
+        
+        // Payments section
+        if (entry.payments && entry.payments.length > 0) {
+            const paymentsList = entry.payments.map(payment => `
+                <li class="payment-item">
+                    <span class="payment-amount">$${payment.payment_amount.toFixed(2)}</span>
+                    <span class="payment-method">${payment.payment_method}</span>
+                    ${payment.reference_number ? `<span class="payment-ref">${payment.reference_number}</span>` : ''}
+                </li>
+            `).join('');
+            
+            sections.push(`
+                <div class="detail-section payments">
+                    <h4><i class="fas fa-credit-card"></i> Payments</h4>
+                    <ul class="payments-list">${paymentsList}</ul>
+                </div>
+            `);
+        }
+        
+        return sections.join('');
+    },
+
+    // Render billing summary
+    renderBillingSummary: function() {
+        if (!this.billingSummary) return;
+        
+        const summary = this.billingSummary.payment_summary;
+        
+        // Update payment statistics
+        const totalPaidEl = document.getElementById('total-paid-amount');
+        if (totalPaidEl) totalPaidEl.textContent = this.formatCurrency(summary.total_paid || 0);
+        
+        const totalPaymentsCountEl = document.getElementById('total-payments-count');
+        if (totalPaymentsCountEl) totalPaymentsCountEl.textContent = summary.total_payments || 0;
+        
+        const averagePaymentEl = document.getElementById('average-payment');
+        if (averagePaymentEl) averagePaymentEl.textContent = this.formatCurrency(summary.average_payment || 0);
+        
+        const lastPaymentDateEl = document.getElementById('last-payment-date');
+        if (lastPaymentDateEl && summary.last_payment_date) {
+            lastPaymentDateEl.textContent = this.formatDate(summary.last_payment_date);
+        }
+        
+        // Render payment method breakdown
+        this.renderPaymentMethodBreakdown(summary);
+        
+        // Render outstanding invoices
+        this.renderOutstandingInvoices();
+    },
+
+    // Render payment method breakdown
+    renderPaymentMethodBreakdown: function(summary) {
+        const methodsContainer = document.getElementById('payment-methods-breakdown');
+        if (!methodsContainer) return;
+        
+        const methods = [
+            { name: 'Cash', count: summary.cash_payments || 0, color: '#28a745' },
+            { name: 'Card', count: summary.card_payments || 0, color: '#007bff' },
+            { name: 'Bank Transfer', count: summary.bank_payments || 0, color: '#6f42c1' },
+            { name: 'Insurance', count: summary.insurance_payments || 0, color: '#fd7e14' }
+        ];
+        
+        methodsContainer.innerHTML = methods.map(method => `
+            <div class="payment-method-item">
+                <div class="method-indicator" style="background-color: ${method.color}"></div>
+                <span class="method-name">${method.name}</span>
+                <span class="method-count">${method.count}</span>
+            </div>
+        `).join('');
+    },
+
+    // Render outstanding invoices
+    renderOutstandingInvoices: function() {
+        const invoicesContainer = document.getElementById('outstanding-invoices');
+        if (!invoicesContainer) return;
+        
+        const invoices = this.billingSummary.outstanding_invoices || [];
+        
+        if (invoices.length === 0) {
+            invoicesContainer.innerHTML = '<p class="no-data">No outstanding invoices</p>';
+            return;
+        }
+        
+        invoicesContainer.innerHTML = invoices.map(invoice => `
+            <div class="invoice-item">
+                <div class="invoice-header">
+                    <span class="invoice-number">${invoice.name}</span>
+                    <span class="invoice-amount">${this.formatCurrency(invoice.outstanding_amount)}</span>
+                </div>
+                <div class="invoice-details">
+                    <span class="invoice-date">Due: ${this.formatDate(invoice.due_date)}</span>
+                    <span class="invoice-status status-${invoice.status.toLowerCase().replace(' ', '-')}">${invoice.status}</span>
+                </div>
+            </div>
+        `).join('');
+        
+        // Update total outstanding
+        const totalOutstandingEl = document.getElementById('total-outstanding');
+        if (totalOutstandingEl) {
+            totalOutstandingEl.textContent = this.formatCurrency(this.billingSummary.total_outstanding || 0);
+        }
     },
 
     // Tab switching functionality

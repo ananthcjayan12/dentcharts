@@ -45,15 +45,20 @@ def get_patient_detail_data(patient_id):
             LIMIT 10
         """, (patient_id,), as_dict=True)
         
-        # Get patient's payment history
+        # Get patient's payment history with enhanced details
         payments = frappe.db.sql("""
             SELECT 
                 name,
                 posting_date,
+                payment_date,
                 payment_amount,
                 payment_method,
+                payment_status,
                 reference_number,
-                notes
+                notes,
+                invoice,
+                received_by,
+                payment_account
             FROM `tabDental Payment Entry`
             WHERE patient = %s AND docstatus = 1
             ORDER BY posting_date DESC
@@ -201,3 +206,221 @@ def get_patient_activity_summary(patient_id, limit=5):
     except Exception as e:
         frappe.log_error(f"Activity Summary Error: {frappe.get_traceback()}", "Activity Summary Error")
         return []
+
+@frappe.whitelist()
+def get_patient_billing_summary(patient_id):
+    """Get comprehensive billing and payment summary for a patient"""
+    try:
+        # Get payment summary
+        payment_summary = frappe.db.sql("""
+            SELECT 
+                COUNT(*) as total_payments,
+                COALESCE(SUM(payment_amount), 0) as total_paid,
+                COALESCE(AVG(payment_amount), 0) as average_payment,
+                MAX(posting_date) as last_payment_date,
+                COUNT(CASE WHEN payment_method = 'Cash' THEN 1 END) as cash_payments,
+                COUNT(CASE WHEN payment_method = 'Card' THEN 1 END) as card_payments,
+                COUNT(CASE WHEN payment_method = 'Bank Transfer' THEN 1 END) as bank_payments,
+                COUNT(CASE WHEN payment_method = 'Insurance' THEN 1 END) as insurance_payments
+            FROM `tabDental Payment Entry`
+            WHERE patient = %s AND docstatus = 1
+        """, (patient_id,), as_dict=True)
+        
+        payment_summary = payment_summary[0] if payment_summary else {}
+        
+        # Get recent payment trends (last 6 months)
+        payment_trends = frappe.db.sql("""
+            SELECT 
+                DATE_FORMAT(posting_date, '%%Y-%%m') as month,
+                COUNT(*) as payment_count,
+                SUM(payment_amount) as monthly_total
+            FROM `tabDental Payment Entry`
+            WHERE patient = %s AND docstatus = 1
+            AND posting_date >= DATE_SUB(CURDATE(), INTERVAL 6 MONTH)
+            GROUP BY DATE_FORMAT(posting_date, '%%Y-%%m')
+            ORDER BY month DESC
+        """, (patient_id,), as_dict=True)
+        
+        # Get outstanding invoices (if invoice system exists)
+        outstanding_invoices = []
+        try:
+            outstanding_invoices = frappe.db.sql("""
+                SELECT 
+                    name,
+                    posting_date,
+                    grand_total,
+                    outstanding_amount,
+                    due_date,
+                    status
+                FROM `tabSales Invoice`
+                WHERE customer = %s AND docstatus = 1 
+                AND outstanding_amount > 0
+                ORDER BY due_date ASC
+            """, (patient_id,), as_dict=True)
+        except Exception:
+            # Invoice table might not exist or have different structure
+            pass
+        
+        result = {
+            "success": True,
+            "data": {
+                "payment_summary": payment_summary,
+                "payment_trends": payment_trends,
+                "outstanding_invoices": outstanding_invoices,
+                "total_outstanding": sum(inv.get('outstanding_amount', 0) for inv in outstanding_invoices)
+            }
+        }
+        
+        return result
+        
+    except Exception as e:
+        frappe.log_error(f"Billing Summary Error: {frappe.get_traceback()}", "Billing Summary Error")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+@frappe.whitelist()
+def get_patient_notebook_summary(patient_id, limit=10):
+    """Get comprehensive notebook-style summary for patient"""
+    try:
+        # Get detailed appointment history with all relevant information
+        notebook_entries = frappe.db.sql("""
+            SELECT 
+                appointment_date as date,
+                appointment_time as time,
+                practitioner as doctor,
+                chief_complaint,
+                practitioner_notes as notes,
+                patient_notes,
+                status,
+                appointment_type,
+                treatment_plan,
+                special_instructions,
+                estimated_cost,
+                payment_status,
+                cancellation_reason
+            FROM `tabDental Appointment`
+            WHERE patient = %s AND docstatus != 2
+            ORDER BY appointment_date DESC, appointment_time DESC
+            LIMIT %s
+        """, (patient_id, limit), as_dict=True)
+        
+        # Enhance each entry with related data
+        for entry in notebook_entries:
+            # Get procedures performed on this date
+            try:
+                procedures = frappe.db.sql("""
+                    SELECT 
+                        tooth_number,
+                        procedure_name,
+                        status,
+                        cost,
+                        notes
+                    FROM `tabTooth Procedure`
+                    WHERE patient = %s AND DATE(date_completed) = %s
+                    ORDER BY tooth_number
+                """, (patient_id, entry.date), as_dict=True)
+                entry['procedures'] = procedures
+            except Exception:
+                entry['procedures'] = []
+            
+            # Get findings/conditions recorded on this date
+            try:
+                findings = frappe.db.sql("""
+                    SELECT 
+                        tooth_number,
+                        condition_name as finding,
+                        severity,
+                        notes,
+                        status
+                    FROM `tabTooth Condition`
+                    WHERE patient = %s AND DATE(recorded_date) = %s
+                    ORDER BY tooth_number
+                """, (patient_id, entry.date), as_dict=True)
+                entry['findings'] = findings
+            except Exception:
+                entry['findings'] = []
+            
+            # Get payments made on this date
+            try:
+                payments = frappe.db.sql("""
+                    SELECT 
+                        payment_amount,
+                        payment_method,
+                        reference_number,
+                        notes
+                    FROM `tabDental Payment Entry`
+                    WHERE patient = %s AND posting_date = %s AND docstatus = 1
+                """, (patient_id, entry.date), as_dict=True)
+                entry['payments'] = payments
+            except Exception:
+                entry['payments'] = []
+            
+            # Calculate total procedures and findings for quick summary
+            entry['procedure_count'] = len(entry.get('procedures', []))
+            entry['finding_count'] = len(entry.get('findings', []))
+            entry['payment_total'] = sum(p.get('payment_amount', 0) for p in entry.get('payments', []))
+            
+            # Generate a narrative summary
+            entry['narrative_summary'] = generate_visit_narrative(entry)
+        
+        return {
+            "success": True,
+            "data": {
+                "notebook_entries": notebook_entries,
+                "total_entries": len(notebook_entries)
+            }
+        }
+        
+    except Exception as e:
+        frappe.log_error(f"Notebook Summary Error: {frappe.get_traceback()}", "Notebook Summary Error")
+        return {
+            "success": False,
+            "error": str(e)
+        }
+
+def generate_visit_narrative(entry):
+    """Generate a narrative summary for a visit entry"""
+    narrative_parts = []
+    
+    # Visit type and complaint
+    if entry.get('chief_complaint'):
+        narrative_parts.append(f"Patient presented with: {entry.chief_complaint}")
+    
+    # Procedures performed
+    if entry.get('procedures'):
+        procedure_list = []
+        for proc in entry['procedures']:
+            tooth_text = f"tooth {proc['tooth_number']}" if proc.get('tooth_number') else "multiple teeth"
+            procedure_list.append(f"{proc['procedure_name']} on {tooth_text}")
+        if procedure_list:
+            narrative_parts.append(f"Procedures performed: {', '.join(procedure_list)}")
+    
+    # Findings
+    if entry.get('findings'):
+        finding_list = []
+        for finding in entry['findings']:
+            tooth_text = f"tooth {finding['tooth_number']}" if finding.get('tooth_number') else "multiple teeth"
+            severity_text = f" ({finding['severity']})" if finding.get('severity') else ""
+            finding_list.append(f"{finding['finding']} on {tooth_text}{severity_text}")
+        if finding_list:
+            narrative_parts.append(f"Findings: {', '.join(finding_list)}")
+    
+    # Treatment plan
+    if entry.get('treatment_plan'):
+        narrative_parts.append(f"Treatment plan: {entry.treatment_plan}")
+    
+    # Payment information
+    if entry.get('payment_total') and entry['payment_total'] > 0:
+        payment_methods = [p['payment_method'] for p in entry.get('payments', []) if p.get('payment_method')]
+        payment_text = f"Payment received: ${entry['payment_total']:.2f}"
+        if payment_methods:
+            payment_text += f" ({', '.join(set(payment_methods))})"
+        narrative_parts.append(payment_text)
+    
+    # Notes
+    if entry.get('notes'):
+        narrative_parts.append(f"Notes: {entry.notes}")
+    
+    return ". ".join(narrative_parts) + "." if narrative_parts else "Visit completed."

@@ -204,20 +204,84 @@
         <div id="payments-tab" class="tab-content">
             <div class="payments-section">
                 <div class="payments-header">
-                    <h3><i class="fas fa-money-bill-wave"></i> Payment History</h3>
+                    <h3><i class="fas fa-money-bill-wave"></i> Payment History & Billing</h3>
                     <button class="btn-primary" onclick="recordPayment('{{ patient.name }}')">
                         <i class="fas fa-plus"></i> Record Payment
                     </button>
                 </div>
+                
+                <!-- Payment Summary Cards -->
+                <div class="payment-summary-cards">
+                    <div class="summary-card">
+                        <div class="card-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="card-content">
+                            <h4 id="total-paid-amount">$0.00</h4>
+                            <p>Total Paid</p>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="card-icon">
+                            <i class="fas fa-receipt"></i>
+                        </div>
+                        <div class="card-content">
+                            <h4 id="total-payments-count">0</h4>
+                            <p>Total Payments</p>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="card-icon">
+                            <i class="fas fa-chart-line"></i>
+                        </div>
+                        <div class="card-content">
+                            <h4 id="average-payment">$0.00</h4>
+                            <p>Average Payment</p>
+                        </div>
+                    </div>
+                    <div class="summary-card">
+                        <div class="card-icon">
+                            <i class="fas fa-exclamation-triangle"></i>
+                        </div>
+                        <div class="card-content">
+                            <h4 id="total-outstanding">$0.00</h4>
+                            <p>Outstanding</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Payment Methods Breakdown -->
+                <div class="payment-breakdown">
+                    <h4>Payment Methods</h4>
+                    <div id="payment-methods-breakdown" class="methods-container">
+                        <!-- Payment method breakdown will be populated by JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Outstanding Invoices -->
+                <div class="outstanding-section">
+                    <h4>Outstanding Invoices</h4>
+                    <div id="outstanding-invoices" class="outstanding-container">
+                        <!-- Outstanding invoices will be populated by JavaScript -->
+                    </div>
+                </div>
+                
+                <!-- Payment History Table -->
                 <div id="payments-table-container" class="table-container">
+                    <h4>Payment History</h4>
                     <table id="payments-table" class="data-table">
                         <thead>
                             <tr>
                                 <th>Date</th>
                                 <th>Amount</th>
                                 <th>Method</th>
+                                <th>Status</th>
                                 <th>Reference</th>
+                                <th>Received By</th>
                                 <th>Notes</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
                                 <th>Actions</th>
                             </tr>
                         </thead>

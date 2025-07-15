@@ -871,6 +871,589 @@ body {
     color: #6c757d;
 }
 
+/* Payment Summary Cards */
+.payment-summary-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+
+.summary-card {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    transition: transform 0.2s ease;
+}
+
+.summary-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.summary-card .card-icon {
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.2rem;
+    color: white;
+}
+
+.summary-card:nth-child(1) .card-icon { background: #28a745; }
+.summary-card:nth-child(2) .card-icon { background: #007bff; }
+.summary-card:nth-child(3) .card-icon { background: #6f42c1; }
+.summary-card:nth-child(4) .card-icon { background: #dc3545; }
+
+.summary-card .card-content h4 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.summary-card .card-content p {
+    margin: 0;
+    color: #7f8c8d;
+    font-size: 0.9rem;
+}
+
+/* Payment Methods Breakdown */
+.payment-breakdown {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.payment-breakdown h4 {
+    margin: 0 0 1rem 0;
+    color: #2c3e50;
+}
+
+.methods-container {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 1rem;
+}
+
+.payment-method-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.75rem;
+    background: #f8f9fa;
+    border-radius: 6px;
+}
+
+.method-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.method-name {
+    flex: 1;
+    font-weight: 500;
+}
+
+.method-count {
+    background: #e9ecef;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+/* Outstanding Invoices */
+.outstanding-section {
+    background: white;
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin: 1.5rem 0;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.outstanding-section h4 {
+    margin: 0 0 1rem 0;
+    color: #2c3e50;
+}
+
+.outstanding-container {
+    max-height: 300px;
+    overflow-y: auto;
+}
+
+.invoice-item {
+    padding: 1rem;
+    border: 1px solid #e9ecef;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+}
+
+.invoice-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.invoice-number {
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.invoice-amount {
+    font-weight: 600;
+    color: #dc3545;
+    font-size: 1.1rem;
+}
+
+.invoice-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+}
+
+.invoice-date {
+    color: #7f8c8d;
+}
+
+.invoice-status {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.status-overdue { background: #ffeaa7; color: #d63031; }
+.status-pending { background: #fab1a0; color: #e17055; }
+.status-paid { background: #a8e6cf; color: #00b894; }
+
+/* Payment Method Badges */
+.payment-method-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.method-cash { background: #d4edda; color: #155724; }
+.method-card { background: #cce5ff; color: #004085; }
+.method-bank-transfer { background: #e2d5f1; color: #5a2d82; }
+.method-insurance { background: #ffd9a3; color: #8b4513; }
+
+/* Status Badges */
+.status-badge {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.status-received { background: #d4edda; color: #155724; }
+.status-pending { background: #fff3cd; color: #856404; }
+.status-cancelled { background: #f8d7da; color: #721c24; }
+
+/* Enhanced Notebook Styles */
+.notebook-entry.enhanced {
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    margin-bottom: 2rem;
+    overflow: hidden;
+    transition: all 0.3s ease;
+}
+
+.notebook-entry.enhanced:hover {
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+    transform: translateY(-2px);
+}
+
+.entry-header.enhanced {
+    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    color: white;
+    padding: 1.5rem;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+}
+
+.visit-date-section h3 {
+    margin: 0 0 0.5rem 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+}
+
+.visit-date-section h3 i {
+    margin-right: 0.5rem;
+}
+
+.visit-metadata {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+}
+
+.doctor-name,
+.appointment-type {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 500;
+}
+
+.status-indicator {
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.status-indicator.status-completed {
+    background: rgba(40, 167, 69, 0.9);
+}
+
+.status-indicator.status-scheduled {
+    background: rgba(255, 193, 7, 0.9);
+}
+
+.status-indicator.status-cancelled {
+    background: rgba(220, 53, 69, 0.9);
+}
+
+.quick-stats {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    align-items: flex-end;
+}
+
+.quick-stat {
+    background: rgba(255, 255, 255, 0.2);
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.8rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.quick-stat.procedures { background: rgba(40, 167, 69, 0.8); }
+.quick-stat.findings { background: rgba(255, 193, 7, 0.8); }
+.quick-stat.payment { background: rgba(23, 162, 184, 0.8); }
+.quick-stat.consultation { background: rgba(108, 117, 125, 0.8); }
+
+.entry-content.enhanced {
+    padding: 0;
+}
+
+.narrative-section {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-bottom: 1px solid #e9ecef;
+}
+
+.narrative-text {
+    position: relative;
+    font-size: 1rem;
+    line-height: 1.6;
+    color: #495057;
+}
+
+.narrative-text i.fa-quote-left {
+    position: absolute;
+    left: -1rem;
+    top: 0.5rem;
+    color: #6c757d;
+    font-size: 1.5rem;
+}
+
+.narrative-text p {
+    margin: 0;
+    padding-left: 1.5rem;
+    font-style: italic;
+}
+
+.detail-section {
+    padding: 1.5rem;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.detail-section:last-child {
+    border-bottom: none;
+}
+
+.detail-section h4 {
+    margin: 0 0 1rem 0;
+    color: #495057;
+    font-size: 1.1rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.detail-section h4 i {
+    color: #6c757d;
+}
+
+.detail-section.complaint {
+    background: #fff3cd;
+    border-left: 4px solid #ffc107;
+}
+
+.detail-section.procedures {
+    background: #d4edda;
+    border-left: 4px solid #28a745;
+}
+
+.detail-section.findings {
+    background: #f8d7da;
+    border-left: 4px solid #dc3545;
+}
+
+.detail-section.treatment-plan {
+    background: #d1ecf1;
+    border-left: 4px solid #17a2b8;
+}
+
+.detail-section.notes {
+    background: #e2e3e5;
+    border-left: 4px solid #6c757d;
+}
+
+.detail-section.payments {
+    background: #d4edda;
+    border-left: 4px solid #28a745;
+}
+
+/* List Styles */
+.procedures-list,
+.findings-list,
+.payments-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.procedure-item,
+.finding-item,
+.payment-item {
+    background: white;
+    border-radius: 8px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.procedure-header,
+.finding-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.tooth-number {
+    background: #495057;
+    color: white;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.procedure-name,
+.finding-name {
+    font-weight: 600;
+    color: #495057;
+}
+
+.procedure-details,
+.finding-details {
+    display: flex;
+    gap: 1rem;
+    margin-top: 0.5rem;
+}
+
+.procedure-status,
+.finding-status,
+.procedure-cost {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.procedure-status { background: #e9ecef; color: #495057; }
+.procedure-cost { background: #d4edda; color: #155724; }
+
+.severity {
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+
+.severity-mild { background: #fff3cd; color: #856404; }
+.severity-moderate { background: #ffeaa7; color: #d68910; }
+.severity-severe { background: #f8d7da; color: #721c24; }
+
+.procedure-notes,
+.finding-notes {
+    margin: 0.5rem 0 0 0;
+    color: #6c757d;
+    font-size: 0.9rem;
+    font-style: italic;
+}
+
+.payment-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+}
+
+.payment-amount {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: #28a745;
+}
+
+.payment-method {
+    background: #e9ecef;
+    padding: 0.25rem 0.5rem;
+    border-radius: 12px;
+    font-size: 0.8rem;
+}
+
+.payment-ref {
+    color: #6c757d;
+    font-size: 0.9rem;
+}
+
+.notes-container {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.note-item {
+    background: white;
+    border-radius: 6px;
+    padding: 1rem;
+    margin-bottom: 0.75rem;
+    border-left: 3px solid #6c757d;
+}
+
+.note-item.special {
+    border-left-color: #ffc107;
+    background: #fffbf0;
+}
+
+.entry-footer.enhanced {
+    background: #f8f9fa;
+    padding: 1rem 1.5rem;
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    align-items: center;
+    border-top: 1px solid #e9ecef;
+}
+
+.cost-info,
+.payment-status,
+.special-note {
+    padding: 0.25rem 0.75rem;
+    border-radius: 15px;
+    font-size: 0.85rem;
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+.cost-info {
+    background: #d1ecf1;
+    color: #0c5460;
+}
+
+.payment-status {
+    background: #d4edda;
+    color: #155724;
+}
+
+.special-note {
+    background: #fff3cd;
+    color: #856404;
+}
+
+.no-data-notebook {
+    text-align: center;
+    padding: 4rem 2rem;
+    color: #6c757d;
+}
+
+.no-data-notebook i {
+    margin-bottom: 1rem;
+    opacity: 0.5;
+}
+
+.no-data-notebook h3 {
+    margin: 1rem 0 0.5rem 0;
+    color: #495057;
+}
+
+/* Mobile Responsiveness for Payment Section */
+@media (max-width: 768px) {
+    .payment-summary-cards {
+        grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+        gap: 0.75rem;
+    }
+    
+    .summary-card {
+        padding: 1rem;
+        flex-direction: column;
+        text-align: center;
+        gap: 0.5rem;
+    }
+    
+    .summary-card .card-icon {
+        width: 40px;
+        height: 40px;
+        font-size: 1rem;
+    }
+    
+    .methods-container {
+        grid-template-columns: 1fr;
+    }
+    
+    .invoice-header,
+    .invoice-details {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 0.5rem;
+    }
+}
+
 /* Responsive Design */
 @media (max-width: 768px) {
     .header-content {
