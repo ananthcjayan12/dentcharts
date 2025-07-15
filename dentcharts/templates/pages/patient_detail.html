@@ -1,0 +1,256 @@
+{% extends "templates/web.html" %}
+
+{% block title %}
+    {{ title or "Patient Dashboard" }}
+{% endblock %}
+
+{% block head_include %}
+    <meta name="csrf-token" content="{{ frappe.session.csrf_token }}">
+    <link rel="stylesheet" href="/assets/dentcharts/css/patient_dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+{% endblock %}
+
+{% block content %}
+<div class="patient-detail-dashboard-container">
+    <!-- Back Navigation -->
+    <div class="back-navigation">
+        <a href="/patient_dashboard" class="back-btn">
+            <i class="fas fa-arrow-left"></i> Back to Main Dashboard
+        </a>
+    </div>
+
+    <!-- Patient Header -->
+    <div class="patient-header-section">
+        <div class="patient-info-card">
+            <div class="patient-avatar">
+                <i class="fas fa-user-circle"></i>
+            </div>
+            <div class="patient-details">
+                <h1 class="patient-name" id="patient-name">{{ patient.patient_name }}</h1>
+                <div class="patient-meta">
+                    <span class="meta-item">
+                        <i class="fas fa-id-badge"></i>
+                        <span id="patient-id">{{ patient.name }}</span>
+                    </span>
+                    <span class="meta-item">
+                        <i class="fas fa-birthday-cake"></i>
+                        <span id="patient-age">Age: Loading...</span>
+                    </span>
+                    <span class="meta-item">
+                        <i class="fas fa-venus-mars"></i>
+                        <span id="patient-sex">{{ patient.sex or 'Not specified' }}</span>
+                    </span>
+                    <span class="meta-item">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span id="patient-registration">Registered: {{ patient.date_of_registration or 'N/A' }}</span>
+                    </span>
+                </div>
+                <div class="patient-contact">
+                    <span class="contact-item">
+                        <i class="fas fa-phone"></i>
+                        <span id="patient-mobile">{{ patient.mobile or 'No phone' }}</span>
+                    </span>
+                    <span class="contact-item">
+                        <i class="fas fa-envelope"></i>
+                        <span id="patient-email">{{ patient.email or 'No email' }}</span>
+                    </span>
+                </div>
+            </div>
+            <div class="patient-actions">
+                <button class="action-btn primary" onclick="editPatient('{{ patient.name }}')">
+                    <i class="fas fa-edit"></i> Edit Patient
+                </button>
+                <button class="action-btn secondary" onclick="scheduleAppointment('{{ patient.name }}')">
+                    <i class="fas fa-calendar-plus"></i> Schedule Appointment
+                </button>
+                <button class="action-btn secondary" onclick="recordPayment('{{ patient.name }}')">
+                    <i class="fas fa-credit-card"></i> Record Payment
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Indicator -->
+    <div id="loading-indicator" class="loading-indicator" style="display: none;">
+        <div class="spinner"></div>
+        <p>Loading patient data...</p>
+    </div>
+
+    <!-- Main Content Tabs -->
+    <div class="content-tabs">
+        <div class="tab-navigation">
+            <button class="tab-btn active" onclick="switchTab('overview')">
+                <i class="fas fa-chart-pie"></i> Overview
+            </button>
+            <button class="tab-btn" onclick="switchTab('history')">
+                <i class="fas fa-history"></i> Medical History
+            </button>
+            <button class="tab-btn" onclick="switchTab('chart')">
+                <i class="fas fa-tooth"></i> Dental Chart
+            </button>
+            <button class="tab-btn" onclick="switchTab('payments')">
+                <i class="fas fa-money-bill-wave"></i> Payments
+            </button>
+            <button class="tab-btn" onclick="switchTab('summary')">
+                <i class="fas fa-book"></i> Notebook Summary
+            </button>
+        </div>
+
+        <!-- Overview Tab -->
+        <div id="overview-tab" class="tab-content active">
+            <div class="overview-grid">
+                <!-- Quick Stats Cards -->
+                <div class="quick-stats">
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-calendar-check"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="total-appointments">Loading...</h3>
+                            <p>Total Appointments</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-procedures"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="total-procedures">Loading...</h3>
+                            <p>Total Procedures</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-dollar-sign"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="total-payments">Loading...</h3>
+                            <p>Total Payments</p>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-icon">
+                            <i class="fas fa-clock"></i>
+                        </div>
+                        <div class="stat-content">
+                            <h3 id="last-visit">Loading...</h3>
+                            <p>Last Visit</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Recent Activity -->
+                <div class="recent-activity-section">
+                    <h3>Recent Activity</h3>
+                    <div id="recent-activity-list" class="activity-list">
+                        <!-- Activity items will be populated by JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Medical History Tab -->
+        <div id="history-tab" class="tab-content">
+            <div class="history-grid">
+                <div class="history-section">
+                    <h3><i class="fas fa-teeth"></i> Dental History</h3>
+                    <div id="dental-history-content" class="history-content">
+                        Loading...
+                    </div>
+                </div>
+                <div class="history-section">
+                    <h3><i class="fas fa-exclamation-triangle"></i> Allergies</h3>
+                    <div id="allergies-content" class="history-content">
+                        Loading...
+                    </div>
+                </div>
+                <div class="history-section">
+                    <h3><i class="fas fa-tools"></i> Previous Dental Work</h3>
+                    <div id="previous-work-content" class="history-content">
+                        Loading...
+                    </div>
+                </div>
+                <div class="history-section">
+                    <h3><i class="fas fa-shield-alt"></i> Insurance Information</h3>
+                    <div id="insurance-content" class="history-content">
+                        Loading...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Dental Chart Tab -->
+        <div id="chart-tab" class="tab-content">
+            <div class="chart-section">
+                <h3><i class="fas fa-tooth"></i> Interactive Dental Chart</h3>
+                <p class="chart-note">
+                    <i class="fas fa-info-circle"></i>
+                    Dental chart functionality will be integrated here using existing dental chart system.
+                </p>
+                <div id="dental-chart-container" class="chart-container">
+                    <!-- Existing dental chart will be embedded here -->
+                    <div class="chart-placeholder">
+                        <i class="fas fa-tooth fa-3x"></i>
+                        <p>Dental Chart Integration Coming Soon</p>
+                        <button class="btn-primary" onclick="openDentalChart('{{ patient.name }}')">
+                            <i class="fas fa-external-link-alt"></i> Open Dental Chart
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payments Tab -->
+        <div id="payments-tab" class="tab-content">
+            <div class="payments-section">
+                <div class="payments-header">
+                    <h3><i class="fas fa-money-bill-wave"></i> Payment History</h3>
+                    <button class="btn-primary" onclick="recordPayment('{{ patient.name }}')">
+                        <i class="fas fa-plus"></i> Record Payment
+                    </button>
+                </div>
+                <div id="payments-table-container" class="table-container">
+                    <table id="payments-table" class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Amount</th>
+                                <th>Method</th>
+                                <th>Reference</th>
+                                <th>Notes</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="payments-table-body">
+                            <!-- Payment rows will be populated by JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Notebook Summary Tab -->
+        <div id="summary-tab" class="tab-content">
+            <div class="notebook-summary">
+                <div class="summary-header">
+                    <h3><i class="fas fa-book"></i> Notebook-Style Summary</h3>
+                    <p class="summary-description">
+                        Chronological record of all visits, findings, and treatments in a doctor-friendly format.
+                    </p>
+                </div>
+                <div id="notebook-content" class="notebook-content">
+                    <!-- Notebook entries will be populated by JavaScript -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block script %}
+    <script>
+        // Pass patient ID to JavaScript
+        window.currentPatientId = '{{ patient.name }}';
+    </script>
+    <script src="/assets/dentcharts/js/patient_detail.js"></script>
+{% endblock %}

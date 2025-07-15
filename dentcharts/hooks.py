@@ -242,6 +242,17 @@ doctype_js = {"Dental Chart": "public/js/dental_chart_visual.js"}
 # Automatically update python controller files with type annotations for this app.
 # export_python_type_annotations = True
 
+# Web pages
+website_route_rules = [
+    {"from_route": "/patient-dashboard", "to_route": "patient_dashboard"},
+    {"from_route": "/patient-detail/<patient_id>", "to_route": "patient_detail"}
+]
+
+web_pages = {
+    "patient_dashboard": "dentcharts.templates.pages.patient_dashboard",
+    "patient_detail": "dentcharts.templates.pages.patient_detail"
+}
+
 # default_log_clearing_doctypes = {
 # 	"Logging DocType Name": 30  # days to retain logs
 # }

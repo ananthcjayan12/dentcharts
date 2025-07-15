@@ -47,12 +47,8 @@ def get_patient_stats():
     Get patient statistics - reuses existing dental_patient queries
     """
     try:
-        # Add debugging
-        frappe.log_error("Getting patient stats", "Debug")
-        
         # Total patients count
         total_patients = frappe.db.count("Dental Patient") or 0
-        frappe.log_error(f"Total patients found: {total_patients}", "Debug")
         
         # Active patients (those with recent appointments)
         active_patients = frappe.db.sql("""
@@ -79,7 +75,6 @@ def get_patient_stats():
             "icon": "users"
         }
         
-        frappe.log_error(f"Patient stats result: {result}", "Debug")
         return result
         
     except Exception as e:

@@ -15,14 +15,10 @@ def get_context(context):
 def get_dashboard_data():
     """API endpoint for dashboard data"""
     try:
-        # Add debugging
-        frappe.log_error("Dashboard API called", "Debug")
-        
         from dentcharts.patient_management.patient_summary import get_patient_stats
         
         # Get patient statistics
         patient_stats = get_patient_stats()
-        frappe.log_error(f"Patient stats: {patient_stats}", "Debug")
         
         # Get appointment statistics - Fixed query with proper error handling
         appointment_stats = frappe.db.sql("""
@@ -37,7 +33,6 @@ def get_dashboard_data():
         appointment_stats = appointment_stats[0] if appointment_stats else {
             "today": 0, "upcoming": 0, "completed_this_month": 0
         }
-        frappe.log_error(f"Appointment stats: {appointment_stats}", "Debug")
         
         # Get payment statistics - Fixed query with proper error handling
         payment_stats = frappe.db.sql("""
@@ -51,7 +46,6 @@ def get_dashboard_data():
         payment_stats = payment_stats[0] if payment_stats else {
             "received_this_month": 0, "recent_payments": 0, "total_received": 0
         }
-        frappe.log_error(f"Payment stats: {payment_stats}", "Debug")
         
         # Get recent activity
         recent_activity = frappe.db.sql("""
@@ -67,8 +61,6 @@ def get_dashboard_data():
             LIMIT 5
         """, as_dict=True)
         
-        frappe.log_error(f"Recent activity: {recent_activity}", "Debug")
-        
         result = {
             "success": True,
             "data": {
@@ -79,7 +71,6 @@ def get_dashboard_data():
             }
         }
         
-        frappe.log_error(f"Final result: {result}", "Debug")
         return result
         
     except Exception as e:
@@ -195,15 +186,13 @@ def get_recent_activity():
 def get_patient_list(search_term="", limit=20):
     """Get patient list with search"""
     try:
-        frappe.log_error(f"Getting patient list with search term: {search_term}", "Debug")
-        
         conditions = []
         values = []
         
         if search_term:
             conditions.append("""
                 (patient_name LIKE %s OR 
-                 mobile_number LIKE %s OR 
+                 mobile LIKE %s OR 
                  email LIKE %s OR 
                  name LIKE %s)
             """)
@@ -219,10 +208,10 @@ def get_patient_list(search_term="", limit=20):
             SELECT 
                 name,
                 patient_name,
-                COALESCE(mobile_number, '') as mobile_number,
+                COALESCE(mobile, '') as mobile_number,
                 COALESCE(email, '') as email,
                 COALESCE(sex, '') as sex,
-                date_of_birth,
+                dob as date_of_birth,
                 creation,
                 modified
             FROM `tabDental Patient`
@@ -232,7 +221,6 @@ def get_patient_list(search_term="", limit=20):
         """
         
         patients = frappe.db.sql(columns_query, values, as_dict=True)
-        frappe.log_error(f"Found {len(patients)} patients", "Debug")
         
         # Calculate age for each patient
         from frappe.utils import getdate

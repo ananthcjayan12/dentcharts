@@ -14,71 +14,83 @@ const PatientDashboard = {
         console.log('Loading dashboard data...');
         this.showLoading();
         
-        // Use frappe.call to get dashboard data
-        if (typeof frappe !== 'undefined') {
-            console.log('Frappe is available, calling API...');
-            frappe.call({
-                method: 'dentcharts.templates.pages.patient_dashboard.get_dashboard_data',
-                callback: (response) => {
-                    console.log('Full API Response:', response);
-                    
-                    // Check if we have a proper response
-                    if (response && response.message) {
-                        console.log('Response message:', response.message);
-                        
-                        // Check if it's a successful response with data
-                        if (response.message.success && response.message.data) {
-                            console.log('Successfully loaded real data:', response.message.data);
-                            this.updateDashboardCards(response.message.data);
-                            this.loadPatientList();
-                            this.loadRecentActivity(response.message.data.recent_activity);
-                        } else {
-                            console.warn('API returned unsuccessful response or no data:', response.message);
-                            this.loadSampleData();
-                        }
-                    } else {
-                        console.warn('Invalid API response structure:', response);
-                        this.loadSampleData();
-                    }
-                    this.hideLoading();
-                },
-                error: (error) => {
-                    console.error('API call failed:', error);
-                    this.loadSampleData();
-                    this.hideLoading();
-                }
-            });
+        // Try frappe.call first, then fetch API
+        if (typeof frappe !== 'undefined' && frappe.call) {
+            console.log('Using frappe.call to load dashboard data...');
+            this.loadDataWithFrappe();
         } else {
-            console.warn('Frappe not available, using sample data');
-            this.loadSampleData();
+            console.log('Using fetch API to load dashboard data...');
+            this.loadDataWithFetch();
         }
     },
 
-    // Load sample data for testing
-    loadSampleData: function() {
-        console.log('Loading sample data...');
-        setTimeout(() => {
-            this.updateDashboardCards({
-                patient_stats: {
-                    total: 150,
-                    active: 120,
-                    new_this_month: 25
-                },
-                appointment_stats: {
-                    today: 12,
-                    upcoming: 8,
-                    completed_this_month: 45
-                },
-                payment_stats: {
-                    outstanding: 5420,
-                    received_this_month: 12500,
-                    recent_payments: 8
-                }
-            });
-            this.loadSamplePatientList();
-            this.loadSampleActivity();
+    // Load data using frappe.call
+    loadDataWithFrappe: function() {
+        frappe.call({
+            method: 'dentcharts.templates.pages.patient_dashboard.get_dashboard_data',
+            callback: (response) => {
+                console.log('Frappe API Response:', response);
+                this.handleApiResponse(response.message);
+            },
+            error: (error) => {
+                console.error('Frappe API failed:', error);
+                this.hideLoading();
+                throw error; // Don't fallback, let the error be visible
+            }
+        });
+    },
+
+    // Load data using fetch API
+    loadDataWithFetch: function() {
+        const self = this;
+        console.log('Making fetch API request to get dashboard data...');
+        
+        fetch('/api/method/dentcharts.templates.pages.patient_dashboard.get_dashboard_data', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Frappe-CSRF-Token': this.getCSRFToken()
+            }
+        })
+        .then(response => {
+            console.log('Fetch API response status:', response.status);
+            console.log('Fetch API response headers:', response.headers);
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            return response.json();
+        })
+        .then(data => {
+            console.log('Fetch API Response:', data);
+            self.handleApiResponse(data.message);
+        })
+        .catch(error => {
+            console.error('Fetch API failed:', error);
             this.hideLoading();
-        }, 1000);
+            throw error; // Don't fallback, let the error be visible
+        })
+        .finally(() => {
+            self.hideLoading();
+        });
+    },
+
+    // Handle API response from either method
+    handleApiResponse: function(responseData) {
+        if (responseData && responseData.success && responseData.data) {
+            console.log('Successfully loaded real data:', responseData.data);
+            this.updateDashboardCards(responseData.data);
+            this.loadPatientList();
+            this.loadRecentActivity(responseData.data.recent_activity);
+        } else {
+            console.error('API returned unsuccessful response:', responseData);
+            throw new Error('API returned unsuccessful response');
+        }
+    },
+
+    // Get CSRF token for fetch requests
+    getCSRFToken: function() {
+        const tokenElement = document.querySelector('meta[name="csrf-token"]');
+        return tokenElement ? tokenElement.getAttribute('content') : '';
     },
 
     // Update dashboard cards with data
@@ -107,13 +119,14 @@ const PatientDashboard = {
             if (completedAppointmentsEl) completedAppointmentsEl.textContent = data.appointment_stats.completed_this_month || 0;
         }
 
-        // Update payments card
+        // Update payments card - Fixed to use new structure
         if (data.payment_stats) {
-            const outstandingBalanceEl = document.getElementById('outstanding-balance');
+            const totalReceivedEl = document.getElementById('total-received');
             const receivedPaymentsEl = document.getElementById('received-payments');
             const recentPaymentsEl = document.getElementById('recent-payments');
             
-            if (outstandingBalanceEl) outstandingBalanceEl.textContent = this.formatCurrency(data.payment_stats.outstanding || 0);
+            // Use total_received instead of outstanding_balance
+            if (totalReceivedEl) totalReceivedEl.textContent = this.formatCurrency(data.payment_stats.total_received || 0);
             if (receivedPaymentsEl) receivedPaymentsEl.textContent = this.formatCurrency(data.payment_stats.received_this_month || 0);
             if (recentPaymentsEl) recentPaymentsEl.textContent = data.payment_stats.recent_payments || 0;
         }
@@ -121,64 +134,45 @@ const PatientDashboard = {
 
     // Load patient list
     loadPatientList: function(searchTerm = '') {
-        if (typeof frappe !== 'undefined') {
-            console.log('Loading patient list with search term:', searchTerm);
+        console.log('Loading patient list with search term:', searchTerm);
+        
+        const loadPatients = (response) => {
+            console.log('Patient list response:', response);
+            if (response && response.success) {
+                console.log('Successfully loaded patient list:', response.patients);
+                this.displayPatientList(response.patients);
+            } else {
+                console.error('Failed to load patient list:', response);
+                throw new Error('Failed to load patient list');
+            }
+        };
+
+        if (typeof frappe !== 'undefined' && frappe.call) {
             frappe.call({
                 method: 'dentcharts.templates.pages.patient_dashboard.get_patient_list',
-                args: {
-                    search_term: searchTerm,
-                    limit: 20
-                },
-                callback: (response) => {
-                    console.log('Patient list response:', response);
-                    if (response.message && response.message.success) {
-                        console.log('Successfully loaded patient list:', response.message.patients);
-                        this.displayPatientList(response.message.patients);
-                    } else {
-                        console.warn('Failed to load patient list, using sample data');
-                        this.loadSamplePatientList();
-                    }
-                },
+                args: { search_term: searchTerm, limit: 20 },
+                callback: (response) => loadPatients(response.message),
                 error: (error) => {
-                    console.error('Error loading patient list, using sample data:', error);
-                    this.loadSamplePatientList();
+                    console.error('Frappe call failed:', error);
+                    throw error;
                 }
             });
         } else {
-            console.warn('Frappe not available for patient list, using sample data');
-            this.loadSamplePatientList();
+            fetch('/api/method/dentcharts.templates.pages.patient_dashboard.get_patient_list', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-Frappe-CSRF-Token': this.getCSRFToken()
+                },
+                body: JSON.stringify({ search_term: searchTerm, limit: 20 })
+            })
+            .then(response => response.json())
+            .then(data => loadPatients(data.message))
+            .catch(error => {
+                console.error('Fetch failed:', error);
+                throw error;
+            });
         }
-    },
-
-    // Load sample patient list
-    loadSamplePatientList: function() {
-        const samplePatients = [
-            {
-                name: 'PAT-001',
-                patient_name: 'John Doe',
-                age: 35,
-                mobile_number: '555-0123',
-                email: 'john.doe@email.com',
-                modified: '2024-07-10'
-            },
-            {
-                name: 'PAT-002',
-                patient_name: 'Jane Smith',
-                age: 28,
-                mobile_number: '555-0456',
-                email: 'jane.smith@email.com',
-                modified: '2024-07-08'
-            },
-            {
-                name: 'PAT-003',
-                patient_name: 'Bob Johnson',
-                age: 45,
-                mobile_number: '555-0789',
-                email: 'bob.johnson@email.com',
-                modified: '2024-07-05'
-            }
-        ];
-        this.displayPatientList(samplePatients);
     },
 
     // Display patient list in table
@@ -226,27 +220,6 @@ const PatientDashboard = {
         });
     },
 
-    // Load sample activity
-    loadSampleActivity: function() {
-        const activities = [
-            {
-                patient_name: 'John Doe',
-                appointment_status: 'Completed',
-                practitioner: 'Dr. Smith',
-                appointment_date: '2024-07-15',
-                appointment_time: '10:00'
-            },
-            {
-                patient_name: 'Jane Smith',
-                appointment_status: 'Scheduled',
-                practitioner: 'Dr. Johnson',
-                appointment_date: '2024-07-15',
-                appointment_time: '14:00'
-            }
-        ];
-        this.loadRecentActivity(activities);
-    },
-
     // Load recent activity
     loadRecentActivity: function(activities) {
         const activityList = document.getElementById('recent-activity-list');
@@ -270,9 +243,9 @@ const PatientDashboard = {
             activityItem.className = 'activity-item';
             activityItem.innerHTML = `
                 <div class="activity-info">
-                    <div class="activity-patient">${activity.patient_name || 'Unknown Patient'}</div>
+                    <div class="activity-patient">${activity.patient || 'Unknown Patient'}</div>
                     <div class="activity-details">
-                        ${activity.appointment_status || 'Appointment'} - ${activity.practitioner || 'Unknown Doctor'}
+                        ${activity.status || 'Appointment'} - ${activity.practitioner || 'Unknown Doctor'}
                     </div>
                 </div>
                 <div class="activity-time">${this.formatDateTime(activity.appointment_date, activity.appointment_time)}</div>
@@ -326,45 +299,45 @@ const PatientDashboard = {
     // Patient actions
     viewPatient: function(patientId) {
         console.log('Viewing patient:', patientId);
-        // Navigate to individual patient dashboard
-        window.location.href = `/app/patient-dashboard/${patientId}`;
+        // Navigate to individual patient detail dashboard
+        window.location.href = `/patient-detail/${patientId}`;
     },
 
     editPatient: function(patientId) {
         console.log('Editing patient:', patientId);
-        // Navigate to patient edit form
+        // Navigate to dental patient form in edit mode
         window.location.href = `/app/dental-patient/${patientId}`;
     },
 
     viewAllPatients: function() {
         console.log('Viewing all patients');
-        // Navigate to patients list
+        // Navigate to dental patients list
         window.location.href = '/app/dental-patient';
     },
 
     viewAllAppointments: function() {
         console.log('Viewing all appointments');
-        // Navigate to appointments list
+        // Navigate to dental appointments list
         window.location.href = '/app/dental-appointment';
     },
 
     viewPaymentReports: function() {
         console.log('Viewing payment reports');
-        // Navigate to payment reports
+        // Navigate to dental payment entries list
         window.location.href = '/app/dental-payment-entry';
     },
 
     // Quick actions
     createNewPatient: function() {
         console.log('Creating new patient');
-        // Navigate to new patient form
-        window.location.href = '/app/dental-patient/new';
+        // Navigate to new dental patient form
+        window.open('/app/dental-patient/new', '_blank');
     },
 
     scheduleAppointment: function() {
         console.log('Scheduling appointment');
-        // Navigate to new appointment form
-        window.location.href = '/app/dental-appointment/new';
+        // Navigate to new dental appointment form  
+        window.open('/app/dental-appointment/new', '_blank');
     },
 
     // Utility functions

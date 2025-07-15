@@ -3,9 +3,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ frappe.session.csrf_token }}">
     <title>Patient Dashboard - Dental Practice</title>
     <link rel="stylesheet" href="/assets/dentcharts/css/patient_dashboard.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <!-- Add Frappe JS framework -->
+    <script src="/assets/js/frappe-web.min.js"></script>
 </head>
 <body>
     <div class="dashboard-container">
@@ -108,13 +111,13 @@
                         </div>
                         <div class="card-content">
                             <div class="main-stat">
-                                <span class="stat-number" id="outstanding-balance">--</span>
-                                <span class="stat-label">Outstanding</span>
+                                <span class="stat-number" id="total-received">--</span>
+                                <span class="stat-label">Total Received</span>
                             </div>
                             <div class="sub-stats">
                                 <div class="sub-stat">
                                     <span class="sub-stat-number" id="received-payments">--</span>
-                                    <span class="sub-stat-label">Received</span>
+                                    <span class="sub-stat-label">This Month</span>
                                 </div>
                                 <div class="sub-stat">
                                     <span class="sub-stat-number" id="recent-payments">--</span>
