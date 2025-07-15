@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Dashboard - Dental Practice</title>
+    <link rel="stylesheet" href="/assets/dentcharts/css/patient_dashboard.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Header Section -->
+        <header class="dashboard-header">
+            <div class="header-content">
+                <h1 class="dashboard-title">
+                    <i class="fas fa-tooth"></i>
+                    Patient Dashboard
+                </h1>
+                <div class="header-actions">
+                    <button class="btn btn-primary" onclick="createNewPatient()">
+                        <i class="fas fa-plus"></i>
+                        New Patient
+                    </button>
+                    <button class="btn btn-secondary" onclick="scheduleAppointment()">
+                        <i class="fas fa-calendar-plus"></i>
+                        Schedule
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="dashboard-main">
+            <!-- Overview Cards Section -->
+            <section class="overview-section">
+                <div class="cards-container">
+                    <!-- Patients Card -->
+                    <div class="dashboard-card" id="patients-card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-users"></i>
+                                Patients
+                            </h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="main-stat">
+                                <span class="stat-number" id="total-patients">--</span>
+                                <span class="stat-label">Total Patients</span>
+                            </div>
+                            <div class="sub-stats">
+                                <div class="sub-stat">
+                                    <span class="sub-stat-number" id="active-patients">--</span>
+                                    <span class="sub-stat-label">Active</span>
+                                </div>
+                                <div class="sub-stat">
+                                    <span class="sub-stat-number" id="new-patients">--</span>
+                                    <span class="sub-stat-label">New This Month</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="card-action-btn" onclick="viewAllPatients()">
+                                View All Patients
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Appointments Card -->
+                    <div class="dashboard-card" id="appointments-card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-calendar"></i>
+                                Appointments
+                            </h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="main-stat">
+                                <span class="stat-number" id="today-appointments">--</span>
+                                <span class="stat-label">Today</span>
+                            </div>
+                            <div class="sub-stats">
+                                <div class="sub-stat">
+                                    <span class="sub-stat-number" id="upcoming-appointments">--</span>
+                                    <span class="sub-stat-label">Upcoming</span>
+                                </div>
+                                <div class="sub-stat">
+                                    <span class="sub-stat-number" id="completed-appointments">--</span>
+                                    <span class="sub-stat-label">Completed</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="card-action-btn" onclick="viewAllAppointments()">
+                                View Calendar
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Payments Card -->
+                    <div class="dashboard-card" id="payments-card">
+                        <div class="card-header">
+                            <h3 class="card-title">
+                                <i class="fas fa-credit-card"></i>
+                                Payments
+                            </h3>
+                        </div>
+                        <div class="card-content">
+                            <div class="main-stat">
+                                <span class="stat-number" id="outstanding-balance">--</span>
+                                <span class="stat-label">Outstanding</span>
+                            </div>
+                            <div class="sub-stats">
+                                <div class="sub-stat">
+                                    <span class="sub-stat-number" id="received-payments">--</span>
+                                    <span class="sub-stat-label">Received</span>
+                                </div>
+                                <div class="sub-stat">
+                                    <span class="sub-stat-number" id="recent-payments">--</span>
+                                    <span class="sub-stat-label">Recent</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="card-footer">
+                            <button class="card-action-btn" onclick="viewPaymentReports()">
+                                View Reports
+                                <i class="fas fa-arrow-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Patient List Section -->
+            <section class="patient-list-section">
+                <div class="section-header">
+                    <h2 class="section-title">Patient List</h2>
+                    <div class="section-actions">
+                        <div class="search-container">
+                            <input 
+                                type="text" 
+                                id="patient-search" 
+                                placeholder="Search patients..."
+                                class="search-input"
+                            >
+                            <i class="fas fa-search search-icon"></i>
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="patient-table-container">
+                    <table class="patient-table">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Age</th>
+                                <th>Contact</th>
+                                <th>Last Visit</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="patient-table-body">
+                            <!-- Patient rows will be populated here -->
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="loading-indicator" id="loading-indicator" style="display: none;">
+                    <i class="fas fa-spinner fa-spin"></i>
+                    Loading patients...
+                </div>
+            </section>
+
+            <!-- Recent Activity Section -->
+            <section class="recent-activity-section">
+                <div class="section-header">
+                    <h2 class="section-title">Recent Activity</h2>
+                </div>
+                
+                <div class="activity-list" id="recent-activity-list">
+                    <!-- Recent activity items will be populated here -->
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Scripts -->
+    <script src="/assets/dentcharts/js/patient_dashboard.js"></script>
+</body>
+</html>

@@ -12,7 +12,7 @@ def get_patient_basic_info(patient_id):
     Get basic patient information - reuses existing dental_patient data
     """
     try:
-        patient = frappe.get_doc("dental_patient", patient_id)
+        patient = frappe.get_doc("Dental Patient", patient_id)
         
         # Calculate age
         age = None
@@ -48,12 +48,12 @@ def get_patient_stats():
     """
     try:
         # Total patients
-        total_patients = frappe.db.count("dental_patient")
+        total_patients = frappe.db.count("Dental Patient") or 0
         
         # Active patients (with appointments in last 30 days)
         active_patients = frappe.db.sql("""
             SELECT COUNT(DISTINCT patient) 
-            FROM `tabdental_appointment` 
+            FROM `tabDental Appointment` 
             WHERE appointment_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
             AND docstatus = 1
         """)[0][0] or 0
@@ -61,7 +61,7 @@ def get_patient_stats():
         # New patients this month
         new_patients = frappe.db.sql("""
             SELECT COUNT(*) 
-            FROM `tabdental_patient` 
+            FROM `tabDental Patient` 
             WHERE DATE(creation) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
         """)[0][0] or 0
         

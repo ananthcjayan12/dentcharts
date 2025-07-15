@@ -48,12 +48,12 @@ def get_patient_stats():
     """
     try:
         # Total patients count
-        total_patients = frappe.db.count("dental_patient")
+        total_patients = frappe.db.count("Dental Patient") or 0
         
         # Active patients (those with recent appointments)
         active_patients = frappe.db.sql("""
             SELECT COUNT(DISTINCT patient) 
-            FROM `tabdental_appointment` 
+            FROM `tabDental Appointment` 
             WHERE appointment_date >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
             AND docstatus = 1
         """)[0][0] or 0
@@ -61,7 +61,7 @@ def get_patient_stats():
         # New patients this month
         new_patients = frappe.db.sql("""
             SELECT COUNT(*) 
-            FROM `tabdental_patient` 
+            FROM `tabDental Patient` 
             WHERE DATE(creation) >= DATE_SUB(CURDATE(), INTERVAL 30 DAY)
         """)[0][0] or 0
         
