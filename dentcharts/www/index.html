@@ -363,9 +363,13 @@
 					<h1>Where advanced technology meets compassionate care</h1>
 					<p>
 						Expert orthodontic and dental care in Sulthan Bathery led by Prof. Dr. Jacob John
-						and Dr. Maria Jacob, with modern treatment options tailored for every smile.
+						and Dr. Maria Jacob (Dr. Maria K. Pullazhi), with modern treatment options tailored
+						for every smile.
 					</p>
-					<p><strong>Founder/Lead Dentists:</strong> Prof. Dr. Jacob John &amp; Dr. Maria Jacob</p>
+					<p>
+						<strong>Founder/Lead Dentists:</strong> Prof. Dr. Jacob John &amp; Dr. Maria Jacob
+						(Dr. Maria K. Pullazhi)
+					</p>
 					<p>
 						Visit us near KSEB Office, Chungam, Ooty Road, Sulthan Bathery or call
 						<a href="tel:+918075059701">+91 8075059701</a> to book your consultation.
@@ -442,7 +446,7 @@
 					</p>
 				</div>
 				<div class="bio">
-					<div class="subheading">About Dr. Maria K. Pullazhi</div>
+					<div class="subheading">About Dr. Maria Jacob (Dr. Maria K. Pullazhi)</div>
 					<p>
 						Dr. Maria K. Pullazhi is a Chief Dental Surgeon with over 11 years of clinical
 						experience in general dentistry, holding both a BDS and an MBA in Hospital
@@ -543,7 +547,8 @@
 					<h3>Clinic Contact</h3>
 					<p><strong>Phone:</strong> <a href="tel:+918075059701">+91 8075059701</a></p>
 					<p><strong>Address:</strong> Near KSEB Office, Chungam, Ooty Road, Sulthan Bathery</p>
-					<table class="hours-table" aria-label="Operating hours">
+					<table class="hours-table">
+						<caption style="text-align: left; font-weight: 700; margin-bottom: 10px;">Operating Hours</caption>
 						<thead>
 							<tr>
 								<th>Day</th>
@@ -563,7 +568,7 @@
 					<iframe
 						class="map-frame"
 						title="Dr. Jacobs Orthodontic Centre map"
-						src="https://www.google.com/maps?q=Near%20KSEB%20Office%2C%20Chungam%2C%20Ooty%20Road%2C%20Sulthan%20Bathery&output=embed"
+						src="https://maps.google.com/maps?q=Near%20KSEB%20Office%2C%20Chungam%2C%20Ooty%20Road%2C%20Sulthan%20Bathery&t=&z=15&ie=UTF8&iwloc=&output=embed"
 						loading="lazy"
 						referrerpolicy="no-referrer-when-downgrade"
 					></iframe>
@@ -614,9 +619,9 @@
 				</div>
 			</div>
 			<div class="footer-links">
-				<a href="/privacy-policy">Privacy Policy</a>
-				<a href="/terms-of-service">Terms of Service</a>
-				<a href="/disclaimer">Disclaimer</a>
+				<a href="privacy-policy.html">Privacy Policy</a>
+				<a href="terms-of-service.html">Terms of Service</a>
+				<a href="disclaimer.html">Disclaimer</a>
 			</div>
 			<div class="footer-note">
 				Results may vary from person to person. Consult our doctors for a personalized plan.
@@ -628,13 +633,17 @@
 		document.addEventListener("DOMContentLoaded", function () {
 			var form = document.getElementById("appointment-request-form");
 			var status = document.getElementById("form-status");
+			var preferredDateField = document.getElementById("preferred-date");
+			var today = new Date().toISOString().split("T")[0];
+
+			preferredDateField.setAttribute("min", today);
 
 			form.addEventListener("submit", function (event) {
 				event.preventDefault();
 
 				var name = document.getElementById("patient-name").value.trim();
 				var phone = document.getElementById("patient-phone").value.trim();
-				var preferredDate = document.getElementById("preferred-date").value;
+				var preferredDate = preferredDateField.value;
 
 				if (!name || !phone || !preferredDate) {
 					return;
