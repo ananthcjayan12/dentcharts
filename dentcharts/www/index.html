@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Dr. Jacobs Orthodontic Centre &amp; Advanced Dental Care</title>
+	<meta
+		name="description"
+		content="Dr. Jacobs Orthodontic Centre &amp; Advanced Dental Care in Sulthan Bathery offers smile design, aligners, orthodontics, root canal treatment, implants, whitening, and kids dentistry."
+	>
+	<style>
+		:root {
+			--primary: #0b7285;
+			--primary-dark: #095c6a;
+			--accent: #f59f00;
+			--bg: #f7fbfc;
+			--text: #16323f;
+			--muted: #5f7480;
+			--card: #ffffff;
+			--border: #d9e7eb;
+			--shadow: 0 18px 40px rgba(11, 114, 133, 0.12);
+		}
+
+		* {
+			box-sizing: border-box;
+		}
+
+		html {
+			scroll-behavior: smooth;
+		}
+
+		body {
+			margin: 0;
+			font-family: Arial, Helvetica, sans-serif;
+			background: var(--bg);
+			color: var(--text);
+			line-height: 1.6;
+		}
+
+		a {
+			color: inherit;
+		}
+
+		.hero {
+			background: linear-gradient(135deg, rgba(11, 114, 133, 0.95), rgba(9, 92, 106, 0.9));
+			color: #fff;
+			padding: 72px 24px;
+		}
+
+		.hero-inner,
+		.section-inner,
+		.footer-inner {
+			max-width: 1180px;
+			margin: 0 auto;
+		}
+
+		.hero-grid {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 40px;
+			align-items: center;
+		}
+
+		.eyebrow {
+			display: inline-block;
+			padding: 8px 14px;
+			border-radius: 999px;
+			background: rgba(255, 255, 255, 0.14);
+			font-size: 0.9rem;
+			font-weight: 700;
+			letter-spacing: 0.03em;
+			margin-bottom: 18px;
+		}
+
+		h1,
+		h2,
+		h3 {
+			margin: 0 0 16px;
+			line-height: 1.2;
+		}
+
+		h1 {
+			font-size: clamp(2.4rem, 5vw, 4rem);
+		}
+
+		.hero p {
+			margin: 0 0 16px;
+			max-width: 640px;
+			font-size: 1.05rem;
+			color: rgba(255, 255, 255, 0.92);
+		}
+
+		.hero-actions,
+		.quick-contact {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 14px;
+			margin-top: 28px;
+		}
+
+		.btn {
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			gap: 8px;
+			padding: 14px 22px;
+			border-radius: 999px;
+			text-decoration: none;
+			font-weight: 700;
+			border: 1px solid transparent;
+		}
+
+		.btn-primary {
+			background: #fff;
+			color: var(--primary-dark);
+		}
+
+		.btn-secondary {
+			background: transparent;
+			border-color: rgba(255, 255, 255, 0.45);
+			color: #fff;
+		}
+
+		.hero-visual {
+			background: linear-gradient(180deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.08));
+			border: 1px solid rgba(255, 255, 255, 0.2);
+			border-radius: 28px;
+			padding: 28px;
+			box-shadow: var(--shadow);
+			backdrop-filter: blur(8px);
+		}
+
+		.hero-visual-card {
+			background: #fff;
+			color: var(--text);
+			border-radius: 24px;
+			padding: 28px;
+		}
+
+		.hero-visual-card p {
+			color: var(--muted);
+		}
+
+		.hero-stats {
+			display: grid;
+			grid-template-columns: repeat(2, minmax(0, 1fr));
+			gap: 14px;
+			margin-top: 20px;
+		}
+
+		.stat {
+			background: #f1f8fa;
+			border-radius: 18px;
+			padding: 16px;
+		}
+
+		.stat strong {
+			display: block;
+			font-size: 1.6rem;
+			color: var(--primary);
+		}
+
+		section {
+			padding: 72px 24px;
+		}
+
+		.section-heading {
+			max-width: 720px;
+			margin-bottom: 32px;
+		}
+
+		.section-heading p,
+		.card p,
+		.bio p,
+		.contact-card p,
+		.legal-note,
+		.testimonial-card p {
+			color: var(--muted);
+		}
+
+		.grid {
+			display: grid;
+			gap: 24px;
+		}
+
+		.services-grid,
+		.testimonials-grid,
+		.contact-grid {
+			grid-template-columns: repeat(3, minmax(0, 1fr));
+		}
+
+		.card,
+		.bio,
+		.contact-card,
+		.form-card,
+		.testimonial-card {
+			background: var(--card);
+			border: 1px solid var(--border);
+			border-radius: 24px;
+			padding: 24px;
+			box-shadow: var(--shadow);
+		}
+
+		.service-icon {
+			width: 52px;
+			height: 52px;
+			border-radius: 16px;
+			display: inline-flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 1.4rem;
+			background: #e9f7fa;
+			color: var(--primary);
+			margin-bottom: 14px;
+		}
+
+		.about-grid {
+			display: grid;
+			grid-template-columns: 1.05fr 0.95fr;
+			gap: 24px;
+		}
+
+		.subheading {
+			font-size: 0.95rem;
+			font-weight: 700;
+			color: var(--accent);
+			text-transform: uppercase;
+			letter-spacing: 0.06em;
+			margin-bottom: 10px;
+		}
+
+		.list {
+			padding-left: 18px;
+			color: var(--muted);
+			margin: 0;
+		}
+
+		.list li + li {
+			margin-top: 10px;
+		}
+
+		.hours-table {
+			width: 100%;
+			border-collapse: collapse;
+			margin-top: 20px;
+		}
+
+		.hours-table th,
+		.hours-table td {
+			padding: 14px;
+			border-bottom: 1px solid var(--border);
+			text-align: left;
+		}
+
+		.map-frame {
+			width: 100%;
+			min-height: 320px;
+			border: 0;
+			border-radius: 22px;
+		}
+
+		form {
+			display: grid;
+			gap: 16px;
+		}
+
+		label {
+			display: grid;
+			gap: 8px;
+			font-weight: 700;
+		}
+
+		input {
+			width: 100%;
+			padding: 14px 16px;
+			border-radius: 14px;
+			border: 1px solid var(--border);
+			font: inherit;
+		}
+
+		.form-help {
+			font-size: 0.92rem;
+			color: var(--muted);
+			margin: 0;
+		}
+
+		.form-status {
+			display: none;
+			padding: 14px 16px;
+			border-radius: 14px;
+			background: #edf9f1;
+			color: #1f6f43;
+			font-weight: 700;
+		}
+
+		footer {
+			background: #0d2530;
+			color: #f3f8fa;
+			padding: 28px 24px 36px;
+		}
+
+		.footer-inner {
+			display: grid;
+			gap: 24px;
+		}
+
+		.footer-top {
+			display: flex;
+			flex-wrap: wrap;
+			align-items: center;
+			justify-content: space-between;
+			gap: 16px;
+		}
+
+		.footer-links,
+		.social-links {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 16px;
+		}
+
+		.footer-links a,
+		.social-links a {
+			color: #d8ebf0;
+			text-decoration: none;
+		}
+
+		.footer-note {
+			color: #bfd5db;
+			font-size: 0.95rem;
+		}
+
+		@media (max-width: 960px) {
+			.hero-grid,
+			.about-grid,
+			.services-grid,
+			.testimonials-grid,
+			.contact-grid {
+				grid-template-columns: 1fr;
+			}
+		}
+
+		@media (max-width: 640px) {
+			.hero,
+			section,
+			footer {
+				padding-left: 18px;
+				padding-right: 18px;
+			}
+
+			.hero-stats {
+				grid-template-columns: 1fr;
+			}
+		}
+	</style>
+</head>
+<body>
+	<header class="hero" id="top">
+		<div class="hero-inner">
+			<div class="hero-grid">
+				<div>
+					<span class="eyebrow">Dr. Jacobs Orthodontic Centre &amp; Advanced Dental Care</span>
+					<h1>Where advanced technology meets compassionate care</h1>
+					<p>
+						Expert orthodontic and dental care in Sulthan Bathery led by Prof. Dr. Jacob John
+						and Dr. Maria Jacob (Dr. Maria K. Pullazhi), with modern treatment options tailored
+						for every smile.
+					</p>
+					<p>
+						<strong>Founder/Lead Dentists:</strong> Prof. Dr. Jacob John &amp; Dr. Maria Jacob
+						(Dr. Maria K. Pullazhi)
+					</p>
+					<p>
+						Visit us near KSEB Office, Chungam, Ooty Road, Sulthan Bathery or call
+						<a href="tel:+918075059701">+91 8075059701</a> to book your consultation.
+					</p>
+					<div class="hero-actions">
+						<a class="btn btn-primary" href="#contact-form">Book Appointment</a>
+						<a class="btn btn-secondary" href="https://maps.app.goo.gl/eigGesTpUFWckDPB7">Get Directions</a>
+					</div>
+					<div class="quick-contact">
+						<a class="btn btn-secondary" href="tel:+918075059701">Call Clinic</a>
+						<a class="btn btn-secondary" href="#services">Explore Services</a>
+					</div>
+				</div>
+				<div class="hero-visual">
+					<div class="hero-visual-card">
+						<div class="subheading">Clinic Snapshot</div>
+						<h2>Modern orthodontic and dental care for adults and children</h2>
+						<p>
+							A welcoming clinic experience focused on accurate diagnosis, personalized treatment,
+							and ethical patient care.
+						</p>
+						<div class="hero-stats">
+							<div class="stat">
+								<strong>20+ Years</strong>
+								<span>International orthodontic experience</span>
+							</div>
+							<div class="stat">
+								<strong>11+ Years</strong>
+								<span>General dentistry leadership</span>
+							</div>
+							<div class="stat">
+								<strong>Mon–Sat</strong>
+								<span>9:00 AM – 7:00 PM</span>
+							</div>
+							<div class="stat">
+								<strong>6 Core Services</strong>
+								<span>From aligners to kids dentistry</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+		</div>
+	</header>
+
+	<section id="about">
+		<div class="section-inner">
+			<div class="section-heading">
+				<div class="subheading">About Us</div>
+				<h2>Trusted specialists focused on confident, healthy smiles</h2>
+				<p>
+					Dr. Jacobs Orthodontic Centre &amp; Advanced Dental Care brings together specialist
+					orthodontics, general dentistry, and patient-first service under one roof.
+				</p>
+			</div>
+			<div class="about-grid">
+				<div class="bio">
+					<div class="subheading">About Prof. Dr. Jacob John</div>
+					<p>
+						Prof. Dr. Jacob John is an internationally recognized Consultant Specialist Orthodontist
+						with over 20 years of experience across Qatar, Oman, the United Kingdom, Ireland,
+						and India.
+					</p>
+					<p>
+						He completed specialist orthodontic training and fellowships from the Royal College
+						of Surgeons in Ireland, Royal College of Surgeons of Edinburgh, and the Royal College
+						of Physicians and Surgeons of Glasgow. He has served as Specialist Orthodontist at
+						Aster Medical Centre, Qatar, and as Professor and Postgraduate Guide in Orthodontics
+						at Dr. Moopen’s Medical College, Wayanad.
+					</p>
+					<p>
+						Dr. Jacob specializes in Invisalign aligners, self-ligating braces, lingual
+						orthodontics, and growth modulation therapies to solve complex orthodontic concerns.
+					</p>
+				</div>
+				<div class="bio">
+					<div class="subheading">About Dr. Maria Jacob (Dr. Maria K. Pullazhi)</div>
+					<p>
+						Dr. Maria K. Pullazhi is a Chief Dental Surgeon with over 11 years of clinical
+						experience in general dentistry, holding both a BDS and an MBA in Hospital
+						Administration.
+					</p>
+					<p>
+						She is known for accurate diagnosis, effective treatment planning, and clear
+						communication that helps patients make informed decisions about their oral health.
+					</p>
+					<p>
+						Dr. Maria helps maintain high standards of patient care, safety, and ethical dental
+						practice while creating a comfortable and welcoming environment for every patient.
+					</p>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<section id="services">
+		<div class="section-inner">
+			<div class="section-heading">
+				<div class="subheading">Services</div>
+				<h2>Treatment categories designed for complete smile care</h2>
+				<p>
+					Every treatment plan is personalized to your needs, goals, and comfort level.
+				</p>
+			</div>
+			<div class="grid services-grid">
+				<div class="card">
+					<div class="service-icon">✨</div>
+					<h3>Smile Design</h3>
+					<p>Comprehensive aesthetic transformations that improve the harmony and confidence of your smile.</p>
+				</div>
+				<div class="card">
+					<div class="service-icon">😁</div>
+					<h3>Aligners &amp; Orthodontics</h3>
+					<p>Clear aligners and traditional braces for precise, modern teeth-straightening solutions.</p>
+				</div>
+				<div class="card">
+					<div class="service-icon">🦷</div>
+					<h3>Root Canal Treatment (RCT)</h3>
+					<p>Advanced endodontic care focused on preserving damaged teeth and relieving discomfort.</p>
+				</div>
+				<div class="card">
+					<div class="service-icon">🔩</div>
+					<h3>Dental Implants</h3>
+					<p>Permanent, natural-looking replacements for missing teeth with function and stability in mind.</p>
+				</div>
+				<div class="card">
+					<div class="service-icon">🌟</div>
+					<h3>Teeth Whitening</h3>
+					<p>Professional whitening treatments for a brighter, fresher smile with clinician-guided care.</p>
+				</div>
+				<div class="card">
+					<div class="service-icon">👧</div>
+					<h3>Kids Dentistry</h3>
+					<p>Gentle pediatric dental care that helps children feel safe, supported, and comfortable.</p>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<section id="testimonials">
+		<div class="section-inner">
+			<div class="section-heading">
+				<div class="subheading">Testimonials</div>
+				<h2>Patient stories coming soon</h2>
+				<p>[Developer: Add placeholder for patient reviews]</p>
+			</div>
+			<div class="grid testimonials-grid">
+				<div class="testimonial-card">
+					<h3>Orthodontic Success Story</h3>
+					<p>Placeholder for an aligner or braces transformation review.</p>
+				</div>
+				<div class="testimonial-card">
+					<h3>Family Dental Care Review</h3>
+					<p>Placeholder for a parent sharing their child’s comfortable treatment experience.</p>
+				</div>
+				<div class="testimonial-card">
+					<h3>Smile Makeover Feedback</h3>
+					<p>Placeholder for a smile design or whitening testimonial from a happy patient.</p>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<section id="contact">
+		<div class="section-inner">
+			<div class="section-heading">
+				<div class="subheading">Contact &amp; Location</div>
+				<h2>Visit or message the clinic with your preferred appointment date</h2>
+				<p>
+					Address: Near KSEB Office, Chungam, Ooty Road, Sulthan Bathery
+				</p>
+			</div>
+			<div class="grid contact-grid">
+				<div class="contact-card">
+					<h3>Clinic Contact</h3>
+					<p><strong>Phone:</strong> <a href="tel:+918075059701">+91 8075059701</a></p>
+					<p><strong>Address:</strong> Near KSEB Office, Chungam, Ooty Road, Sulthan Bathery</p>
+					<table class="hours-table">
+						<caption style="text-align: left; font-weight: 700; margin-bottom: 10px;">Operating Hours</caption>
+						<thead>
+							<tr>
+								<th>Day</th>
+								<th>Hours</th>
+							</tr>
+						</thead>
+						<tbody>
+							<tr>
+								<td>Monday – Saturday</td>
+								<td>9:00 AM – 7:00 PM</td>
+							</tr>
+						</tbody>
+					</table>
+				</div>
+				<div class="contact-card">
+					<h3>Find Us on the Map</h3>
+					<iframe
+						class="map-frame"
+						title="Dr. Jacobs Orthodontic Centre map"
+						src="https://maps.google.com/maps?q=Near%20KSEB%20Office%2C%20Chungam%2C%20Ooty%20Road%2C%20Sulthan%20Bathery&t=&z=15&ie=UTF8&iwloc=&output=embed"
+						loading="lazy"
+						referrerpolicy="no-referrer-when-downgrade"
+					></iframe>
+					<p><a href="https://maps.app.goo.gl/eigGesTpUFWckDPB7">Open Google Maps</a></p>
+				</div>
+				<div class="form-card">
+					<h3 id="contact-form">Book Appointment</h3>
+					<p class="form-help">
+						Fill in your name, phone number, and preferred date. We will open a prefilled message
+						to the clinic so your request can be shared quickly.
+					</p>
+					<form id="appointment-request-form">
+						<label>
+							Name
+							<input id="patient-name" name="name" type="text" placeholder="Your full name" required>
+						</label>
+						<label>
+							Phone
+							<input id="patient-phone" name="phone" type="tel" placeholder="+91 9XXXXXXXXX" required>
+						</label>
+						<label>
+							Preferred Date
+							<input id="preferred-date" name="preferred_date" type="date" required>
+						</label>
+						<button class="btn btn-primary" type="submit">Book Appointment</button>
+						<p class="legal-note">
+							By submitting this form, you agree to be contacted for appointment coordination.
+						</p>
+						<div class="form-status" id="form-status">
+							Your appointment request details are ready to send to the clinic.
+						</div>
+					</form>
+				</div>
+			</div>
+		</div>
+	</section>
+
+	<footer>
+		<div class="footer-inner">
+			<div class="footer-top">
+				<div>
+					<h3>Dr. Jacobs Orthodontic Centre &amp; Advanced Dental Care</h3>
+					<div class="footer-note">Near KSEB Office, Chungam, Ooty Road, Sulthan Bathery</div>
+				</div>
+				<div class="social-links">
+					<a href="https://www.facebook.com/profile.php?id=61586546922972">Facebook</a>
+					<a href="https://www.instagram.com/dr_jacobs_/">Instagram</a>
+				</div>
+			</div>
+			<div class="footer-links">
+				<a href="privacy-policy.html">Privacy Policy</a>
+				<a href="terms-of-service.html">Terms of Service</a>
+				<a href="disclaimer.html">Disclaimer</a>
+			</div>
+			<div class="footer-note">
+				Results may vary from person to person. Consult our doctors for a personalized plan.
+			</div>
+		</div>
+	</footer>
+
+	<script>
+		document.addEventListener("DOMContentLoaded", function () {
+			var form = document.getElementById("appointment-request-form");
+			var status = document.getElementById("form-status");
+			var preferredDateField = document.getElementById("preferred-date");
+			var today = new Date().toISOString().split("T")[0];
+
+			preferredDateField.setAttribute("min", today);
+
+			form.addEventListener("submit", function (event) {
+				event.preventDefault();
+
+				var name = document.getElementById("patient-name").value.trim();
+				var phone = document.getElementById("patient-phone").value.trim();
+				var preferredDate = preferredDateField.value;
+
+				if (!name || !phone || !preferredDate) {
+					return;
+				}
+
+				var message = [
+					"Appointment Request",
+					"Name: " + name,
+					"Phone: " + phone,
+					"Preferred Date: " + preferredDate
+				].join("%0A");
+
+				status.style.display = "block";
+				window.open("https://wa.me/918075059701?text=" + message, "_blank", "noopener");
+			});
+		});
+	</script>
+</body>
+</html>
